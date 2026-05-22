@@ -386,6 +386,7 @@ export const getSidebarCounts = cache(async (): Promise<SidebarCounts> => {
 export interface MemberPulse extends Profile {
   open_tasks: number;
   completed_today: number;
+  current_task_title: string | null;
 }
 
 /** Used by the sidebar Team Pulse list + /team grid. */
@@ -399,12 +400,17 @@ export const getMembersWithPulse = cache(async (): Promise<MemberPulse[]> => {
   startOfToday.setHours(0, 0, 0, 0);
   const ids = members.map((m) => m.id);
 
+  // One pass over open tasks — count them AND grab the highest-priority /
+  // soonest-due title per user as the "currently working on" hint.
   const [openRes, doneRes] = await Promise.all([
     supabase
       .from("tasks")
-      .select("assignee_id")
+      .select("assignee_id, title, priority, due_at, created_at")
       .neq("status", "done")
-      .in("assignee_id", ids),
+      .in("assignee_id", ids)
+      .order("priority", { ascending: true })
+      .order("due_at", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false }),
     supabase
       .from("tasks")
       .select("assignee_id, completed_at")
@@ -414,9 +420,13 @@ export const getMembersWithPulse = cache(async (): Promise<MemberPulse[]> => {
   ]);
 
   const openByUser = new Map<string, number>();
+  const topTitleByUser = new Map<string, string>();
   for (const row of openRes.data ?? []) {
     if (!row.assignee_id) continue;
     openByUser.set(row.assignee_id, (openByUser.get(row.assignee_id) ?? 0) + 1);
+    if (!topTitleByUser.has(row.assignee_id)) {
+      topTitleByUser.set(row.assignee_id, row.title);
+    }
   }
   const doneByUser = new Map<string, number>();
   for (const row of doneRes.data ?? []) {
@@ -428,6 +438,7 @@ export const getMembersWithPulse = cache(async (): Promise<MemberPulse[]> => {
     ...m,
     open_tasks: openByUser.get(m.id) ?? 0,
     completed_today: doneByUser.get(m.id) ?? 0,
+    current_task_title: topTitleByUser.get(m.id) ?? null,
   }));
 });
 

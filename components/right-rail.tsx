@@ -3,7 +3,8 @@ import { format, formatDistanceToNow } from "date-fns";
 import { CheckCircle, UserPlus } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { statusLabel } from "@/components/status-picker";
-import type { ActivityItem, MemberPulse } from "@/lib/queries";
+import { cn } from "@/lib/utils";
+import type { ActivityItem, MemberPulse, ProfileStatus } from "@/lib/queries";
 
 interface RightRailProps {
   completedToday: number;
@@ -14,9 +15,9 @@ interface RightRailProps {
 }
 
 /**
- * 300px companion column for list pages — progress ring, team activity,
- * and a small recent-events feed. Server component; data comes from
- * the page above.
+ * 300px companion column for list pages. One card, three sections,
+ * hairline dividers between them — keeps the eye in a single column
+ * instead of bouncing between three stacked panels.
  */
 export function RightRail({
   completedToday,
@@ -26,17 +27,51 @@ export function RightRail({
   activity,
 }: RightRailProps) {
   return (
-    <aside className="hidden flex-col gap-4 lg:flex">
-      <ProgressCard completed={completedToday} active={activeToday} />
-      <TeamCard members={members} currentUserId={currentUserId} />
-      <ActivityCard items={activity} currentUserId={currentUserId} />
+    <aside className="hidden lg:block">
+      <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
+        <TodaySection completed={completedToday} active={activeToday} />
+        <Divider />
+        <TeamSection members={members} currentUserId={currentUserId} />
+        <Divider />
+        <ActivitySection items={activity} currentUserId={currentUserId} />
+      </div>
     </aside>
   );
 }
 
-// ── Today's progress ─────────────────────────────────────────────────────────
+function Divider() {
+  return <div className="h-px bg-border/60" />;
+}
 
-function ProgressCard({
+function SectionHeader({
+  title,
+  href,
+  linkLabel = "All",
+}: {
+  title: string;
+  href?: string;
+  linkLabel?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between">
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        {title}
+      </h3>
+      {href && (
+        <Link
+          href={href}
+          className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {linkLabel}
+        </Link>
+      )}
+    </div>
+  );
+}
+
+// ── Today ────────────────────────────────────────────────────────────────────
+
+function TodaySection({
   completed,
   active,
 }: {
@@ -45,11 +80,10 @@ function ProgressCard({
 }) {
   const total = completed + active;
   const ratio = total === 0 ? 0 : completed / total;
-  const pct = Math.round(ratio * 100);
 
   const hint =
     total === 0
-      ? "Nothing on your plate yet today."
+      ? "Nothing on your plate yet."
       : completed === 0
       ? "Pick one and get started."
       : ratio === 1
@@ -57,33 +91,30 @@ function ProgressCard({
       : `${active} left to wrap up.`;
 
   return (
-    <CardShell>
-      <h3 className="text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Today
-      </h3>
-      <div className="mt-3 flex items-center gap-4">
+    <section className="px-4 py-3.5">
+      <SectionHeader title="Today" />
+      <div className="mt-2.5 flex items-center gap-3">
         <ProgressRing ratio={ratio} />
         <div className="min-w-0 flex-1">
-          <p className="text-[20px] font-semibold tabular-nums leading-none text-foreground">
+          <p className="text-[15px] font-semibold tabular-nums leading-none text-foreground">
             {completed}
             <span className="text-muted-foreground/70">/{total}</span>
+            <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
+              complete
+            </span>
           </p>
-          <p className="mt-1 text-[12px] text-muted-foreground">done</p>
+          <p className="mt-1.5 truncate text-[12px] text-muted-foreground">
+            {hint}
+          </p>
         </div>
       </div>
-      <p className="mt-3 text-[12.5px] text-muted-foreground">{hint}</p>
-      {total > 0 && (
-        <p className="mt-2 text-[11px] tabular-nums text-muted-foreground/70">
-          {pct}% complete
-        </p>
-      )}
-    </CardShell>
+    </section>
   );
 }
 
 function ProgressRing({ ratio }: { ratio: number }) {
-  const size = 56;
-  const stroke = 5;
+  const size = 36;
+  const stroke = 4;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const dash = c * Math.min(1, Math.max(0, ratio));
@@ -117,107 +148,111 @@ function ProgressRing({ ratio }: { ratio: number }) {
   );
 }
 
-// ── Team is working on… ───────────────────────────────────────────────────────
+// ── Team Pulse ───────────────────────────────────────────────────────────────
 
-function TeamCard({
+const PRESENCE: Record<NonNullable<ProfileStatus>, string> = {
+  coffee: "bg-amber-500",
+  focus: "bg-violet-500",
+  done: "bg-muted-foreground/40",
+  busy: "bg-rose-500",
+};
+
+function presenceColor(status: ProfileStatus, openTasks: number) {
+  if (status) return PRESENCE[status];
+  return openTasks > 0 ? "bg-emerald-500" : "bg-muted-foreground/30";
+}
+
+function memberSubtext(m: MemberPulse) {
+  if (m.status === "coffee" || m.status === "busy" || m.status === "done") {
+    return statusLabel(m.status) ?? "";
+  }
+  if (m.current_task_title) {
+    return `Working on ${m.current_task_title}`;
+  }
+  if (m.open_tasks > 0) return `${m.open_tasks} open`;
+  return statusLabel(m.status) ?? "Active now";
+}
+
+function TeamSection({
   members,
   currentUserId,
 }: {
   members: MemberPulse[];
   currentUserId: string;
 }) {
+  // Others with work first, sorted by load. Cap at 4 to keep the rail compact.
   const others = members
-    .filter((m) => m.id !== currentUserId && m.open_tasks > 0)
+    .filter((m) => m.id !== currentUserId)
     .sort((a, b) => b.open_tasks - a.open_tasks)
-    .slice(0, 5);
+    .slice(0, 4);
 
   return (
-    <CardShell>
-      <div className="flex items-baseline justify-between">
-        <h3 className="text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Team is working on
-        </h3>
-        <Link
-          href="/team"
-          className="text-[11.5px] text-muted-foreground hover:text-foreground"
-        >
-          All
-        </Link>
-      </div>
+    <section className="px-4 py-3.5">
+      <SectionHeader title="Team Pulse" href="/team" />
       {others.length === 0 ? (
         <p className="mt-3 text-[12.5px] text-muted-foreground">
           Quiet on the floor right now.
         </p>
       ) : (
-        <ul className="mt-3 flex flex-col gap-1">
-          {others.map((m) => {
-            const label = statusLabel(m.status ?? null);
-            return (
-              <li key={m.id}>
-                <Link
-                  href={`/team/${m.id}`}
-                  className="focus-ring flex items-center gap-2.5 rounded-md px-1.5 py-1.5 transition-colors hover:bg-accent/40"
-                >
+        <ul className="mt-2 flex flex-col">
+          {others.map((m) => (
+            <li key={m.id}>
+              <Link
+                href={`/team/${m.id}`}
+                className="focus-ring -mx-1.5 flex items-center gap-2.5 rounded-md px-1.5 py-1.5 transition-colors hover:bg-accent/40"
+              >
+                <span className="relative shrink-0">
                   <Avatar
                     src={m.avatar_url}
                     initials={m.initials}
                     color={m.avatar_color}
                     size={26}
                   />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-[13px] font-medium text-foreground">
-                      {m.name.split(" ")[0]}
-                    </span>
-                    {label && (
-                      <span className="truncate text-[11px] text-muted-foreground">
-                        {label}
-                      </span>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "absolute -bottom-0.5 -right-0.5 size-2 rounded-full ring-2 ring-card",
+                      presenceColor(m.status ?? null, m.open_tasks)
                     )}
+                  />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[12.5px] font-medium text-foreground">
+                    {m.name.split(" ")[0]}
                   </span>
-                  <span className="shrink-0 text-[11.5px] tabular-nums text-muted-foreground">
-                    {m.open_tasks} open
+                  <span className="truncate text-[11px] text-muted-foreground">
+                    {memberSubtext(m)}
                   </span>
-                </Link>
-              </li>
-            );
-          })}
+                </span>
+              </Link>
+            </li>
+          ))}
         </ul>
       )}
-    </CardShell>
+    </section>
   );
 }
 
 // ── Recent activity ──────────────────────────────────────────────────────────
 
-function ActivityCard({
+function ActivitySection({
   items,
   currentUserId,
 }: {
   items: ActivityItem[];
   currentUserId: string;
 }) {
-  const top = items.slice(0, 5);
+  const top = items.slice(0, 4);
 
   return (
-    <CardShell>
-      <div className="flex items-baseline justify-between">
-        <h3 className="text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Recent activity
-        </h3>
-        <Link
-          href="/notifications"
-          className="text-[11.5px] text-muted-foreground hover:text-foreground"
-        >
-          All
-        </Link>
-      </div>
-
+    <section className="px-4 py-3.5">
+      <SectionHeader title="Recent activity" href="/notifications" />
       {top.length === 0 ? (
         <p className="mt-3 text-[12.5px] text-muted-foreground">
           Nothing in the last 7 days.
         </p>
       ) : (
-        <ul className="mt-3 flex flex-col gap-2.5">
+        <ul className="mt-2.5 flex flex-col gap-2.5">
           {top.map((item) => (
             <ActivityRow
               key={`${item.kind}-${item.task.id}-${item.at}`}
@@ -227,7 +262,7 @@ function ActivityCard({
           ))}
         </ul>
       )}
-    </CardShell>
+    </section>
   );
 }
 
@@ -240,6 +275,7 @@ function ActivityRow({
 }) {
   const { kind, task, at } = item;
   const ago = formatDistanceToNow(new Date(at), { addSuffix: true });
+  const timeTitle = format(new Date(at), "PPp");
 
   if (kind === "i-completed") {
     return (
@@ -250,11 +286,12 @@ function ActivityRow({
           className="mt-0.5 shrink-0 text-emerald-600"
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[12.5px] text-foreground">
-            You completed{" "}
-            <span className="font-medium">{task.title}</span>
+          <p className="text-[12px] leading-snug text-muted-foreground">
+            <span className="font-medium text-foreground">You</span>{" "}
+            completed{" "}
+            <span className="font-medium text-foreground">{task.title}</span>
           </p>
-          <p className="text-[11px] text-muted-foreground/80" title={format(new Date(at), "PPp")}>
+          <p className="mt-0.5 text-[11px] text-muted-foreground/70" title={timeTitle}>
             {ago}
           </p>
         </div>
@@ -263,15 +300,21 @@ function ActivityRow({
   }
 
   const author = task.author;
+  const name =
+    author?.id === currentUserId
+      ? "You"
+      : author?.name.split(" ")[0] ?? "Someone";
+
   return (
     <li className="flex items-start gap-2">
       {author ? (
-        <span className="mt-0.5">
+        <span className="mt-0.5 shrink-0">
           <Avatar
             src={author.avatar_url}
             initials={author.initials}
             color={author.avatar_color}
-            size={18}
+            size={16}
+            fontSize={8}
           />
         </span>
       ) : (
@@ -281,29 +324,15 @@ function ActivityRow({
         />
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-[12.5px] text-foreground">
-          <span className="font-medium">
-            {author?.id === currentUserId
-              ? "You"
-              : author?.name.split(" ")[0] ?? "Someone"}
-          </span>{" "}
+        <p className="text-[12px] leading-snug text-muted-foreground">
+          <span className="font-medium text-foreground">{name}</span>{" "}
           assigned you{" "}
-          <span className="font-medium">{task.title}</span>
+          <span className="font-medium text-foreground">{task.title}</span>
         </p>
-        <p className="text-[11px] text-muted-foreground/80" title={format(new Date(at), "PPp")}>
+        <p className="mt-0.5 text-[11px] text-muted-foreground/70" title={timeTitle}>
           {ago}
         </p>
       </div>
     </li>
-  );
-}
-
-// ── Shared shell ─────────────────────────────────────────────────────────────
-
-function CardShell({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="rounded-2xl border border-border/60 bg-card p-4 shadow-soft-xs">
-      {children}
-    </section>
   );
 }
