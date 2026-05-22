@@ -10,7 +10,7 @@ import {
   getTasksAssignedTo,
   getCurrentProfile,
 } from "@/lib/queries";
-import { statusEmoji, statusLabel } from "@/components/status-picker";
+import { statusLabel } from "@/components/status-picker";
 import { Avatar } from "@/components/avatar";
 
 interface TeammatePageProps {
@@ -34,7 +34,6 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
   if (!member) notFound();
 
   const isMe = me?.id === member.id;
-  const emoji = statusEmoji(member.status ?? null);
   const label = statusLabel(member.status ?? null);
 
   const overdue = openTasks.filter(
@@ -81,10 +80,8 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
               )}
             </h2>
             <p className="mt-0.5 text-[13px] text-muted-foreground">
-              {emoji ? (
-                <>
-                  <span>{emoji}</span> <span>{label}</span>
-                </>
+              {label ? (
+                <span>{label}</span>
               ) : (
                 <span className="text-muted-foreground/60">
                   No status set

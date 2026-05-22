@@ -109,7 +109,7 @@ export default async function AssignedToMePage() {
           <div className="min-w-0">
             {activeCount === 0 && completedToday.length === 0 ? (
               <EmptyState
-                emoji="🙌"
+                icon={<Crosshair size={22} />}
                 title="Nothing's on you right now"
                 hint="Add one for yourself, or invite a teammate to share the load."
                 actionLabel="Assign your first task"

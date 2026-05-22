@@ -13,7 +13,8 @@ export interface EmptyStateAction {
 }
 
 interface EmptyStateProps {
-  emoji: string;
+  /** Phosphor icon (or any React node) rendered inside the badge tile. */
+  icon: React.ReactNode;
   title: string;
   hint: string;
   /** Primary CTA, defaults to "Add task" opening QuickAdd. */
@@ -34,7 +35,7 @@ interface EmptyStateProps {
  * placeholder-y when a user lands on an empty view.
  */
 export function EmptyState({
-  emoji,
+  icon,
   title,
   hint,
   actionLabel = "Add task",
@@ -49,8 +50,8 @@ export function EmptyState({
   return (
     <div className="w-full rounded-2xl border border-border/60 bg-card px-8 py-12 shadow-soft-xs sm:px-12">
       <div className="mx-auto flex max-w-[520px] flex-col items-center text-center">
-        <div className="grid size-16 place-items-center rounded-2xl border border-border/60 bg-muted/40 text-[32px] shadow-soft-xs">
-          {emoji}
+        <div className="grid size-14 place-items-center rounded-2xl border border-border/60 bg-muted/40 text-muted-foreground shadow-soft-xs">
+          {icon}
         </div>
         <h3 className="mt-5 text-[18px] font-semibold tracking-tight text-foreground">
           {title}

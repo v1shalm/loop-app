@@ -39,7 +39,7 @@ export default async function InboxPage() {
           <div className="min-w-0">
             {tasks.length === 0 ? (
               <EmptyState
-                emoji="📬"
+                icon={<Tray size={22} />}
                 title="All caught up"
                 hint="New assignments from teammates land here. While the inbox is empty, here's where you can go next."
                 actionLabel="Assign your first task"

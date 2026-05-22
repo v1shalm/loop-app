@@ -10,6 +10,7 @@ import { triageTask, snoozeTask } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
 import type { TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
+import { ProjectDot } from "@/components/project-dot";
 
 const priorityClass: Record<number, string> = {
   1: "text-priority-1",
@@ -98,8 +99,8 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
 
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-muted-foreground">
             {task.project && (
-              <span className="inline-flex items-center gap-1">
-                <span>{task.project.emoji ?? "#"}</span>
+              <span className="inline-flex items-center gap-1.5">
+                <ProjectDot project={task.project} size={7} />
                 <span>{task.project.name}</span>
               </span>
             )}

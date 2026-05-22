@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircle, Tray } from "@/components/icons";
+import { Bell, CheckCircle, Tray } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
 import type { ActivityItem } from "@/lib/queries";
@@ -47,7 +47,7 @@ export function NotificationsList({
 
       {filtered.length === 0 ? (
         <EmptyState
-          emoji="🔔"
+          icon={<Bell size={22} />}
           title="All caught up"
           hint="New assignments and completions show up here as they happen."
           showAction={false}

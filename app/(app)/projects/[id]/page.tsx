@@ -94,7 +94,7 @@ export default async function ProjectPage({ params }: PageProps) {
           </header>
           {openTasks.length === 0 ? (
             <EmptyState
-              emoji="✨"
+              icon={<Hash size={22} />}
               title="This project is empty"
               hint="Add the first task and pick this project from the picker."
             />

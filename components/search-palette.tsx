@@ -333,17 +333,13 @@ function renderLeading(row: ResultRow, active: boolean) {
   }
   if (row.kind === "project") {
     return (
-      <span className="text-[15px] leading-none">
-        {row.emoji ?? (
-          <Hash
-            size={16}
-            className={cn(
-              "shrink-0",
-              active ? "text-primary" : "text-muted-foreground/90"
-            )}
-          />
+      <Hash
+        size={16}
+        className={cn(
+          "shrink-0",
+          active ? "text-primary" : "text-muted-foreground/90"
         )}
-      </span>
+      />
     );
   }
   // person
@@ -406,8 +402,9 @@ function renderTrailing(row: ResultRow) {
     return (
       <>
         {row.project && (
-          <span className="shrink-0 text-[12px] text-muted-foreground">
-            {row.projectEmoji ?? "#"} {row.project}
+          <span className="inline-flex shrink-0 items-center gap-1 text-[12px] text-muted-foreground">
+            <Hash size={11} className="text-muted-foreground/70" />
+            {row.project}
           </span>
         )}
         {row.assignee && row.assigneeColor && row.assigneeInitials && (

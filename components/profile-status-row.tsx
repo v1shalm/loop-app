@@ -36,7 +36,6 @@ export function ProfileStatusRow({ current }: { current: ProfileStatus }) {
                 : "border-border bg-card text-foreground hover:bg-accent/40"
             )}
           >
-            <span className="text-[14px]">{STATUS_META[k].emoji}</span>
             <span>{STATUS_META[k].label}</span>
           </button>
         );

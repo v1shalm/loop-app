@@ -2,7 +2,7 @@ import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import { CheckCircle, UserPlus } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
-import { statusEmoji } from "@/components/status-picker";
+import { statusLabel } from "@/components/status-picker";
 import type { ActivityItem, MemberPulse } from "@/lib/queries";
 
 interface RightRailProps {
@@ -151,7 +151,7 @@ function TeamCard({
       ) : (
         <ul className="mt-3 flex flex-col gap-1">
           {others.map((m) => {
-            const emoji = statusEmoji(m.status ?? null);
+            const label = statusLabel(m.status ?? null);
             return (
               <li key={m.id}>
                 <Link
@@ -164,10 +164,14 @@ function TeamCard({
                     color={m.avatar_color}
                     size={26}
                   />
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
-                    {m.name.split(" ")[0]}
-                    {emoji && (
-                      <span className="ml-1.5 text-[12px]">{emoji}</span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-[13px] font-medium text-foreground">
+                      {m.name.split(" ")[0]}
+                    </span>
+                    {label && (
+                      <span className="truncate text-[11px] text-muted-foreground">
+                        {label}
+                      </span>
                     )}
                   </span>
                   <span className="shrink-0 text-[11.5px] tabular-nums text-muted-foreground">

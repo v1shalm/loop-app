@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { MemberPulse } from "@/lib/queries";
-import { statusEmoji, statusLabel } from "@/components/status-picker";
+import { statusLabel } from "@/components/status-picker";
 import { Avatar } from "@/components/avatar";
 
 export function TeamPulse({
@@ -58,7 +58,6 @@ function PulseRow({
   isMe: boolean;
   compact?: boolean;
 }) {
-  const emoji = statusEmoji(member.status ?? null);
   const label = statusLabel(member.status ?? null);
 
   // The tooltip popup uses bg-foreground (dark) + text-background by default,
@@ -70,7 +69,6 @@ function PulseRow({
           {member.name}
           {isMe && " (you)"}
         </span>
-        {emoji && <span className="text-[13px]">{emoji}</span>}
       </div>
       {label && (
         <span className="text-[11.5px] text-background/70">{label}</span>
@@ -112,10 +110,11 @@ function PulseRow({
               className="focus-ring relative grid size-9 place-items-center rounded-md hover:bg-sidebar-accent/40"
             >
               {avatar}
-              {emoji && (
-                <span className="absolute -bottom-0.5 -right-0.5 grid size-3.5 place-items-center rounded-full bg-sidebar text-[8px] leading-none">
-                  {emoji}
-                </span>
+              {member.open_tasks > 0 && (
+                <span
+                  aria-hidden
+                  className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-emerald-500 ring-2 ring-sidebar"
+                />
               )}
             </Link>
           }
@@ -165,17 +164,12 @@ function PulseRow({
               />
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="flex items-center gap-1">
-                <span className="truncate text-[13px] font-medium text-foreground">
-                  {member.name.split(" ")[0]}
-                  {isMe && (
-                    <span className="ml-1 text-[11px] text-muted-foreground">
-                      (you)
-                    </span>
-                  )}
-                </span>
-                {emoji && (
-                  <span className="text-[12px] leading-none">{emoji}</span>
+              <span className="truncate text-[13px] font-medium text-foreground">
+                {member.name.split(" ")[0]}
+                {isMe && (
+                  <span className="ml-1 text-[11px] text-muted-foreground">
+                    (you)
+                  </span>
                 )}
               </span>
               <span className="truncate text-[11px] text-muted-foreground">

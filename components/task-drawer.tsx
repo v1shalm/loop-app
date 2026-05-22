@@ -36,6 +36,7 @@ import { playSound } from "@/lib/sounds";
 import { formatDistanceToNow } from "date-fns";
 import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
+import { ProjectDot } from "@/components/project-dot";
 
 // Inlined to avoid pulling lib/queries.ts (which imports server-only code)
 // into the client bundle. Keep in sync with TASK_RELATIONS_SELECT.
@@ -428,14 +429,7 @@ function DrawerInner({
           <Popover>
             <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground">
               <Folder size={14} />
-              {task.project ? (
-                <>
-                  {task.project.emoji ? `${task.project.emoji} ` : "# "}
-                  {task.project.name}
-                </>
-              ) : (
-                "Inbox"
-              )}
+              {task.project ? task.project.name : "Inbox"}
             </PopoverTrigger>
             <PopoverContent className="w-[240px] gap-0 p-1" align="start">
               <PopoverItem
@@ -451,9 +445,7 @@ function DrawerInner({
                   selected={task.project_id === p.id}
                   onSelect={() => patch({ projectId: p.id })}
                 >
-                  <span className="text-muted-foreground">
-                    {p.emoji ?? "#"}
-                  </span>
+                  <ProjectDot project={p} size={9} />
                   <span className="truncate">{p.name}</span>
                 </PopoverItem>
               ))}

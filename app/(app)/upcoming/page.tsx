@@ -42,7 +42,7 @@ export default async function UpcomingPage() {
           <div className="min-w-0">
             {total === 0 ? (
               <EmptyState
-                emoji="🗓️"
+                icon={<CalendarDots size={22} />}
                 title="Nothing on the horizon"
                 hint="Schedule something for later this week or pass work to a teammate."
                 actionLabel="Add a task"

@@ -23,6 +23,7 @@ import { createTask } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
 import { DatePicker, formatDueShort } from "@/components/date-picker";
 import { Avatar } from "@/components/avatar";
+import { ProjectDot } from "@/components/project-dot";
 import type { Profile, Project } from "@/lib/queries";
 
 type Priority = 1 | 2 | 3 | 4;
@@ -232,14 +233,7 @@ export function QuickAddDialog({
           <Popover>
             <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.97]">
               <Folder size={14} />
-              {project ? (
-                <>
-                  {project.emoji ? `${project.emoji} ` : "# "}
-                  {project.name}
-                </>
-              ) : (
-                "Inbox"
-              )}
+              {project ? project.name : "Inbox"}
             </PopoverTrigger>
             <PopoverContent className="w-[240px] gap-0 p-1" align="start">
               <PopoverItem
@@ -255,9 +249,7 @@ export function QuickAddDialog({
                   selected={projectId === p.id}
                   onSelect={() => setProjectId(p.id)}
                 >
-                  <span className="text-muted-foreground">
-                    {p.emoji ?? "#"}
-                  </span>
+                  <ProjectDot project={p} size={9} />
                   <span className="truncate">{p.name}</span>
                 </PopoverItem>
               ))}

@@ -3,7 +3,7 @@ import { UsersThree } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { getCurrentProfile, getMembersWithPulse } from "@/lib/queries";
-import { statusEmoji, statusLabel } from "@/components/status-picker";
+import { statusLabel } from "@/components/status-picker";
 import { Avatar } from "@/components/avatar";
 
 export const metadata = { title: "Team · Loop" };
@@ -27,7 +27,7 @@ export default async function TeamPage() {
       <div className="mx-auto w-full max-w-[960px] px-8 pb-24 pt-8">
         {members.length === 0 ? (
           <EmptyState
-            emoji="👋"
+            icon={<UsersThree size={22} />}
             title="Just you in here for now"
             hint="Invite teammates so you can hand work off. Anyone you assign a task to will see it in their Inbox."
             showAction={false}
@@ -55,7 +55,6 @@ function MemberCard({
   member: import("@/lib/queries").MemberPulse;
   isMe: boolean;
 }) {
-  const emoji = statusEmoji(member.status ?? null);
   const label = statusLabel(member.status ?? null);
 
   // Progress ring: ratio of done today over (done + open). Caps at 1.
@@ -84,11 +83,8 @@ function MemberCard({
             )}
           </p>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
-            {emoji ? (
-              <>
-                <span>{emoji}</span>{" "}
-                <span>{label}</span>
-              </>
+            {label ? (
+              <span>{label}</span>
             ) : (
               <span className="text-muted-foreground/60">
                 No status set

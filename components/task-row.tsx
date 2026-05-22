@@ -151,7 +151,7 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
           transition={{ duration: 0.18, ease: [0.32, 0.72, 0.32, 1] }}
           className="group border-b border-border/40 last:border-b-0"
         >
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_140px_120px_88px] items-center gap-4 px-4 py-3 transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/30">
+          <div className="flex items-center gap-3 px-4 py-3 transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/30">
             {/* Checkbox */}
             <button
               onClick={toggle}
@@ -168,12 +168,12 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
               />
             </button>
 
-            {/* Title + comment count */}
+            {/* Title + comment count — fills the row */}
             <button
               onClick={openDrawer}
               aria-label={`Open ${task.title}`}
               title="Click to open details"
-              className="focus-ring group/title flex min-w-0 items-center gap-2 text-left"
+              className="focus-ring group/title flex min-w-0 flex-1 items-center gap-2 text-left"
             >
               <span className="truncate text-[14px] font-medium text-foreground decoration-foreground/40 underline-offset-2 group-hover/title:underline">
                 {task.title}
@@ -186,29 +186,22 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
               )}
             </button>
 
-            {/* Assignee */}
+            {/* Assignee — avatar only, right-aligned */}
             <Popover>
               <PopoverTrigger
                 aria-label="Assignee"
-                className="focus-ring flex items-center gap-2 rounded-md px-1 py-1 text-left transition-colors hover:bg-accent/40"
+                className="focus-ring grid size-7 shrink-0 place-items-center rounded-full transition-colors hover:bg-accent/40"
               >
                 {optAssignee ? (
-                  <>
-                    <Avatar
-                      src={optAssignee.avatar_url}
-                      initials={optAssignee.initials}
-                      color={optAssignee.avatar_color}
-                      size={24}
-                    />
-                    <span className="truncate text-[13px] text-foreground">
-                      {optAssignee.id === currentUserId
-                        ? "You"
-                        : optAssignee.name.split(" ")[0]}
-                    </span>
-                  </>
+                  <Avatar
+                    src={optAssignee.avatar_url}
+                    initials={optAssignee.initials}
+                    color={optAssignee.avatar_color}
+                    size={24}
+                  />
                 ) : (
-                  <span className="text-[13px] text-muted-foreground/70">
-                    Unassigned
+                  <span className="grid size-6 place-items-center rounded-full border border-dashed border-border text-[10px] text-muted-foreground/60">
+                    +
                   </span>
                 )}
               </PopoverTrigger>

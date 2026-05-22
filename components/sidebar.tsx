@@ -455,14 +455,7 @@ function ProjectNavItem({
       )}
     >
       <ProjectDot project={project} size={9} />
-      {!collapsed && (
-        <span className="truncate flex-1">
-          {project.emoji && (
-            <span className="mr-1 text-[14px]">{project.emoji}</span>
-          )}
-          {project.name}
-        </span>
-      )}
+      {!collapsed && <span className="truncate flex-1">{project.name}</span>}
       {!collapsed && badge !== undefined && (
         <span
           className={cn(
@@ -483,7 +476,6 @@ function ProjectNavItem({
       <Tooltip>
         <TooltipTrigger render={link} />
         <TooltipContent side="right" sideOffset={6}>
-          {project.emoji ? `${project.emoji} ` : ""}
           {project.name}
           {badge !== undefined && (
             <span className="ml-2 text-muted-foreground">{badge}</span>
