@@ -10,6 +10,7 @@ export type ProfileStatus = "coffee" | "focus" | "done" | "busy" | null;
 export type Profile = Tables["profiles"]["Row"] & {
   status?: ProfileStatus;
   role?: string | null;
+  avatar_url?: string | null;
 };
 export type Task = Tables["tasks"]["Row"] & { triaged_at?: string | null };
 export type Project = Tables["projects"]["Row"];

@@ -1,15 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Sidebar, type SidebarProps } from "@/components/sidebar";
-import { QuickAddDialog } from "@/components/quick-add-dialog";
-import { RealtimeBridge } from "@/components/realtime-bridge";
 import { SidebarProvider } from "@/components/sidebar-context";
-import { TaskDrawer } from "@/components/task-drawer";
 import { TeamProvider } from "@/components/team-provider";
 import { QuickAddProvider } from "@/components/quick-add-context";
-import { SearchPalette } from "@/components/search-palette";
-import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
+
+// Heavy client modules — only ship their code once the user actually triggers
+// them. Each carries motion + popovers + date-picker code that would
+// otherwise inflate the initial app bundle.
+const QuickAddDialog = dynamic(
+  () => import("@/components/quick-add-dialog").then((m) => m.QuickAddDialog),
+  { ssr: false }
+);
+const TaskDrawer = dynamic(
+  () => import("@/components/task-drawer").then((m) => m.TaskDrawer),
+  { ssr: false }
+);
+const SearchPalette = dynamic(
+  () => import("@/components/search-palette").then((m) => m.SearchPalette),
+  { ssr: false }
+);
+const KeyboardShortcutsDialog = dynamic(
+  () =>
+    import("@/components/keyboard-shortcuts-dialog").then(
+      (m) => m.KeyboardShortcutsDialog
+    ),
+  { ssr: false }
+);
+const RealtimeBridge = dynamic(
+  () => import("@/components/realtime-bridge").then((m) => m.RealtimeBridge),
+  { ssr: false }
+);
 
 export function AppShell({
   user,

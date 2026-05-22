@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar } from "@/components/avatar";
 import type { Profile } from "@/lib/queries";
 import { signOut } from "@/app/login/actions";
 
@@ -28,15 +29,12 @@ export function ProfileMenu({ user }: { user: Profile }) {
         className="focus-ring flex w-full items-center gap-2.5 rounded-lg border border-border/60 bg-card px-2.5 py-2 text-left shadow-soft-xs transition-colors hover:bg-accent/40 data-[popup-open]:bg-accent/40"
         aria-label="Open account menu"
       >
-        <span
-          className="grid size-9 shrink-0 place-items-center rounded-full text-[12px] font-semibold text-zinc-900"
-          style={{
-            backgroundColor: user.avatar_color,
-            boxShadow: "var(--shadow-avatar)",
-          }}
-        >
-          {user.initials}
-        </span>
+        <Avatar
+          src={user.avatar_url}
+          initials={user.initials}
+          color={user.avatar_color}
+          size={36}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-semibold text-foreground">
             {user.name}
@@ -59,15 +57,12 @@ export function ProfileMenu({ user }: { user: Profile }) {
         className="w-[224px] rounded-lg border border-border/60 bg-popover p-1 shadow-soft-sm ring-0"
       >
         <div className="flex items-center gap-2 px-2 pb-1.5 pt-1.5">
-          <span
-            className="grid size-7 shrink-0 place-items-center rounded-full text-[10.5px] font-semibold text-zinc-900"
-            style={{
-              backgroundColor: user.avatar_color,
-              boxShadow: "var(--shadow-avatar)",
-            }}
-          >
-            {user.initials}
-          </span>
+          <Avatar
+            src={user.avatar_url}
+            initials={user.initials}
+            color={user.avatar_color}
+            size={28}
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-[12.5px] font-semibold text-foreground">
               {user.name}

@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import type { MemberPulse, Profile, Project, Workspace } from "@/lib/queries";
 import { SoundSwitch } from "@/components/sound-switch";
 import { ProfileMenu } from "@/components/profile-menu";
+import { Avatar } from "@/components/avatar";
 import { TeamPulse } from "@/components/team-pulse";
 import {
   SidebarEmptyCard,
@@ -292,15 +293,12 @@ export function Sidebar({
                   aria-label={user.name}
                   className="focus-ring grid size-9 place-items-center rounded-md hover:bg-accent/50"
                 >
-                  <span
-                    className="grid size-7 place-items-center rounded-full text-[10.5px] font-semibold text-zinc-900"
-                    style={{
-                      backgroundColor: user.avatar_color,
-                      boxShadow: "var(--shadow-avatar)",
-                    }}
-                  >
-                    {user.initials}
-                  </span>
+                  <Avatar
+                    src={user.avatar_url}
+                    initials={user.initials}
+                    color={user.avatar_color}
+                    size={28}
+                  />
                 </Link>
               }
             />
