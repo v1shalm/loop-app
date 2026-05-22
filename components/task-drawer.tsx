@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
@@ -44,6 +52,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
 import { ProjectDot } from "@/components/project-dot";
+import { Button } from "@/components/ui/button";
 
 // Inlined to avoid pulling lib/queries.ts (which imports server-only code)
 // into the client bundle. Keep in sync with TASK_RELATIONS_SELECT.
@@ -358,11 +367,10 @@ function DrawerInner({
             >
               {done && <Check size={12} weight="bold" className="text-white" />}
             </button>
-            <textarea
+            <AutoTextarea
               ref={titleRef}
               defaultValue={task.title}
               onBlur={saveTitle}
-              rows={1}
               placeholder="Untitled task"
               className={cn(
                 "min-h-[28px] flex-1 resize-none bg-transparent text-[20px] font-semibold leading-snug tracking-tight text-foreground outline-none placeholder:text-muted-foreground/50",
@@ -503,12 +511,12 @@ function DrawerInner({
         {/* Description */}
         <section className="px-6 py-5">
           <SectionHeader icon={<Tray size={14} />} label="Description" />
-          <textarea
+          <AutoTextarea
             ref={descRef}
             defaultValue={task.description ?? ""}
             onBlur={saveDescription}
             placeholder="Add more details (optional)"
-            rows={3}
+            minRows={3}
             className="mt-2.5 w-full resize-none rounded-lg border border-border/60 bg-card p-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors focus:border-ring/40 placeholder:text-muted-foreground/50"
           />
         </section>
@@ -616,14 +624,13 @@ function DrawerFooter({
 }) {
   return (
     <div className="flex items-center justify-between border-t border-border/60 bg-popover px-5 py-3">
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={onToggle}
         disabled={pending}
         className={cn(
-          "focus-ring inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors disabled:opacity-50",
-          done
-            ? "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
-            : "text-emerald-700 hover:bg-emerald-50"
+          !done && "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
         )}
       >
         <CheckCircle
@@ -632,15 +639,17 @@ function DrawerFooter({
           className={done ? "text-muted-foreground" : "text-emerald-600"}
         />
         {done ? "Reopen task" : "Mark as complete"}
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={onDelete}
         disabled={pending}
-        className="focus-ring inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50"
+        className="text-rose-600 hover:bg-rose-50 hover:text-rose-600"
       >
         <Trash size={15} />
         Delete task
-      </button>
+      </Button>
     </div>
   );
 }
@@ -772,7 +781,7 @@ function CommentsSection({
         </ul>
       )}
 
-      {/* Composer — avatar + input + send */}
+      {/* Composer — avatar + textarea + send */}
       <div className="mt-4 flex items-start gap-2.5">
         {currentUser && (
           <span className="mt-1 shrink-0">
@@ -785,7 +794,7 @@ function CommentsSection({
           </span>
         )}
         <div className="min-w-0 flex-1 rounded-xl border border-border/60 bg-card transition-colors focus-within:border-ring/40">
-          <textarea
+          <AutoTextarea
             ref={inputRef}
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -796,34 +805,66 @@ function CommentsSection({
               }
             }}
             placeholder="Add a comment..."
-            rows={2}
-            className="w-full resize-none rounded-t-xl bg-transparent px-3 py-2.5 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+            minRows={2}
+            className="w-full resize-none rounded-xl bg-transparent px-3 py-2.5 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
           />
-          <div className="flex items-center justify-between gap-2 border-t border-border/40 px-2 py-1.5">
-            <span className="text-[11px] text-muted-foreground/70">
-              Tip: paste a link or @mention a teammate
-            </span>
-            <div className="flex items-center gap-1.5">
-              <kbd className="chip-3d hidden h-[18px] items-center justify-center rounded border border-border bg-background px-1.5 text-[10.5px] font-semibold text-muted-foreground sm:inline-flex">
-                ⌘ + Enter
-              </kbd>
-              <button
-                onClick={submit}
-                disabled={!body.trim() || pending}
-                className="focus-ring surface-brand surface-brand-hover flex items-center gap-1.5 rounded-md px-3 py-1 text-[12px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
-              >
-                {pending && (
-                  <CircleNotch size={12} className="animate-spin" />
-                )}
-                Send
-              </button>
-            </div>
+          <div className="flex items-center justify-end gap-2 px-2 pb-2">
+            <Button
+              onClick={submit}
+              disabled={!body.trim() || pending}
+              size="sm"
+              variant="default"
+            >
+              {pending && (
+                <CircleNotch size={12} className="animate-spin" />
+              )}
+              Send
+            </Button>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+// ── Auto-growing textarea ────────────────────────────────────────────────────
+
+interface AutoTextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  minRows?: number;
+}
+
+const AutoTextarea = forwardRef<HTMLTextAreaElement, AutoTextareaProps>(
+  function AutoTextarea({ minRows = 1, onInput, value, defaultValue, ...rest }, ref) {
+    const innerRef = useRef<HTMLTextAreaElement | null>(null);
+    useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement);
+
+    const resize = () => {
+      const el = innerRef.current;
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    };
+
+    useLayoutEffect(() => {
+      resize();
+    }, [value, defaultValue]);
+
+    return (
+      <textarea
+        ref={innerRef}
+        rows={minRows}
+        value={value}
+        defaultValue={defaultValue}
+        onInput={(e) => {
+          resize();
+          onInput?.(e);
+        }}
+        {...rest}
+      />
+    );
+  }
+);
 
 function CommentItem({
   comment,
