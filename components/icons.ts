@@ -43,6 +43,7 @@ export {
   SpeakerSlash,
   Tray,
   TrendUp,
+  User,
   UserPlus,
   UsersThree,
   X,

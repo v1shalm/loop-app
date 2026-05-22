@@ -99,7 +99,7 @@ export default async function ProjectPage({ params }: PageProps) {
               hint="Add the first task and pick this project from the picker."
             />
           ) : (
-            <TaskTable>
+            <TaskTable defaultProjectId={project.id}>
               {openTasks.map((t) => (
                 <TaskRow key={t.id} task={t} />
               ))}

@@ -77,7 +77,11 @@ export function AppShell({
 
   return (
     <SidebarProvider>
-      <TeamProvider members={members} currentUserId={user.id}>
+      <TeamProvider
+        members={members}
+        projects={projects}
+        currentUserId={user.id}
+      >
         <QuickAddProvider open={() => setQuickOpen(true)}>
           <div className="flex h-dvh w-full overflow-hidden bg-background">
             <Sidebar
