@@ -45,6 +45,16 @@ export default async function UpcomingPage() {
                 emoji="🗓️"
                 title="Nothing on the horizon"
                 hint="Schedule something for later this week or pass work to a teammate."
+                actionLabel="Add a task"
+                secondary={{
+                  label: "Invite a teammate",
+                  href: "/team",
+                }}
+                tips={[
+                  "Tasks due tomorrow → next 2 weeks show up grouped here.",
+                  "Drag a date on a task to move it between buckets.",
+                  "Use the calendar picker to bulk-schedule recurring work.",
+                ]}
               />
             ) : (
               <>

@@ -41,8 +41,17 @@ export default async function InboxPage() {
               <EmptyState
                 emoji="📬"
                 title="All caught up"
-                hint="New assignments from teammates land here. Accept them or snooze for later."
-                showAction={false}
+                hint="New assignments from teammates land here. While the inbox is empty, here's where you can go next."
+                actionLabel="Assign your first task"
+                secondary={{
+                  label: "Invite a teammate",
+                  href: "/team",
+                }}
+                tips={[
+                  "Tasks someone else assigns to you appear here first.",
+                  "Hit Accept to add them to your day, or Mark later to push them out a week.",
+                  "Press ⌘K to jump anywhere, Q to quickly add a task.",
+                ]}
               />
             ) : (
               <>

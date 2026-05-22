@@ -111,7 +111,17 @@ export default async function AssignedToMePage() {
               <EmptyState
                 emoji="🙌"
                 title="Nothing's on you right now"
-                hint="Add one for yourself, or wait for a teammate to assign you something."
+                hint="Add one for yourself, or invite a teammate to share the load."
+                actionLabel="Assign your first task"
+                secondary={{
+                  label: "Invite a teammate",
+                  href: "/team",
+                }}
+                tips={[
+                  "Self-assigned tasks land straight here — no inbox step.",
+                  "Use # to drop a task into a project, @ to assign it to someone.",
+                  "Press ⌘K to jump anywhere, Q to quickly add a task.",
+                ]}
               />
             ) : (
               <>

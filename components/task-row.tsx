@@ -171,9 +171,11 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
             {/* Title + comment count */}
             <button
               onClick={openDrawer}
-              className="focus-ring flex min-w-0 items-center gap-2 text-left"
+              aria-label={`Open ${task.title}`}
+              title="Click to open details"
+              className="focus-ring group/title flex min-w-0 items-center gap-2 text-left"
             >
-              <span className="truncate text-[14px] font-medium text-foreground">
+              <span className="truncate text-[14px] font-medium text-foreground decoration-foreground/40 underline-offset-2 group-hover/title:underline">
                 {task.title}
               </span>
               {commentCount > 0 && (
