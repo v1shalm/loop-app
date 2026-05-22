@@ -127,6 +127,22 @@ function PulseRow({
     );
   }
 
+  // Subtext: prefer the user's chosen status label if set, otherwise show
+  // a short "N open" or "active now" so the row always has signal.
+  const subtext =
+    label ??
+    (member.open_tasks > 0
+      ? `${member.open_tasks} open · active now`
+      : "Active now");
+
+  // Presence dot color — green if they have open work in flight, neutral
+  // gray otherwise. We don't have a real presence channel; this maps to
+  // observed activity instead.
+  const presenceColor =
+    member.open_tasks > 0
+      ? "bg-emerald-500"
+      : "bg-muted-foreground/30";
+
   return (
     <Tooltip>
       <TooltipTrigger
@@ -134,20 +150,38 @@ function PulseRow({
           <Link
             href={`/team/${member.id}`}
             className={cn(
-              "focus-ring group flex h-8 items-center gap-2 rounded-md px-2 text-[13px] transition-colors",
+              "focus-ring group flex h-11 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors",
               "text-sidebar-foreground/90 hover:bg-sidebar-accent/40 hover:text-foreground"
             )}
           >
-            {avatar}
-            <span className="min-w-0 flex-1 truncate">{member.name}</span>
-            {emoji && (
+            <span className="relative">
+              {avatar}
               <span
-                className="text-[14px] leading-none"
-                aria-label={label ?? undefined}
-              >
-                {emoji}
+                aria-hidden
+                className={cn(
+                  "absolute -bottom-0.5 -right-0.5 size-2 rounded-full ring-2 ring-sidebar",
+                  presenceColor
+                )}
+              />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="flex items-center gap-1">
+                <span className="truncate text-[13px] font-medium text-foreground">
+                  {member.name.split(" ")[0]}
+                  {isMe && (
+                    <span className="ml-1 text-[11px] text-muted-foreground">
+                      (you)
+                    </span>
+                  )}
+                </span>
+                {emoji && (
+                  <span className="text-[12px] leading-none">{emoji}</span>
+                )}
               </span>
-            )}
+              <span className="truncate text-[11px] text-muted-foreground">
+                {subtext}
+              </span>
+            </span>
           </Link>
         }
       />

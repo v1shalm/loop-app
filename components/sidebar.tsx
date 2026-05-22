@@ -8,13 +8,11 @@ import {
   CalendarDots,
   CaretDown,
   Crosshair,
-  Hash,
   MagnifyingGlass,
   Plus,
   Question,
   SidebarSimple,
   Tray,
-  UsersThree,
 } from "@/components/icons";
 import {
   Tooltip,
@@ -27,6 +25,8 @@ import { SoundSwitch } from "@/components/sound-switch";
 import { ProfileMenu } from "@/components/profile-menu";
 import { Avatar } from "@/components/avatar";
 import { TeamPulse } from "@/components/team-pulse";
+import { ProjectDot } from "@/components/project-dot";
+import { AddProjectPopover } from "@/components/add-project-popover";
 import {
   SidebarEmptyCard,
   ProjectsEmptyGraphic,
@@ -62,7 +62,6 @@ export function Sidebar({
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
   const workspaceName = workspace?.name ?? "Loop";
-  const initial = workspaceName.charAt(0).toUpperCase();
 
   return (
     <aside
@@ -71,7 +70,7 @@ export function Sidebar({
         collapsed ? "w-[64px]" : "w-[248px]"
       )}
     >
-      {/* ── Top: workspace + search + collapse toggle ───────────── */}
+      {/* ── Top: workspace + search + notifications + collapse ─── */}
       <div
         className={cn(
           "flex h-14 items-center gap-1 border-b border-sidebar-border/60",
@@ -103,6 +102,33 @@ export function Sidebar({
                 <MagnifyingGlass size={16} />
               </TooltipTrigger>
               <TooltipContent side="bottom">Search</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Link
+                    href="/notifications"
+                    aria-label="Notifications"
+                    className="focus-ring relative grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                  >
+                    <Bell size={16} />
+                    {counts.inbox > 0 && (
+                      <span
+                        aria-hidden
+                        className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-rose-500 ring-2 ring-sidebar"
+                      />
+                    )}
+                  </Link>
+                }
+              />
+              <TooltipContent side="bottom">
+                Notifications
+                {counts.inbox > 0 && (
+                  <span className="ml-1.5 text-muted-foreground">
+                    · {counts.inbox} unread
+                  </span>
+                )}
+              </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger
@@ -150,21 +176,13 @@ export function Sidebar({
         )}
       </div>
 
-      {/* ── Primary nav ─────────────────────────────────────────── */}
+      {/* ── Flat primary nav (no section header) ──────────────── */}
       <nav
         className={cn(
           "pt-1",
           collapsed ? "flex flex-col items-center gap-0.5 px-2" : "px-2"
         )}
       >
-        <NavItem
-          href="/inbox"
-          icon={Tray}
-          label="Inbox"
-          badge={counts.inbox || undefined}
-          active={pathname === "/inbox"}
-          collapsed={collapsed}
-        />
         <NavItem
           href="/assigned-to-me"
           icon={Crosshair}
@@ -177,27 +195,29 @@ export function Sidebar({
           }
           collapsed={collapsed}
         />
+        <NavItem
+          href="/inbox"
+          icon={Tray}
+          label="Inbox"
+          badge={counts.inbox || undefined}
+          active={pathname === "/inbox"}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/upcoming"
+          icon={CalendarDots}
+          label="Upcoming"
+          active={pathname === "/upcoming"}
+          collapsed={collapsed}
+        />
       </nav>
 
       <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
-        <Section title="Workspace" collapsed={collapsed}>
-          <NavItem
-            href="/upcoming"
-            icon={CalendarDots}
-            label="Upcoming"
-            active={pathname === "/upcoming"}
-            collapsed={collapsed}
-          />
-          <NavItem
-            href="/team"
-            icon={UsersThree}
-            label="Team"
-            active={pathname === "/team" || pathname === "/people"}
-            collapsed={collapsed}
-          />
-        </Section>
-
-        <Section title="Projects" collapsed={collapsed}>
+        <Section
+          title="Projects"
+          collapsed={collapsed}
+          headerAction={!collapsed ? <AddProjectPopover /> : undefined}
+        >
           {projects.length === 0 && !collapsed && (
             <SidebarEmptyCard
               graphic={<ProjectsEmptyGraphic />}
@@ -205,11 +225,9 @@ export function Sidebar({
             />
           )}
           {projects.map((p) => (
-            <NavItem
+            <ProjectNavItem
               key={p.id}
-              href={`/projects/${p.id}`}
-              icon={Hash}
-              label={p.name}
+              project={p}
               badge={counts.projectCounts[p.id] || undefined}
               active={pathname === `/projects/${p.id}`}
               collapsed={collapsed}
@@ -233,30 +251,15 @@ export function Sidebar({
         </Section>
       </div>
 
-      {/* ── Bottom: actions, sound switch, profile card ────────── */}
+      {/* ── Bottom: help, sound switch, profile ────────── */}
       <div
         className={cn(
           "border-t border-sidebar-border",
           collapsed ? "flex flex-col items-center gap-2 px-2 py-2" : "px-3 py-3"
         )}
       >
-        {/* Notif + Help row */}
         {!collapsed && (
           <div className="mb-2 flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Link
-                    href="/notifications"
-                    aria-label="Notifications"
-                    className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-                  >
-                    <Bell size={15} />
-                  </Link>
-                }
-              />
-              <TooltipContent side="top">Notifications</TooltipContent>
-            </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 onClick={onOpenHelp}
@@ -311,11 +314,13 @@ function Section({
   children,
   collapsed,
   defaultOpen = true,
+  headerAction,
 }: {
   title: string;
   children: React.ReactNode;
   collapsed: boolean;
   defaultOpen?: boolean;
+  headerAction?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -329,20 +334,23 @@ function Section({
 
   return (
     <div className="px-2">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="focus-ring group flex h-7 w-full items-center gap-1 rounded px-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 hover:text-foreground"
-      >
-        <CaretDown
-          size={11}
-          weight="bold"
-          className={cn(
-            "transition-transform duration-150 ease-[var(--ease-out)]",
-            !open && "-rotate-90"
-          )}
-        />
-        <span>{title}</span>
-      </button>
+      <div className="flex h-7 items-center gap-1 pr-1">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="focus-ring group flex h-7 flex-1 items-center gap-1 rounded px-2 text-[11.5px] font-semibold tracking-tight text-muted-foreground/80 hover:text-foreground"
+        >
+          <CaretDown
+            size={11}
+            weight="bold"
+            className={cn(
+              "transition-transform duration-150 ease-[var(--ease-out)]",
+              !open && "-rotate-90"
+            )}
+          />
+          <span>{title}</span>
+        </button>
+        {headerAction}
+      </div>
       {open && <div className="mt-0.5 flex flex-col">{children}</div>}
     </div>
   );
@@ -410,6 +418,73 @@ function NavItem({
         <TooltipTrigger render={link} />
         <TooltipContent side="right" sideOffset={6}>
           {label}
+          {badge !== undefined && (
+            <span className="ml-2 text-muted-foreground">{badge}</span>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return link;
+}
+
+function ProjectNavItem({
+  project,
+  badge,
+  active,
+  collapsed,
+}: {
+  project: Project;
+  badge?: string | number;
+  active?: boolean;
+  collapsed: boolean;
+}) {
+  const link = (
+    <Link
+      href={`/projects/${project.id}`}
+      prefetch
+      className={cn(
+        "focus-ring group flex items-center text-[13.5px] transition-colors duration-150 ease-[var(--ease-out)]",
+        collapsed
+          ? "size-9 justify-center rounded-md"
+          : "h-8 gap-2.5 rounded-lg px-2.5",
+        active
+          ? "bg-primary/8 font-medium text-primary"
+          : "text-sidebar-foreground/90 hover:bg-accent/40 hover:text-foreground"
+      )}
+    >
+      <ProjectDot project={project} size={9} />
+      {!collapsed && (
+        <span className="truncate flex-1">
+          {project.emoji && (
+            <span className="mr-1 text-[14px]">{project.emoji}</span>
+          )}
+          {project.name}
+        </span>
+      )}
+      {!collapsed && badge !== undefined && (
+        <span
+          className={cn(
+            "ml-auto rounded-md px-1.5 text-[11px] tabular-nums",
+            active
+              ? "bg-primary/15 text-primary"
+              : "text-muted-foreground"
+          )}
+        >
+          {badge}
+        </span>
+      )}
+    </Link>
+  );
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger render={link} />
+        <TooltipContent side="right" sideOffset={6}>
+          {project.emoji ? `${project.emoji} ` : ""}
+          {project.name}
           {badge !== undefined && (
             <span className="ml-2 text-muted-foreground">{badge}</span>
           )}

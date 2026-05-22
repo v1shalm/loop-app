@@ -2,13 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import {
-  Bell,
-  CaretRight,
-  Gear,
-  SignOut,
-  UsersThree,
-} from "@/components/icons";
+import { Bell, Gear, SignOut, UsersThree } from "@/components/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +20,7 @@ export function ProfileMenu({ user }: { user: Profile }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="focus-ring flex w-full items-center gap-2.5 rounded-lg border border-border/60 bg-card px-2.5 py-2 text-left shadow-soft-xs transition-colors hover:bg-accent/40 data-[popup-open]:bg-accent/40"
+        className="group/profile focus-ring flex w-full items-center gap-2.5 rounded-lg border border-border/60 bg-card px-2.5 py-2 text-left shadow-soft-xs transition-colors hover:bg-accent/40 data-[popup-open]:bg-accent/40"
         aria-label="Open account menu"
       >
         <Avatar
@@ -43,10 +37,9 @@ export function ProfileMenu({ user }: { user: Profile }) {
             {user.role ?? "Team member"}
           </p>
         </div>
-        <CaretRight
-          size={13}
-          weight="bold"
-          className="shrink-0 text-muted-foreground/60"
+        <Gear
+          size={14}
+          className="shrink-0 text-muted-foreground/60 transition-colors group-hover/profile:text-foreground"
         />
       </DropdownMenuTrigger>
 

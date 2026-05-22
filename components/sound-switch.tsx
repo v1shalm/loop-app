@@ -44,7 +44,7 @@ export function SoundSwitch() {
       </span>
       <span
         className={cn(
-          "text-[10.5px] font-semibold uppercase tracking-wider",
+          "text-[11px] font-semibold tracking-tight",
           on ? "text-primary" : "text-muted-foreground/70"
         )}
       >

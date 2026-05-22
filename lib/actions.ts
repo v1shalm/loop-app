@@ -148,6 +148,35 @@ export async function searchAll(query: string): Promise<SearchResults> {
   };
 }
 
+export async function createProject(
+  name: string,
+  emoji?: string | null
+): Promise<{ ok?: true; projectId?: string; error?: string }> {
+  const trimmed = name?.trim();
+  if (!trimmed) return { error: "Project name required." };
+  if (trimmed.length > 60) return { error: "Project name too long." };
+
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const workspace = await getDefaultWorkspace();
+  if (!workspace) return { error: "No workspace yet." };
+
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({
+      workspace_id: workspace.id,
+      name: trimmed,
+      emoji: emoji?.trim() || null,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true, projectId: data?.id };
+}
+
 export interface CreateTaskInput {
   title: string;
   description?: string;
