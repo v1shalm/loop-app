@@ -127,7 +127,7 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
         <button
           onClick={later}
           disabled={pending}
-          className="focus-ring flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent hover:text-foreground active:scale-[0.97] disabled:opacity-50"
+          className="focus-ring flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.97] disabled:opacity-50"
         >
           <Clock size={13} />
           Mark later

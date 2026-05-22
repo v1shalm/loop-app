@@ -322,8 +322,10 @@ function PopoverItem({
     <button
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent",
-        selected && "bg-accent font-medium"
+        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+        selected
+          ? "bg-primary/8 font-medium text-primary"
+          : "text-foreground hover:bg-accent/40 hover:text-foreground"
       )}
     >
       {children}

@@ -113,7 +113,7 @@ function HeaderIconBtn({
     <button
       aria-label={label}
       title={label}
-      className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
     >
       {children}
     </button>

@@ -43,7 +43,7 @@ const PRIORITY_OPTIONS: { p: Priority; label: string; cls: string }[] = [
 ];
 
 const chipClass =
-  "focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground transition-[background-color,color,border-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent hover:text-foreground active:scale-[0.97]";
+  "focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground transition-[background-color,color,border-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.97]";
 
 export function QuickAddDialog({
   open,
@@ -107,22 +107,24 @@ export function QuickAddDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-xl gap-0 border-border/60 p-0 shadow-soft-xl sm:rounded-2xl"
+        className="max-w-xl gap-0 p-0 shadow-soft-md sm:rounded-xl"
       >
-        {/* ElevenLabs-style header */}
-        <div className="flex items-center gap-2.5 border-b border-border/60 px-4 py-3">
-          <span className="surface-brand grid size-7 place-items-center rounded-md text-white shadow-[var(--shadow-brand-tile)]">
-            <Plus size={16} weight="bold" />
-          </span>
+        <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
+          <Plus
+            size={15}
+            weight="bold"
+            className="text-muted-foreground"
+            aria-hidden
+          />
           <h2 className="text-[14px] font-semibold tracking-tight text-foreground">
             Add task
           </h2>
           <button
             onClick={() => onOpenChange(false)}
             aria-label="Close"
-            className="focus-ring ml-auto grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent hover:text-foreground active:scale-[0.94]"
+            className="focus-ring ml-auto grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.94]"
           >
-            <X size={16} weight="bold" />
+            <X size={14} weight="bold" />
           </button>
         </div>
 
@@ -228,7 +230,7 @@ export function QuickAddDialog({
 
         <div className="flex items-center justify-between gap-2 border-t border-border/60 bg-muted/40 px-4 py-3">
           <Popover>
-            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent hover:text-foreground active:scale-[0.97]">
+            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.97]">
               <Folder size={14} />
               {project ? (
                 <>
@@ -265,7 +267,7 @@ export function QuickAddDialog({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onOpenChange(false)}
-              className="focus-ring rounded-md px-3 py-1.5 text-[13px] text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent hover:text-foreground active:scale-[0.97]"
+              className="focus-ring rounded-md px-3 py-1.5 text-[13px] text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.97]"
             >
               Cancel
             </button>
@@ -297,8 +299,10 @@ function PopoverItem({
     <button
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent",
-        selected && "bg-accent font-medium"
+        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+        selected
+          ? "bg-primary/8 font-medium text-primary"
+          : "text-foreground hover:bg-accent/40 hover:text-foreground"
       )}
     >
       {children}

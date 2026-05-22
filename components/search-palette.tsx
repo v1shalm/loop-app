@@ -205,7 +205,7 @@ export function SearchPalette({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[600px] gap-0 border-border/60 p-0 shadow-soft-xl sm:rounded-xl"
+        className="max-w-[600px] gap-0 p-0 shadow-soft-md sm:rounded-xl"
       >
         {/* Input */}
         <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">

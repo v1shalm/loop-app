@@ -85,7 +85,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
                 "focus-ring rounded-full border px-2.5 py-1 text-[11.5px] font-medium transition-colors",
                 active
                   ? "border-primary/60 bg-primary/10 text-primary"
-                  : "border-border bg-card text-foreground hover:bg-accent"
+                  : "border-border bg-card text-foreground hover:bg-accent/40"
               )}
             >
               {c.label}
@@ -96,7 +96,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
           <button
             onClick={() => onChange(null)}
             aria-label="Clear date"
-            className="focus-ring ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="focus-ring ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
           >
             <X size={11} weight="bold" />
             Clear
@@ -109,7 +109,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
         <button
           onClick={() => setView((v) => subMonths(v, 1))}
           aria-label="Previous month"
-          className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
         >
           <CaretLeft size={13} weight="bold" />
         </button>
@@ -119,7 +119,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
         <button
           onClick={() => setView((v) => addMonths(v, 1))}
           aria-label="Next month"
-          className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
         >
           <CaretRight size={13} weight="bold" />
         </button>
@@ -150,7 +150,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
               className={cn(
                 "focus-ring grid h-7 place-items-center rounded-md text-[12px] tabular-nums transition-colors",
                 !inMonth && "text-muted-foreground/40",
-                inMonth && !isSel && "text-foreground hover:bg-accent",
+                inMonth && !isSel && "text-foreground hover:bg-accent/40",
                 isSel && "bg-primary text-primary-foreground font-semibold",
                 !isSel && today && "ring-1 ring-inset ring-primary/50 text-primary"
               )}

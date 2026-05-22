@@ -45,7 +45,7 @@ export function KeyboardShortcutsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-md gap-0 border-border/60 p-0 shadow-soft-xl sm:rounded-xl"
+        className="max-w-md gap-0 p-0 shadow-soft-md sm:rounded-xl"
       >
         <div className="flex items-center gap-2 border-b border-border/60 px-5 py-3">
           <h2 className="flex-1 text-[14px] font-semibold tracking-tight text-foreground">
@@ -54,7 +54,7 @@ export function KeyboardShortcutsDialog({
           <button
             onClick={() => onOpenChange(false)}
             aria-label="Close"
-            className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
           >
             <X size={14} weight="bold" />
           </button>

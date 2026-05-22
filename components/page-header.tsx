@@ -22,19 +22,25 @@ export function PageHeader({
         className
       )}
     >
-      <div className="flex min-w-0 items-baseline gap-2.5">
+      <div className="flex min-w-0 items-center gap-2.5">
         {icon && (
-          <span className="grid size-5 shrink-0 translate-y-px place-items-center text-muted-foreground">
+          <span className="grid size-[18px] shrink-0 place-items-center text-muted-foreground">
             {icon}
           </span>
         )}
-        <h1 className="truncate text-[16px] font-semibold tracking-[-0.005em] text-foreground">
+        <h1 className="truncate text-[15.5px] font-semibold leading-none tracking-[-0.005em] text-foreground">
           {title}
         </h1>
         {subtitle && (
-          <span className="truncate text-[12.5px] font-normal text-muted-foreground">
-            {subtitle}
-          </span>
+          <>
+            <span
+              aria-hidden
+              className="h-3.5 w-px shrink-0 bg-border"
+            />
+            <span className="truncate text-[12.5px] leading-none text-muted-foreground">
+              {subtitle}
+            </span>
+          </>
         )}
       </div>
 

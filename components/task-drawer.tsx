@@ -347,7 +347,7 @@ function DrawerInner({
         {/* Chips row */}
         <div className="mt-4 flex flex-wrap items-center gap-1.5">
           <Popover>
-            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent hover:text-foreground">
+            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground">
               <CalendarBlank size={14} />
               <span
                 className={
@@ -372,7 +372,7 @@ function DrawerInner({
           </Popover>
 
           <Popover>
-            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent hover:text-foreground">
+            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground">
               <Flag size={14} className={priorityOpt.cls} weight="fill" />
               {priorityOpt.label}
             </PopoverTrigger>
@@ -395,7 +395,7 @@ function DrawerInner({
           </Popover>
 
           <Popover>
-            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent hover:text-foreground">
+            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground">
               <UserPlus size={14} />
               {task.assignee
                 ? task.assignee.id === currentUserId
@@ -426,7 +426,7 @@ function DrawerInner({
           </Popover>
 
           <Popover>
-            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent hover:text-foreground">
+            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground">
               <Folder size={14} />
               {task.project ? (
                 <>
@@ -716,7 +716,7 @@ function Header({
         <button
           onClick={onClose}
           aria-label="Close"
-          className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent hover:text-foreground active:scale-[0.94]"
+          className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.94]"
         >
           <X size={14} weight="bold" />
         </button>
@@ -738,8 +738,10 @@ function PopoverItem({
     <button
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] text-foreground hover:bg-accent",
-        selected && "bg-accent font-medium"
+        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+        selected
+          ? "bg-primary/8 font-medium text-primary"
+          : "text-foreground hover:bg-accent/40 hover:text-foreground"
       )}
     >
       {children}

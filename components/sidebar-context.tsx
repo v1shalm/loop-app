@@ -31,6 +31,18 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Expose the live sidebar width as a CSS custom property so modals can
+  // center themselves on the content area instead of the full viewport.
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--sidebar-w",
+      collapsed ? "64px" : "248px"
+    );
+    return () => {
+      document.documentElement.style.removeProperty("--sidebar-w");
+    };
+  }, [collapsed]);
+
   const setCollapsed = useCallback((v: boolean) => {
     setCollapsedState(v);
     try {

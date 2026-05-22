@@ -1,0 +1,13 @@
+{
+  "title": "Loop",
+  "tagline": "Share work across your team.",
+  "colors": {
+    "background": "#0d0b1a",
+    "foreground": "#ffffff",
+    "accent": "#7857ff"
+  },
+  "logo": null,
+  "faviconSrc": null,
+  "outputDir": "public/metadata",
+  "font": "Inter"
+}

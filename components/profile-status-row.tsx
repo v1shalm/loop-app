@@ -33,7 +33,7 @@ export function ProfileStatusRow({ current }: { current: ProfileStatus }) {
               "chip-3d focus-ring flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[12.5px] transition-[background-color,color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-60",
               active
                 ? "border-foreground bg-foreground text-background"
-                : "border-border bg-card text-foreground hover:bg-accent"
+                : "border-border bg-card text-foreground hover:bg-accent/40"
             )}
           >
             <span className="text-[14px]">{STATUS_META[k].emoji}</span>
