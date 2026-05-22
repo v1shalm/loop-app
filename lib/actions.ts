@@ -14,6 +14,7 @@ export interface SearchTaskResult {
   assignee_name: string | null;
   assignee_color: string | null;
   assignee_initials: string | null;
+  assignee_avatar_url: string | null;
 }
 
 export interface SearchProjectResult {
@@ -28,6 +29,7 @@ export interface SearchPersonResult {
   name: string;
   initials: string;
   avatar_color: string;
+  avatar_url: string | null;
   role: string | null;
 }
 
@@ -55,7 +57,7 @@ export async function searchAll(query: string): Promise<SearchResults> {
   const tasksP = (supabase
     .from("tasks")
     .select(
-      "id, title, status, project:projects(name, emoji), assignee:profiles!tasks_assignee_id_fkey(name, avatar_color, initials)"
+      "id, title, status, project:projects(name, emoji), assignee:profiles!tasks_assignee_id_fkey(name, avatar_color, initials, avatar_url)"
     )
     .or(`title.ilike.${like},description.ilike.${like}`)
     .order("created_at", { ascending: false })
@@ -69,7 +71,7 @@ export async function searchAll(query: string): Promise<SearchResults> {
 
   const peopleP = supabase
     .from("profiles")
-    .select("id, name, initials, avatar_color, role")
+    .select("id, name, initials, avatar_color, avatar_url, role")
     .ilike("name", like)
     .limit(4);
 
@@ -84,7 +86,12 @@ export async function searchAll(query: string): Promise<SearchResults> {
     title: string;
     status: string;
     project: { name: string; emoji: string | null } | null;
-    assignee: { name: string; avatar_color: string; initials: string } | null;
+    assignee: {
+      name: string;
+      avatar_color: string;
+      initials: string;
+      avatar_url: string | null;
+    } | null;
   };
   type ProjectRow = { id: string; name: string; emoji: string | null };
   type PersonRow = {
@@ -92,6 +99,7 @@ export async function searchAll(query: string): Promise<SearchResults> {
     name: string;
     initials: string;
     avatar_color: string;
+    avatar_url: string | null;
     role: string | null;
   };
 
@@ -121,6 +129,7 @@ export async function searchAll(query: string): Promise<SearchResults> {
       assignee_name: r.assignee?.name ?? null,
       assignee_color: r.assignee?.avatar_color ?? null,
       assignee_initials: r.assignee?.initials ?? null,
+      assignee_avatar_url: r.assignee?.avatar_url ?? null,
     })),
     projects: ((projectsR.data ?? []) as ProjectRow[]).map((p) => ({
       id: p.id,
@@ -133,6 +142,7 @@ export async function searchAll(query: string): Promise<SearchResults> {
       name: p.name,
       initials: p.initials,
       avatar_color: p.avatar_color,
+      avatar_url: p.avatar_url,
       role: p.role,
     })),
   };
@@ -244,6 +254,7 @@ export interface CommentRow {
     name: string;
     initials: string;
     avatar_color: string;
+    avatar_url: string | null;
   } | null;
 }
 
@@ -265,7 +276,7 @@ export async function addComment(
     .from("task_comments")
     .insert({ task_id: taskId, author_id: profile.id, body: text })
     .select(
-      "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color)"
+      "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color, avatar_url)"
     )
     .single() as any);
 

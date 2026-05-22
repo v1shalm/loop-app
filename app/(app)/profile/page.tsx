@@ -47,6 +47,7 @@ export default async function ProfilePage() {
             initialRole={profile.role ?? null}
             email={authEmail}
             avatarColor={profile.avatar_color}
+            avatarUrl={profile.avatar_url}
             initials={profile.initials}
           />
         </section>

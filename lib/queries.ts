@@ -18,16 +18,22 @@ export type Workspace = Tables["workspaces"]["Row"];
 
 export type TaskWithRelations = Task & {
   project?: Pick<Project, "id" | "name" | "emoji"> | null;
-  assignee?: Pick<Profile, "id" | "name" | "initials" | "avatar_color"> | null;
-  author?: Pick<Profile, "id" | "name" | "initials" | "avatar_color"> | null;
+  assignee?: Pick<
+    Profile,
+    "id" | "name" | "initials" | "avatar_color" | "avatar_url"
+  > | null;
+  author?: Pick<
+    Profile,
+    "id" | "name" | "initials" | "avatar_color" | "avatar_url"
+  > | null;
   comments?: { count: number }[];
 };
 
 export const TASK_RELATIONS_SELECT = `
   *,
   project:projects(id, name, emoji),
-  assignee:profiles!tasks_assignee_id_fkey(id, name, initials, avatar_color),
-  author:profiles!tasks_author_id_fkey(id, name, initials, avatar_color),
+  assignee:profiles!tasks_assignee_id_fkey(id, name, initials, avatar_color, avatar_url),
+  author:profiles!tasks_author_id_fkey(id, name, initials, avatar_color, avatar_url),
   comments:task_comments(count)
 `;
 

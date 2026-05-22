@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { triageTask, snoozeTask } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
 import type { TaskWithRelations } from "@/lib/queries";
+import { Avatar } from "@/components/avatar";
 
 const priorityClass: Record<number, string> = {
   1: "text-priority-1",
@@ -70,15 +71,13 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
     <article className="rounded-xl border border-border/60 bg-card p-4 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm">
       <div className="flex items-start gap-3">
         {task.author && (
-          <span
-            className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-zinc-900"
-            style={{
-              backgroundColor: task.author.avatar_color,
-              boxShadow: "var(--shadow-avatar)",
-            }}
-            title={task.author.name}
-          >
-            {task.author.initials}
+          <span className="mt-0.5" title={task.author.name}>
+            <Avatar
+              src={task.author.avatar_url}
+              initials={task.author.initials}
+              color={task.author.avatar_color}
+              size={32}
+            />
           </span>
         )}
         <div className="min-w-0 flex-1">

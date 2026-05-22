@@ -35,14 +35,15 @@ import {
 import { playSound } from "@/lib/sounds";
 import { formatDistanceToNow } from "date-fns";
 import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
+import { Avatar } from "@/components/avatar";
 
 // Inlined to avoid pulling lib/queries.ts (which imports server-only code)
 // into the client bundle. Keep in sync with TASK_RELATIONS_SELECT.
 const TASK_RELATIONS_SELECT = `
   *,
   project:projects(id, name, emoji),
-  assignee:profiles!tasks_assignee_id_fkey(id, name, initials, avatar_color),
-  author:profiles!tasks_author_id_fkey(id, name, initials, avatar_color)
+  assignee:profiles!tasks_assignee_id_fkey(id, name, initials, avatar_color, avatar_url),
+  author:profiles!tasks_author_id_fkey(id, name, initials, avatar_color, avatar_url)
 `;
 
 type Priority = 1 | 2 | 3 | 4;
@@ -165,7 +166,7 @@ function DrawerInner({
     const commentsP = (supabase
       .from("task_comments")
       .select(
-        "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color)"
+        "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color, avatar_url)"
       )
       .eq("task_id", taskId)
       .order("created_at", { ascending: true }) as any);
@@ -240,6 +241,7 @@ function DrawerInner({
             name: m.name,
             initials: m.initials,
             avatar_color: m.avatar_color,
+            avatar_url: m.avatar_url ?? null,
           }
         : null;
     }
@@ -408,12 +410,12 @@ function DrawerInner({
                   selected={task.assignee?.id === m.id}
                   onSelect={() => patch({ assigneeId: m.id })}
                 >
-                  <span
-                    className="grid size-4 place-items-center rounded-full text-[9px] font-semibold text-zinc-900"
-                    style={{ backgroundColor: m.avatar_color }}
-                  >
-                    {m.initials}
-                  </span>
+                  <Avatar
+                    src={m.avatar_url}
+                    initials={m.initials}
+                    color={m.avatar_color}
+                    size={18}
+                  />
                   <span>
                     {m.name}
                     {m.id === currentUserId ? " (you)" : ""}
@@ -479,12 +481,12 @@ function DrawerInner({
           {task.author && (
             <Meta label="Created by">
               <span className="inline-flex items-center gap-1.5">
-                <span
-                  className="grid size-4 place-items-center rounded-full text-[8px] font-semibold text-zinc-900"
-                  style={{ backgroundColor: task.author.avatar_color }}
-                >
-                  {task.author.initials}
-                </span>
+                <Avatar
+                  src={task.author.avatar_url}
+                  initials={task.author.initials}
+                  color={task.author.avatar_color}
+                  size={16}
+                />
                 {task.author.name}
               </span>
             </Meta>
@@ -651,14 +653,13 @@ function CommentItem({
 
   return (
     <li className="flex items-start gap-2.5">
-      <span
-        className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-semibold text-zinc-900"
-        style={{
-          backgroundColor: comment.author?.avatar_color ?? "var(--muted)",
-          boxShadow: "var(--shadow-avatar)",
-        }}
-      >
-        {comment.author?.initials ?? "?"}
+      <span className="mt-0.5">
+        <Avatar
+          src={comment.author?.avatar_url ?? null}
+          initials={comment.author?.initials ?? "?"}
+          color={comment.author?.avatar_color ?? "#D4D4D4"}
+          size={24}
+        />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">

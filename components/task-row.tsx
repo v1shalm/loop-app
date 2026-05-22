@@ -22,6 +22,7 @@ import { setTaskStatus, updateTask } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
 import type { TaskWithRelations } from "@/lib/queries";
 import { useTeamContext } from "@/components/team-provider";
+import { Avatar } from "@/components/avatar";
 
 type Priority = 1 | 2 | 3 | 4;
 
@@ -99,6 +100,7 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
         name: target.name,
         initials: target.initials,
         avatar_color: target.avatar_color,
+        avatar_url: target.avatar_url ?? null,
       });
     }
     startTransition(async () => {
@@ -190,15 +192,12 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
               >
                 {optAssignee ? (
                   <>
-                    <span
-                      className="grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-semibold text-zinc-900"
-                      style={{
-                        backgroundColor: optAssignee.avatar_color,
-                        boxShadow: "var(--shadow-avatar)",
-                      }}
-                    >
-                      {optAssignee.initials}
-                    </span>
+                    <Avatar
+                      src={optAssignee.avatar_url}
+                      initials={optAssignee.initials}
+                      color={optAssignee.avatar_color}
+                      size={24}
+                    />
                     <span className="truncate text-[13px] text-foreground">
                       {optAssignee.id === currentUserId
                         ? "You"
@@ -223,12 +222,12 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
                       selected={optAssignee?.id === m.id}
                       onSelect={() => reassign(m.id)}
                     >
-                      <span
-                        className="grid size-4 place-items-center rounded-full text-[9px] font-semibold text-zinc-900"
-                        style={{ backgroundColor: m.avatar_color }}
-                      >
-                        {m.initials}
-                      </span>
+                      <Avatar
+                        src={m.avatar_url}
+                        initials={m.initials}
+                        color={m.avatar_color}
+                        size={18}
+                      />
                       <span>
                         {m.name}
                         {m.id === currentUserId ? " (you)" : ""}

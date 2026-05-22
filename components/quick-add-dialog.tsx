@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { createTask } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
 import { DatePicker, formatDueShort } from "@/components/date-picker";
+import { Avatar } from "@/components/avatar";
 import type { Profile, Project } from "@/lib/queries";
 
 type Priority = 1 | 2 | 3 | 4;
@@ -207,12 +208,12 @@ export function QuickAddDialog({
                       selected={assigneeId === m.id}
                       onSelect={() => setAssigneeId(m.id)}
                     >
-                      <span
-                        className="grid size-4 place-items-center rounded-full text-[9px] font-semibold text-zinc-900"
-                        style={{ backgroundColor: m.avatar_color }}
-                      >
-                        {m.initials}
-                      </span>
+                      <Avatar
+                        src={m.avatar_url}
+                        initials={m.initials}
+                        color={m.avatar_color}
+                        size={18}
+                      />
                       <span>
                         {m.name}
                         {m.id === currentUserId ? " (me)" : ""}

@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import type { MemberPulse } from "@/lib/queries";
 import { statusEmoji, statusLabel } from "@/components/status-picker";
+import { Avatar } from "@/components/avatar";
 
 export function TeamPulse({
   members,
@@ -92,15 +93,12 @@ function PulseRow({
   );
 
   const avatar = (
-    <span
-      className="grid size-5 shrink-0 place-items-center rounded-full text-[9px] font-semibold text-zinc-900"
-      style={{
-        backgroundColor: member.avatar_color,
-        boxShadow: "var(--shadow-avatar)",
-      }}
-    >
-      {member.initials}
-    </span>
+    <Avatar
+      src={member.avatar_url}
+      initials={member.initials}
+      color={member.avatar_color}
+      size={20}
+    />
   );
 
   if (compact) {

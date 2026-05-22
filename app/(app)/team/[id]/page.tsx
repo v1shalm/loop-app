@@ -11,6 +11,7 @@ import {
   getCurrentProfile,
 } from "@/lib/queries";
 import { statusEmoji, statusLabel } from "@/components/status-picker";
+import { Avatar } from "@/components/avatar";
 
 interface TeammatePageProps {
   params: Promise<{ id: string }>;
@@ -64,15 +65,12 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
         </Link>
 
         <header className="mb-6 flex items-center gap-4 rounded-2xl border border-border/60 bg-card p-5 shadow-soft-sm">
-          <span
-            className="grid size-14 shrink-0 place-items-center rounded-full text-[18px] font-semibold text-zinc-900"
-            style={{
-              backgroundColor: member.avatar_color,
-              boxShadow: "var(--shadow-avatar)",
-            }}
-          >
-            {member.initials}
-          </span>
+          <Avatar
+            src={member.avatar_url}
+            initials={member.initials}
+            color={member.avatar_color}
+            size={56}
+          />
           <div className="min-w-0 flex-1">
             <h2 className="text-[18px] font-semibold tracking-tight text-foreground">
               {member.name}

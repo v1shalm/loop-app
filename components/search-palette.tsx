@@ -15,6 +15,7 @@ import {
   Tray,
   UsersThree,
 } from "@/components/icons";
+import { Avatar } from "@/components/avatar";
 import { cn } from "@/lib/utils";
 import { searchAll, type SearchResults } from "@/lib/actions";
 
@@ -28,9 +29,28 @@ type JumpItem = {
 
 type ResultRow =
   | JumpItem
-  | { kind: "task"; id: string; title: string; status: string; project: string | null; projectEmoji: string | null; assignee: string | null; assigneeColor: string | null; assigneeInitials: string | null }
+  | {
+      kind: "task";
+      id: string;
+      title: string;
+      status: string;
+      project: string | null;
+      projectEmoji: string | null;
+      assignee: string | null;
+      assigneeColor: string | null;
+      assigneeInitials: string | null;
+      assigneeAvatarUrl: string | null;
+    }
   | { kind: "project"; id: string; name: string; emoji: string | null; openCount: number }
-  | { kind: "person"; id: string; name: string; initials: string; avatarColor: string; role: string | null };
+  | {
+      kind: "person";
+      id: string;
+      name: string;
+      initials: string;
+      avatarColor: string;
+      avatarUrl: string | null;
+      role: string | null;
+    };
 
 type Group = { label: string; rows: ResultRow[] };
 
@@ -110,6 +130,7 @@ export function SearchPalette({
           assignee: t.assignee_name,
           assigneeColor: t.assignee_color,
           assigneeInitials: t.assignee_initials,
+          assigneeAvatarUrl: t.assignee_avatar_url,
         })),
       });
     }
@@ -134,6 +155,7 @@ export function SearchPalette({
           name: p.name,
           initials: p.initials,
           avatarColor: p.avatar_color,
+          avatarUrl: p.avatar_url,
           role: p.role,
         })),
       });
@@ -186,9 +208,9 @@ export function SearchPalette({
         className="max-w-[600px] gap-0 border-border/60 p-0 shadow-soft-xl sm:rounded-xl"
       >
         {/* Input */}
-        <div className="flex items-center gap-2.5 border-b border-border/60 px-4 py-3">
+        <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">
           <MagnifyingGlass
-            size={15}
+            size={16}
             className="shrink-0 text-muted-foreground"
           />
           <input
@@ -202,22 +224,25 @@ export function SearchPalette({
           />
           {pending && (
             <CircleNotch
-              size={13}
+              size={14}
               className="animate-spin text-muted-foreground"
             />
           )}
         </div>
 
         {/* Body */}
-        <div className="max-h-[420px] overflow-y-auto px-1.5 py-2">
+        <div className="max-h-[440px] overflow-y-auto p-2">
           {noResults ? (
             <Hint>No matches for &ldquo;{query.trim()}&rdquo;.</Hint>
           ) : (
             (() => {
               let runningIdx = 0;
-              return groups.map((g) => (
-                <section key={g.label} className="mb-2 last:mb-0">
-                  <p className="px-3 pb-1 pt-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              return groups.map((g, i) => (
+                <section
+                  key={g.label}
+                  className={cn("flex flex-col", i > 0 && "mt-3")}
+                >
+                  <p className="px-2 pb-1 pt-1 text-[11.5px] font-medium text-muted-foreground">
                     {g.label}
                   </p>
                   {g.rows.map((row) => {
@@ -239,10 +264,10 @@ export function SearchPalette({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-3 border-t border-border/60 bg-muted/40 px-4 py-2 text-[11px] text-muted-foreground">
-          <KeyHint k="↑↓" label="navigate" />
-          <KeyHint k="↵" label="open" />
-          <KeyHint k="Esc" label="close" />
+        <div className="flex items-center gap-4 border-t border-border/60 bg-muted/30 px-4 py-2.5 text-[11.5px] text-muted-foreground">
+          <KeyHint k="↑↓" label="Navigate" />
+          <KeyHint k="↵" label="Open" />
+          <KeyHint k="Esc" label="Close" />
         </div>
       </DialogContent>
     </Dialog>
@@ -264,63 +289,80 @@ function Row({
     <button
       onMouseEnter={onHover}
       onClick={onClick}
+      data-active={active || undefined}
       className={cn(
-        "flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left transition-colors",
-        active && "bg-accent"
+        "group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sidebar-foreground/90 transition-colors duration-150 ease-[var(--ease-out)]",
+        active
+          ? "bg-primary/8 font-medium text-primary"
+          : "hover:bg-accent/40 hover:text-foreground"
       )}
     >
-      {renderLeading(row)}
-      {renderBody(row)}
+      {renderLeading(row, active)}
+      {renderBody(row, active)}
       {renderTrailing(row)}
     </button>
   );
 }
 
-function renderLeading(row: ResultRow) {
+function renderLeading(row: ResultRow, active: boolean) {
   if (row.kind === "jump") {
     const Icon = row.Icon;
     return (
-      <span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
-        <Icon size={13} />
-      </span>
+      <Icon
+        size={16}
+        className={cn(
+          "shrink-0",
+          active ? "text-primary" : "text-muted-foreground/90"
+        )}
+      />
     );
   }
   if (row.kind === "task") {
     return row.status === "done" ? (
       <CheckCircle
-        size={15}
+        size={16}
         weight="fill"
         className="shrink-0 text-emerald-600"
       />
     ) : (
-      <span className="grid size-4 shrink-0 place-items-center rounded-full border border-border" />
+      <span
+        className={cn(
+          "grid size-4 shrink-0 place-items-center rounded-full border",
+          active ? "border-primary/40" : "border-border"
+        )}
+      />
     );
   }
   if (row.kind === "project") {
     return (
-      <span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-[14px]">
-        {row.emoji ?? <Hash size={13} className="text-muted-foreground" />}
+      <span className="text-[15px] leading-none">
+        {row.emoji ?? (
+          <Hash
+            size={16}
+            className={cn(
+              "shrink-0",
+              active ? "text-primary" : "text-muted-foreground/90"
+            )}
+          />
+        )}
       </span>
     );
   }
   // person
   return (
-    <span
-      className="grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-semibold text-zinc-900"
-      style={{
-        backgroundColor: row.avatarColor,
-        boxShadow: "var(--shadow-avatar)",
-      }}
-    >
-      {row.initials}
-    </span>
+    <Avatar
+      src={row.avatarUrl}
+      initials={row.initials}
+      color={row.avatarColor}
+      size={24}
+    />
   );
 }
 
-function renderBody(row: ResultRow) {
+function renderBody(row: ResultRow, active: boolean) {
   if (row.kind === "jump") {
     return (
-      <span className="flex-1 truncate text-[13.5px] font-medium text-foreground">
+      <span className="flex-1 truncate text-[13.5px] font-medium">
         {row.label}
       </span>
     );
@@ -330,9 +372,7 @@ function renderBody(row: ResultRow) {
       <span
         className={cn(
           "flex-1 truncate text-[13.5px]",
-          row.status === "done"
-            ? "text-muted-foreground line-through"
-            : "text-foreground"
+          row.status === "done" && "text-muted-foreground line-through"
         )}
       >
         {row.title}
@@ -341,18 +381,21 @@ function renderBody(row: ResultRow) {
   }
   if (row.kind === "project") {
     return (
-      <span className="flex-1 truncate text-[13.5px] font-medium text-foreground">
+      <span className="flex-1 truncate text-[13.5px] font-medium">
         {row.name}
       </span>
     );
   }
   return (
     <span className="flex min-w-0 flex-1 flex-col">
-      <span className="truncate text-[13.5px] font-medium text-foreground">
-        {row.name}
-      </span>
+      <span className="truncate text-[13.5px] font-medium">{row.name}</span>
       {row.role && (
-        <span className="truncate text-[11.5px] text-muted-foreground">
+        <span
+          className={cn(
+            "truncate text-[11.5px]",
+            active ? "text-primary/70" : "text-muted-foreground"
+          )}
+        >
           {row.role}
         </span>
       )}
@@ -370,16 +413,12 @@ function renderTrailing(row: ResultRow) {
           </span>
         )}
         {row.assignee && row.assigneeColor && row.assigneeInitials && (
-          <span
-            className="grid size-5 shrink-0 place-items-center rounded-full text-[9px] font-semibold text-zinc-900"
-            style={{
-              backgroundColor: row.assigneeColor,
-              boxShadow: "var(--shadow-avatar)",
-            }}
-            title={row.assignee}
-          >
-            {row.assigneeInitials}
-          </span>
+          <Avatar
+            src={row.assigneeAvatarUrl}
+            initials={row.assigneeInitials}
+            color={row.assigneeColor}
+            size={20}
+          />
         )}
       </>
     );
@@ -391,19 +430,12 @@ function renderTrailing(row: ResultRow) {
       </span>
     );
   }
-  if (row.kind === "jump") {
-    return (
-      <span className="shrink-0 text-[10.5px] uppercase tracking-wider text-muted-foreground/60">
-        Page
-      </span>
-    );
-  }
   return null;
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
   return (
-    <p className="px-3 py-6 text-center text-[12.5px] text-muted-foreground">
+    <p className="px-3 py-8 text-center text-[13px] text-muted-foreground">
       {children}
     </p>
   );
@@ -411,8 +443,8 @@ function Hint({ children }: { children: React.ReactNode }) {
 
 function KeyHint({ k, label }: { k: string; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1">
-      <kbd className="chip-3d inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-background px-1 text-[10.5px] font-semibold text-foreground">
+    <span className="inline-flex items-center gap-1.5">
+      <kbd className="chip-3d inline-flex h-[19px] min-w-[19px] items-center justify-center rounded-[5px] border border-border bg-card px-1.5 text-[11px] font-semibold text-foreground/80">
         {k}
       </kbd>
       <span>{label}</span>

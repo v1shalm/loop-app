@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { getCurrentProfile, getMembersWithPulse } from "@/lib/queries";
 import { statusEmoji, statusLabel } from "@/components/status-picker";
+import { Avatar } from "@/components/avatar";
 
 export const metadata = { title: "Team · Loop" };
 
@@ -67,15 +68,12 @@ function MemberCard({
       className="focus-ring group flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-5 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
     >
       <div className="flex items-start gap-3">
-        <span
-          className="grid size-11 shrink-0 place-items-center rounded-full text-[14px] font-semibold text-zinc-900"
-          style={{
-            backgroundColor: member.avatar_color,
-            boxShadow: "var(--shadow-avatar)",
-          }}
-        >
-          {member.initials}
-        </span>
+        <Avatar
+          src={member.avatar_url}
+          initials={member.initials}
+          color={member.avatar_color}
+          size={44}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[14.5px] font-semibold text-foreground">
             {member.name}

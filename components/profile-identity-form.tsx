@@ -4,12 +4,14 @@ import { useState, useTransition } from "react";
 import { sileo } from "sileo";
 import { CircleNotch } from "@/components/icons";
 import { updateMyProfile } from "@/lib/actions";
+import { Avatar } from "@/components/avatar";
 
 interface ProfileIdentityFormProps {
   initialName: string;
   initialRole: string | null;
   email: string | null;
   avatarColor: string;
+  avatarUrl?: string | null;
   initials: string;
 }
 
@@ -18,6 +20,7 @@ export function ProfileIdentityForm({
   initialRole,
   email,
   avatarColor,
+  avatarUrl,
   initials,
 }: ProfileIdentityFormProps) {
   const [name, setName] = useState(initialName);
@@ -43,15 +46,12 @@ export function ProfileIdentityForm({
   return (
     <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
       <div className="flex items-center gap-4 border-b border-border/40 p-5">
-        <span
-          className="grid size-14 shrink-0 place-items-center rounded-full text-[18px] font-semibold text-zinc-900"
-          style={{
-            backgroundColor: avatarColor,
-            boxShadow: "var(--shadow-avatar)",
-          }}
-        >
-          {initials}
-        </span>
+        <Avatar
+          src={avatarUrl}
+          initials={initials}
+          color={avatarColor}
+          size={56}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[16px] font-semibold tracking-tight text-foreground">
             {name || "Unnamed"}
