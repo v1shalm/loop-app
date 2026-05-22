@@ -1,22 +1,53 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { sileo } from "sileo";
 import { CircleNotch, Tray } from "@/components/icons";
 import { GoogleG } from "@/components/google-g-icon";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { sendMagicLink } from "./actions";
 
+// Demo account — intentionally public so reviewers / automated agents can
+// poke at the app without their own Google account. The account is a
+// regular Supabase email/password user with the same RLS as everyone else.
+const DEMO_EMAIL = "demo@loop.app";
+const DEMO_PASSWORD = "demo-loop-2026";
+
 export function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/assigned-to-me";
 
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
+  const [demoPending, setDemoPending] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const signInWithDemo = async () => {
+    const supabase = getSupabaseBrowser();
+    if (!supabase) {
+      sileo.error({ title: "Sign-in isn't configured yet." });
+      return;
+    }
+    setDemoPending(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: DEMO_EMAIL,
+      password: DEMO_PASSWORD,
+    });
+    if (error) {
+      setDemoPending(false);
+      sileo.error({
+        title: "Demo account not ready yet.",
+        description: error.message,
+      });
+      return;
+    }
+    router.push(next);
+    router.refresh();
+  };
 
   const signInWithGoogle = async () => {
     const supabase = getSupabaseBrowser();
@@ -63,7 +94,7 @@ export function LoginForm() {
     );
   }
 
-  const anyPending = pending || googlePending;
+  const anyPending = pending || googlePending || demoPending;
 
   return (
     <div className="flex flex-col gap-4">
@@ -150,6 +181,24 @@ export function LoginForm() {
           We&apos;ll email you a one-tap sign-in link. No password.
         </p>
       </form>
+
+      {/* Demo account — no email needed. */}
+      <div className="mt-1 rounded-lg border border-dashed border-border bg-muted/30 p-3 text-center">
+        <p className="text-[12px] text-muted-foreground">
+          Just looking around? Sign in to the demo workspace.
+        </p>
+        <button
+          type="button"
+          onClick={signInWithDemo}
+          disabled={anyPending}
+          className="focus-ring mt-2 inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40 disabled:opacity-60"
+        >
+          {demoPending && (
+            <CircleNotch size={12} className="animate-spin text-muted-foreground" />
+          )}
+          {demoPending ? "Signing in…" : "Try the demo →"}
+        </button>
+      </div>
     </div>
   );
 }
