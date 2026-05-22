@@ -25,14 +25,19 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
 
-  // Tree-shake heavy icon library by transforming barrel imports into
-  // per-icon imports at build time. Cuts ~hundreds of KB of unused icons.
   experimental: {
     optimizePackageImports: [
       "@phosphor-icons/react",
       "date-fns",
       "motion",
     ],
+    // Keep the prefetched page payload in the client cache long enough that
+    // tab-switching between sidebar items doesn't re-trigger the server fetch
+    // and the loading.tsx skeleton flash.
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
 
   async headers() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { sileo } from "sileo";
@@ -48,19 +48,31 @@ const PRIORITY_FLAG_CLASS: Record<Priority, string> = {
 
 export function TaskRow({ task }: { task: TaskWithRelations }) {
   const [done, setDone] = useState(task.status === "done");
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const { members, currentUserId } = useTeamContext();
 
-  const due = task.due_at ? new Date(task.due_at) : null;
+  // Optimistic mirrors so popover/date changes paint instantly.
+  // Sync back to props when the server returns fresh data via revalidatePath.
+  const [optPriority, setOptPriority] = useState<Priority>(
+    task.priority as Priority
+  );
+  const [optDueAt, setOptDueAt] = useState<string | null>(task.due_at);
+  const [optAssignee, setOptAssignee] = useState(task.assignee);
+  useEffect(() => {
+    setOptPriority(task.priority as Priority);
+    setOptDueAt(task.due_at);
+    setOptAssignee(task.assignee);
+  }, [task.priority, task.due_at, task.assignee]);
+
+  const due = optDueAt ? new Date(optDueAt) : null;
   const overdue = due && isPast(due) && !isToday(due) && !done;
   const commentCount = task.comments?.[0]?.count ?? 0;
-  const priority = task.priority as Priority;
+  const priority = optPriority;
 
   const toggle = () => {
-    if (pending) return;
     setDone(true);
     playSound("completed", priority);
     startTransition(async () => {
@@ -68,8 +80,6 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
       if (res.error) {
         sileo.error({ title: res.error });
         setDone(false);
-      } else {
-        router.refresh();
       }
     });
   };
@@ -81,34 +91,50 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
   };
 
   const reassign = (assigneeId: string) => {
+    const target = members.find((m) => m.id === assigneeId);
+    const prev = optAssignee;
+    if (target) {
+      setOptAssignee({
+        id: target.id,
+        name: target.name,
+        initials: target.initials,
+        avatar_color: target.avatar_color,
+      });
+    }
     startTransition(async () => {
       const res = await updateTask(task.id, { assigneeId });
-      if (res.error) sileo.error({ title: res.error });
-      else {
-        const target = members.find((m) => m.id === assigneeId);
-        if (target && target.id !== currentUserId) {
-          sileo.success({ title: `Assigned to ${target.name}` });
-        }
-        router.refresh();
+      if (res.error) {
+        sileo.error({ title: res.error });
+        setOptAssignee(prev);
+      } else if (target && target.id !== currentUserId) {
+        sileo.success({ title: `Assigned to ${target.name}` });
       }
     });
   };
 
   const setPriority = (p: Priority) => {
+    const prev = optPriority;
+    setOptPriority(p);
     startTransition(async () => {
       const res = await updateTask(task.id, { priority: p });
-      if (res.error) sileo.error({ title: res.error });
-      else router.refresh();
+      if (res.error) {
+        sileo.error({ title: res.error });
+        setOptPriority(prev);
+      }
     });
   };
 
   const setDue = (d: Date | null) => {
+    const prev = optDueAt;
+    setOptDueAt(d ? d.toISOString() : null);
     startTransition(async () => {
       const res = await updateTask(task.id, {
         dueAt: d ? d.toISOString() : null,
       });
-      if (res.error) sileo.error({ title: res.error });
-      else router.refresh();
+      if (res.error) {
+        sileo.error({ title: res.error });
+        setOptDueAt(prev);
+      }
     });
   };
 
@@ -127,7 +153,6 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
             {/* Checkbox */}
             <button
               onClick={toggle}
-              disabled={pending}
               aria-label={`Mark "${task.title}" complete`}
               className={cn(
                 "focus-ring touch-expand grid size-[18px] shrink-0 place-items-center rounded-[5px] border bg-background transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] hover:border-foreground/40 active:scale-95",
@@ -163,21 +188,21 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
                 aria-label="Assignee"
                 className="focus-ring flex items-center gap-2 rounded-md px-1 py-1 text-left transition-colors hover:bg-accent/40"
               >
-                {task.assignee ? (
+                {optAssignee ? (
                   <>
                     <span
                       className="grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-semibold text-zinc-900"
                       style={{
-                        backgroundColor: task.assignee.avatar_color,
+                        backgroundColor: optAssignee.avatar_color,
                         boxShadow: "var(--shadow-avatar)",
                       }}
                     >
-                      {task.assignee.initials}
+                      {optAssignee.initials}
                     </span>
                     <span className="truncate text-[13px] text-foreground">
-                      {task.assignee.id === currentUserId
+                      {optAssignee.id === currentUserId
                         ? "You"
-                        : task.assignee.name.split(" ")[0]}
+                        : optAssignee.name.split(" ")[0]}
                     </span>
                   </>
                 ) : (
@@ -195,7 +220,7 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
                   members.map((m) => (
                     <PopoverItem
                       key={m.id}
-                      selected={task.assignee?.id === m.id}
+                      selected={optAssignee?.id === m.id}
                       onSelect={() => reassign(m.id)}
                     >
                       <span

@@ -128,8 +128,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.008 250);
 
-  /* Brand: indigo blue, replaces the red. */
-  --primary: oklch(0.55 0.2 265);
+  /* Brand: vibrant violet — matches the reference CTA. */
+  --primary: oklch(0.56 0.22 290);
   --primary-foreground: oklch(0.995 0 0);
 
   --secondary: oklch(0.965 0.004 250);
@@ -146,9 +146,9 @@
 
   --border: oklch(0.92 0.005 250);
   --input: oklch(0.92 0.005 250);
-  --ring: oklch(0.55 0.2 265);
+  --ring: oklch(0.56 0.22 290);
 
-  --chart-1: oklch(0.55 0.2 265);
+  --chart-1: oklch(0.56 0.22 290);
   --chart-2: oklch(0.72 0.16 60);
   --chart-3: oklch(0.62 0.15 220);
   --chart-4: oklch(0.65 0.12 150);
@@ -160,12 +160,12 @@
   /* Sidebar — pure white, slightly cooler border */
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.22 0.008 250);
-  --sidebar-primary: oklch(0.55 0.2 265);
+  --sidebar-primary: oklch(0.56 0.22 290);
   --sidebar-primary-foreground: oklch(0.995 0 0);
   --sidebar-accent: oklch(0.95 0.008 250);
   --sidebar-accent-foreground: oklch(0.18 0.008 250);
   --sidebar-border: oklch(0.92 0.005 250);
-  --sidebar-ring: oklch(0.55 0.2 265);
+  --sidebar-ring: oklch(0.56 0.22 290);
 
   /* Priority — pill colors set inline (rose/amber/emerald) */
   --priority-1: oklch(0.62 0.197 27);

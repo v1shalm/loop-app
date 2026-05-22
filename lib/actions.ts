@@ -147,15 +147,10 @@ export interface CreateTaskInput {
   assigneeId?: string | null;
 }
 
-function revalidateTaskRoutes(projectId?: string | null) {
-  revalidatePath("/assigned-to-me");
-  revalidatePath("/today");
-  revalidatePath("/upcoming");
-  revalidatePath("/inbox");
-  revalidatePath("/team");
-  revalidatePath("/notifications");
-  revalidatePath("/my-tasks"); // legacy alias still in routes
-  if (projectId) revalidatePath(`/projects/${projectId}`);
+function revalidateTaskRoutes(_projectId?: string | null) {
+  // One layout-level revalidation invalidates every (app) page + the sidebar
+  // counts in a single hop, instead of 8 path-by-path stale signals.
+  revalidatePath("/", "layout");
 }
 
 export async function createTask(

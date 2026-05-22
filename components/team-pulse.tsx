@@ -26,7 +26,7 @@ export function TeamPulse({
 
   if (collapsed) {
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col items-center gap-0.5">
         {sorted.slice(0, 4).map((m) => (
           <PulseRow
             key={m.id}

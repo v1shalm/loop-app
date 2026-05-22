@@ -195,13 +195,10 @@ function DrawerInner({
     if (!task || !titleRef.current) return;
     const next = titleRef.current.value.trim();
     if (!next || next === task.title) return;
+    setTask({ ...task, title: next });
     startTransition(async () => {
       const res = await updateTask(task.id, { title: next });
       if (res.error) sileo.error({ title: res.error });
-      else {
-        setTask({ ...task, title: next });
-        router.refresh();
-      }
     });
   };
 
@@ -209,24 +206,47 @@ function DrawerInner({
     if (!task || !descRef.current) return;
     const next = descRef.current.value;
     if (next === (task.description ?? "")) return;
+    setTask({ ...task, description: next || null });
     startTransition(async () => {
       const res = await updateTask(task.id, {
         description: next || null,
       });
       if (res.error) sileo.error({ title: res.error });
-      else {
-        setTask({ ...task, description: next || null });
-        router.refresh();
-      }
     });
   };
 
   const patch = (changes: Parameters<typeof updateTask>[1]) => {
     if (!task) return;
+    // Optimistic local mirror — every field the drawer can change.
+    const optimistic: Partial<TaskWithRelations> = {};
+    if (changes.title !== undefined) optimistic.title = changes.title.trim();
+    if (changes.description !== undefined)
+      optimistic.description = changes.description;
+    if (changes.priority !== undefined) optimistic.priority = changes.priority;
+    if (changes.dueAt !== undefined) optimistic.due_at = changes.dueAt;
+    if (changes.projectId !== undefined) {
+      optimistic.project_id = changes.projectId;
+      const proj = projects.find((p) => p.id === changes.projectId);
+      optimistic.project = proj
+        ? { id: proj.id, name: proj.name, emoji: proj.emoji }
+        : null;
+    }
+    if (changes.assigneeId !== undefined) {
+      optimistic.assignee_id = changes.assigneeId;
+      const m = members.find((m) => m.id === changes.assigneeId);
+      optimistic.assignee = m
+        ? {
+            id: m.id,
+            name: m.name,
+            initials: m.initials,
+            avatar_color: m.avatar_color,
+          }
+        : null;
+    }
+    setTask({ ...task, ...optimistic });
     startTransition(async () => {
       const res = await updateTask(task.id, changes);
       if (res.error) sileo.error({ title: res.error });
-      else router.refresh();
     });
   };
 
@@ -234,17 +254,14 @@ function DrawerInner({
     if (!task) return;
     const next = task.status === "done" ? "todo" : "done";
     if (next === "done") playSound("completed", task.priority as Priority);
+    setTask({
+      ...task,
+      status: next,
+      completed_at: next === "done" ? new Date().toISOString() : null,
+    });
     startTransition(async () => {
       const res = await setTaskStatus(task.id, next);
       if (res.error) sileo.error({ title: res.error });
-      else {
-        setTask({
-          ...task,
-          status: next,
-          completed_at: next === "done" ? new Date().toISOString() : null,
-        });
-        router.refresh();
-      }
     });
   };
 
@@ -252,14 +269,13 @@ function DrawerInner({
     if (!task) return;
     const ok = window.confirm(`Delete "${task.title}"? This can't be undone.`);
     if (!ok) return;
+    // Close immediately so the drawer feels snappy; the row will animate out
+    // when the revalidated list re-renders.
+    onClose();
     startTransition(async () => {
       const res = await deleteTask(task.id);
       if (res.error) sileo.error({ title: res.error });
-      else {
-        sileo.success({ title: "Task deleted" });
-        router.refresh();
-        onClose();
-      }
+      else sileo.success({ title: "Task deleted" });
     });
   };
 
@@ -543,7 +559,6 @@ function CommentsSection({
           prev.map((c) => (c.id === tempId ? res.comment! : c))
         );
       }
-      router.refresh();
     });
   };
 
@@ -552,7 +567,6 @@ function CommentsSection({
     startTransition(async () => {
       const res = await deleteComment(id);
       if (res.error) sileo.error({ title: res.error });
-      else router.refresh();
     });
   };
 

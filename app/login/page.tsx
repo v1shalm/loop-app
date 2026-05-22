@@ -9,20 +9,13 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-dvh place-items-center bg-background px-6 py-10">
       <div className="w-full max-w-[440px]">
-        {/* Brand */}
-        <div className="mb-8 flex items-center justify-center gap-2.5">
-          <span className="surface-brand grid size-9 place-items-center rounded-md text-[15px] font-bold text-white shadow-[var(--shadow-brand-tile)]">
-            L
-          </span>
-          <span className="text-[18px] font-semibold tracking-tight text-foreground">
-            Loop
-          </span>
-        </div>
-
         {/* Card */}
         <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-soft-sm">
           <div className="px-7 pb-6 pt-7">
-            <h1 className="text-center text-[20px] font-semibold tracking-tight text-foreground">
+            <p className="text-center text-[15px] font-semibold tracking-tight text-foreground">
+              Loop
+            </p>
+            <h1 className="mt-5 text-center text-[20px] font-semibold tracking-tight text-foreground">
               Welcome
             </h1>
             <p className="mt-1 text-center text-[13px] text-muted-foreground">

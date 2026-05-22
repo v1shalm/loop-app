@@ -50,13 +50,8 @@ export function RealtimeBridge({
           filter: `workspace_id=eq.${workspaceId}`,
         },
         (payload) => {
-          // Coalesce refresh calls to avoid spamming the server on bursts.
-          const now = Date.now();
-          if (now - lastRefresh.current > 250) {
-            lastRefresh.current = now;
-            router.refresh();
-          }
-
+          // Fire the "assigned to you" toast/sound immediately — it's cheap
+          // and the user needs the feedback right away.
           if (payload.eventType === "INSERT") {
             const task = payload.new as TaskPayload;
             if (
@@ -70,6 +65,28 @@ export function RealtimeBridge({
                 description: task.title,
               });
             }
+          }
+
+          // Skip the expensive router.refresh() if the user authored the
+          // change themselves (their server action already revalidated) or
+          // if the tab isn't focused — they'll get fresh data when they
+          // come back.
+          const task =
+            (payload.new as TaskPayload | null) ??
+            (payload.old as TaskPayload | null);
+          if (task?.author_id === userId) return;
+          if (
+            typeof document !== "undefined" &&
+            document.visibilityState !== "visible"
+          ) {
+            return;
+          }
+
+          // Coalesce burst refreshes (multiple rows updated in one tx).
+          const now = Date.now();
+          if (now - lastRefresh.current > 1500) {
+            lastRefresh.current = now;
+            router.refresh();
           }
         }
       )

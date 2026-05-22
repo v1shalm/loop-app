@@ -8,12 +8,12 @@ import {
   CalendarBlank,
   CalendarDots,
   CaretDown,
-  CaretRight,
   Crosshair,
   Hash,
   MagnifyingGlass,
   Plus,
   Question,
+  SidebarSimple,
   Tray,
   UsersThree,
 } from "@/components/icons";
@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { MemberPulse, Profile, Project, Workspace } from "@/lib/queries";
 import { SoundSwitch } from "@/components/sound-switch";
+import { ProfileMenu } from "@/components/profile-menu";
 import { TeamPulse } from "@/components/team-pulse";
 import {
   SidebarEmptyCard,
@@ -59,7 +60,7 @@ export function Sidebar({
   onOpenHelp,
 }: SidebarProps) {
   const pathname = usePathname();
-  const { collapsed } = useSidebar();
+  const { collapsed, toggle } = useSidebar();
   const workspaceName = workspace?.name ?? "Loop";
   const initial = workspaceName.charAt(0).toUpperCase();
 
@@ -70,55 +71,68 @@ export function Sidebar({
         collapsed ? "w-[64px]" : "w-[248px]"
       )}
     >
-      {/* ── Top: workspace + search ─────────────────────────────── */}
+      {/* ── Top: workspace + search + collapse toggle ───────────── */}
       <div
         className={cn(
-          "flex h-14 items-center gap-2",
+          "flex h-14 items-center gap-1 border-b border-sidebar-border/60",
           collapsed ? "justify-center px-2" : "px-3"
         )}
       >
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger
-              aria-label={workspaceName}
-              className="focus-ring surface-brand grid size-[32px] place-items-center rounded-[10px] text-[13px] font-bold text-white shadow-[var(--shadow-brand-tile)]"
+              onClick={toggle}
+              aria-label="Expand sidebar"
+              className="focus-ring grid size-9 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
             >
-              {initial}
+              <SidebarSimple size={16} />
             </TooltipTrigger>
-            <TooltipContent side="right">{workspaceName}</TooltipContent>
+            <TooltipContent side="right">Expand sidebar</TooltipContent>
           </Tooltip>
         ) : (
           <>
-            <div className="flex min-w-0 flex-1 items-center gap-2 px-1.5 py-1">
-              <span className="surface-brand grid size-[26px] place-items-center rounded-md text-[12px] font-bold text-white shadow-[var(--shadow-brand-tile)]">
-                {initial}
-              </span>
-              <span className="truncate text-[14px] font-semibold tracking-tight text-foreground">
-                {workspaceName}
-              </span>
-            </div>
-            <button
-              onClick={onOpenSearch}
-              aria-label="Search (⌘K)"
-              title="Search (⌘K)"
-              className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-            >
-              <MagnifyingGlass size={16} />
-            </button>
+            <span className="min-w-0 flex-1 truncate px-1.5 text-[14.5px] font-semibold tracking-tight text-foreground">
+              {workspaceName}
+            </span>
+            <Tooltip>
+              <TooltipTrigger
+                onClick={onOpenSearch}
+                aria-label="Search (⌘K)"
+                className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+              >
+                <MagnifyingGlass size={16} />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Search</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger
+                onClick={toggle}
+                aria-label="Collapse sidebar"
+                className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+              >
+                <SidebarSimple size={16} />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Collapse sidebar</TooltipContent>
+            </Tooltip>
           </>
         )}
       </div>
 
       {/* ── Primary CTA: Add Task ──────────────────────────────── */}
-      <div className={cn("pb-2", collapsed ? "px-2" : "px-3")}>
+      <div
+        className={cn(
+          "pt-2 pb-1",
+          collapsed ? "flex justify-center px-2" : "px-3"
+        )}
+      >
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger
               onClick={onOpenQuickAdd}
               aria-label="Add task (Q)"
-              className="focus-ring surface-brand surface-brand-hover grid size-10 place-items-center rounded-md text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.96]"
+              className="focus-ring surface-brand surface-brand-hover grid size-9 place-items-center rounded-md text-white shadow-soft-xs transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.96]"
             >
-              <Plus size={18} weight="bold" />
+              <Plus size={16} weight="bold" />
             </TooltipTrigger>
             <TooltipContent side="right">Add task</TooltipContent>
           </Tooltip>
@@ -137,7 +151,12 @@ export function Sidebar({
       </div>
 
       {/* ── Primary nav ─────────────────────────────────────────── */}
-      <nav className={cn("pt-1", collapsed ? "px-2" : "px-2")}>
+      <nav
+        className={cn(
+          "pt-1",
+          collapsed ? "flex flex-col items-center gap-0.5 px-2" : "px-2"
+        )}
+      >
         <NavItem
           href="/inbox"
           icon={Tray}
@@ -265,46 +284,30 @@ export function Sidebar({
 
         {/* Profile card */}
         {collapsed ? (
-          <Link
-            href="/profile"
-            aria-label={user.name}
-            title={user.name}
-            className="focus-ring grid size-8 place-items-center rounded-full text-[11px] font-semibold text-zinc-900"
-            style={{
-              backgroundColor: user.avatar_color,
-              boxShadow: "var(--shadow-avatar)",
-            }}
-          >
-            {user.initials}
-          </Link>
-        ) : (
-          <Link
-            href="/profile"
-            className="focus-ring flex w-full items-center gap-2.5 rounded-lg border border-border/60 bg-card px-2.5 py-2 shadow-soft-xs transition-colors hover:bg-accent/40"
-          >
-            <span
-              className="grid size-9 shrink-0 place-items-center rounded-full text-[12px] font-semibold text-zinc-900"
-              style={{
-                backgroundColor: user.avatar_color,
-                boxShadow: "var(--shadow-avatar)",
-              }}
-            >
-              {user.initials}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-foreground">
-                {user.name}
-              </p>
-              <p className="truncate text-[11.5px] text-muted-foreground">
-                {user.role ?? "Team member"}
-              </p>
-            </div>
-            <CaretRight
-              size={13}
-              weight="bold"
-              className="shrink-0 text-muted-foreground/60"
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Link
+                  href="/profile"
+                  aria-label={user.name}
+                  className="focus-ring grid size-9 place-items-center rounded-md hover:bg-accent/50"
+                >
+                  <span
+                    className="grid size-7 place-items-center rounded-full text-[10.5px] font-semibold text-zinc-900"
+                    style={{
+                      backgroundColor: user.avatar_color,
+                      boxShadow: "var(--shadow-avatar)",
+                    }}
+                  >
+                    {user.initials}
+                  </span>
+                </Link>
+              }
             />
-          </Link>
+            <TooltipContent side="right">{user.name}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <ProfileMenu user={user} />
         )}
       </div>
     </aside>
@@ -325,7 +328,11 @@ function Section({
   const [open, setOpen] = useState(defaultOpen);
 
   if (collapsed) {
-    return <div className="flex flex-col px-1.5">{children}</div>;
+    return (
+      <div className="flex flex-col items-center gap-0.5 px-2">
+        {children}
+      </div>
+    );
   }
 
   return (
@@ -369,9 +376,12 @@ function NavItem({
   const link = (
     <Link
       href={href}
+      prefetch
       className={cn(
-        "focus-ring group flex items-center rounded-lg text-[13.5px] transition-colors duration-150 ease-[var(--ease-out)]",
-        collapsed ? "h-9 w-9 justify-center" : "h-8 gap-2.5 px-2.5",
+        "focus-ring group flex items-center text-[13.5px] transition-colors duration-150 ease-[var(--ease-out)]",
+        collapsed
+          ? "size-9 justify-center rounded-md"
+          : "h-8 gap-2.5 rounded-lg px-2.5",
         active
           ? "bg-primary/8 font-medium text-primary"
           : muted
