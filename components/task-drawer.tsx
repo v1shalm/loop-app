@@ -86,40 +86,44 @@ export function TaskDrawer({
   return createPortal(
     <AnimatePresence>
       {taskId && (
-        <motion.div
-          key="drawer-root"
-          className="fixed inset-0 z-50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-        >
+        <div key="drawer-root" className="fixed inset-0 z-50">
+          {/* Backdrop — dims fast, fades to clear faster on close */}
           <motion.div
             key="backdrop"
             onClick={close}
-            className="absolute inset-0 bg-black/10 supports-backdrop-filter:backdrop-blur-xs"
+            className="absolute inset-0 bg-black/25 supports-backdrop-filter:backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
           />
+          {/* Floating panel — inset from edges, full slide from right with
+              the Vaul/Ionic deceleration curve. Same curve Shopify Shop
+              uses for its bottom sheet. */}
           <motion.div
             key="panel"
-            initial={{ x: 24, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 24, opacity: 0 }}
-            transition={{ duration: 0.22, ease: [0.32, 0.72, 0.32, 1] }}
-            className="absolute inset-y-0 right-0 flex w-full max-w-[480px] flex-col border-l border-border/60 bg-popover shadow-soft-xl"
+            initial={{ x: "calc(100% + 24px)" }}
+            animate={{ x: 0 }}
+            exit={{ x: "calc(100% + 24px)" }}
+            transition={{
+              duration: 0.42,
+              ease: [0.32, 0.72, 0, 1],
+            }}
+            className="pointer-events-none absolute inset-y-3 right-3 flex w-full max-w-[480px] flex-col"
           >
-            <DrawerInner
-              taskId={taskId}
-              projects={projects}
-              members={members}
-              currentUserId={currentUserId}
-              onClose={close}
-            />
+            <div
+              className="pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-popover shadow-[0_24px_64px_-12px_rgba(15,23,42,0.32),0_8px_16px_-8px_rgba(15,23,42,0.18)]"
+            >
+              <DrawerInner
+                taskId={taskId}
+                projects={projects}
+                members={members}
+                currentUserId={currentUserId}
+                onClose={close}
+              />
+            </div>
           </motion.div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>,
     document.body
