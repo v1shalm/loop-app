@@ -37,11 +37,7 @@ export function CompletedSection({
           {count} {count === 1 ? "task" : "tasks"}
         </span>
       </button>
-      {open && (
-        <div className="mt-2 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
-          {children}
-        </div>
-      )}
+      {open && <div className="mt-3 flex flex-col gap-2">{children}</div>}
     </section>
   );
 }

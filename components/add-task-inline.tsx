@@ -106,9 +106,9 @@ export function AddTaskInline({
     return (
       <button
         onClick={() => setActive(true)}
-        className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-left text-[13.5px] font-medium text-muted-foreground transition-[background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/30 hover:text-foreground"
+        className="focus-ring group flex w-full items-center gap-3 rounded-xl border border-dashed border-border bg-card/40 px-4 py-3 text-left text-[13.5px] font-medium text-muted-foreground transition-[background-color,color,border-color] duration-150 ease-[var(--ease-out)] hover:border-border hover:bg-card hover:text-foreground"
       >
-        <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-dashed border-muted-foreground/50 text-muted-foreground">
+        <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-dashed border-muted-foreground/50 text-muted-foreground transition-colors group-hover:border-muted-foreground/70">
           <Plus size={11} weight="bold" />
         </span>
         <span>Add task</span>
@@ -117,47 +117,48 @@ export function AddTaskInline({
   }
 
   return (
-    <div ref={containerRef} className="px-3 pb-3 pt-2">
-      <div className="rounded-lg border border-border bg-background shadow-soft-xs">
-        <div className="flex items-center gap-3 px-3 py-2.5">
-          <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-muted-foreground/40 text-muted-foreground/70">
-            <Plus size={11} weight="bold" />
-          </span>
-          <input
-            ref={inputRef}
-            autoFocus
-            value={text}
-            disabled={pending}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            placeholder="What needs doing? Try @name #project p1 tomorrow"
-            className="min-w-0 flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+    <div
+      ref={containerRef}
+      className="rounded-xl border border-border bg-card shadow-soft-xs"
+    >
+      <div className="flex items-center gap-3 px-4 py-3">
+        <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-muted-foreground/40 text-muted-foreground/70">
+          <Plus size={11} weight="bold" />
+        </span>
+        <input
+          ref={inputRef}
+          autoFocus
+          value={text}
+          disabled={pending}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder="What needs doing? Try @name #project p1 tomorrow"
+          className="min-w-0 flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+        />
+        <button
+          type="button"
+          onClick={openModal}
+          title="Open full form"
+          className="focus-ring shrink-0 rounded-md px-1.5 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+        >
+          More
+        </button>
+        {pending ? (
+          <CircleNotch
+            size={14}
+            className="shrink-0 animate-spin text-muted-foreground"
           />
-          <button
-            type="button"
-            onClick={openModal}
-            title="Open full form"
-            className="focus-ring shrink-0 rounded-md px-1.5 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-          >
-            More
-          </button>
-          {pending ? (
-            <CircleNotch
-              size={14}
-              className="shrink-0 animate-spin text-muted-foreground"
-            />
-          ) : null}
-        </div>
-
-        {(parsed.hints.length > 0 || text.trim().length > 0) && (
-          <HintRow hints={parsed.hints} hasText={text.trim().length > 0} />
-        )}
+        ) : null}
       </div>
+
+      {(parsed.hints.length > 0 || text.trim().length > 0) && (
+        <HintRow hints={parsed.hints} hasText={text.trim().length > 0} />
+      )}
     </div>
   );
 }

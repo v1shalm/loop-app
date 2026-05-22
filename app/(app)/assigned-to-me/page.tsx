@@ -141,10 +141,7 @@ export default async function AssignedToMePage() {
                 ))}
 
                 {sections.length === 0 && (
-                  <div className="mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
-                    {/* AddTaskInline already lives in TaskTable footer — render
-                        a bare card with only the footer for the no-active case
-                        so the user still has the quick-add affordance. */}
+                  <div className="mb-8">
                     <TaskTable>{null}</TaskTable>
                   </div>
                 )}
@@ -232,20 +229,18 @@ function CompletedRow({
   at: string | null;
 }) {
   return (
-    <div className="flex items-center gap-3 border-b border-border/40 px-4 py-3 last:border-b-0">
-      <CheckCircle
-        size={16}
-        weight="fill"
-        className="shrink-0 text-emerald-600"
-      />
+    <article className="flex items-center gap-3 rounded-xl border border-border/60 bg-emerald-50/40 px-4 py-3 shadow-soft-xs">
+      <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] bg-emerald-600 text-emerald-50">
+        <CheckCircle size={13} weight="fill" />
+      </span>
       <p className="min-w-0 flex-1 truncate text-[13.5px] text-muted-foreground line-through decoration-muted-foreground/40">
         {title}
       </p>
       {at && (
-        <span className="text-[11.5px] tabular-nums text-muted-foreground/70">
+        <span className="text-[11.5px] tabular-nums text-emerald-700/80">
           {format(new Date(at), "h:mm a")}
         </span>
       )}
-    </div>
+    </article>
   );
 }

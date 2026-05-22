@@ -3,9 +3,9 @@
 import { AddTaskInline } from "@/components/add-task-inline";
 
 /**
- * Card-style container for a group of TaskRows. Renders the hairline-divided
- * row layout from the design reference, with an "+ Add task" footer that
- * opens Quick Add.
+ * Vertical stack of task cards. Each row is now its own card (TaskRow)
+ * with its own border and shadow, so this wrapper only handles spacing
+ * between cards and the "+ Add task" footer.
  */
 export function TaskTable({
   children,
@@ -17,13 +17,9 @@ export function TaskTable({
   defaultProjectId?: string | null;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
+    <div className="flex flex-col gap-2">
       {children}
-      {showAdd && (
-        <div className="border-t border-border/40">
-          <AddTaskInline defaultProjectId={defaultProjectId} />
-        </div>
-      )}
+      {showAdd && <AddTaskInline defaultProjectId={defaultProjectId} />}
     </div>
   );
 }
