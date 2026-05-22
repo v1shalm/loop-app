@@ -50,8 +50,27 @@ export function EmptyState({
   return (
     <div className="w-full rounded-2xl border border-border/60 bg-card px-8 py-12 shadow-soft-xs sm:px-12">
       <div className="mx-auto flex max-w-[520px] flex-col items-center text-center">
-        <div className="grid size-14 place-items-center rounded-2xl border border-border/60 bg-muted/40 text-muted-foreground shadow-soft-xs">
-          {icon}
+        <div className="relative grid place-items-center">
+          {/* Soft violet halo behind the tile — the "purple hint" */}
+          <div
+            aria-hidden
+            className="absolute inset-0 -m-6 rounded-full bg-[radial-gradient(closest-side,oklch(0.62_0.22_295/0.28),oklch(0.62_0.22_295/0.08)_55%,transparent_75%)] blur-md"
+          />
+          {/* The tile itself — gradient bed + inner highlight + layered shadow */}
+          <div
+            className="relative grid size-16 place-items-center rounded-2xl border border-border/60 bg-[linear-gradient(140deg,var(--card)_0%,var(--card)_55%,oklch(0.62_0.22_295/0.08)_100%)] text-primary"
+            style={{
+              boxShadow:
+                "inset 0 1px 0 0 rgba(255,255,255,0.75), 0 1px 2px 0 rgba(15,23,42,0.04), 0 8px 24px -10px oklch(0.62 0.22 295 / 0.35), 0 2px 6px -2px rgba(15,23,42,0.08)",
+            }}
+          >
+            {/* Inner subtle inner ring for extra depth */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-[3px] rounded-[14px] ring-1 ring-inset ring-white/40"
+            />
+            <span className="relative">{icon}</span>
+          </div>
         </div>
         <h3 className="mt-5 text-[18px] font-semibold tracking-tight text-foreground">
           {title}
