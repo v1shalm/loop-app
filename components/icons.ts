@@ -41,6 +41,7 @@ export {
   SlidersHorizontal,
   SpeakerHigh,
   SpeakerSlash,
+  Trash,
   Tray,
   TrendUp,
   User,

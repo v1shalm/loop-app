@@ -14,11 +14,18 @@ import {
 } from "@/components/ui/popover";
 import {
   CalendarBlank,
+  CaretDown,
   Check,
+  CheckCircle,
   ChatCircle,
   CircleNotch,
+  Clock,
+  DotsThree,
   Flag,
   Folder,
+  Hash,
+  Trash,
+  Tray,
   UserPlus,
   X,
 } from "@/components/icons";
@@ -143,7 +150,6 @@ function DrawerInner({
   currentUserId: string;
   onClose: () => void;
 }) {
-  const router = useRouter();
   const [task, setTask] = useState<TaskWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<CommentRow[]>([]);
@@ -297,10 +303,12 @@ function DrawerInner({
   if (!task) {
     return (
       <div className="flex h-full flex-col">
-        <Header onClose={onClose} title="Task not found" pending={false} />
+        <Header onClose={onClose} pending={false} />
         <div className="grid flex-1 place-items-center text-center text-muted-foreground">
           <div>
-            <div className="text-3xl">🤷</div>
+            <span className="mx-auto grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+              <Tray size={20} />
+            </span>
             <p className="mt-3 text-[13.5px]">
               This task may have been deleted.
             </p>
@@ -314,197 +322,325 @@ function DrawerInner({
   const due = task.due_at ? new Date(task.due_at) : null;
   const overdue = due && isPast(due) && !isToday(due) && task.status !== "done";
   const done = task.status === "done";
+  const currentUser = members.find((m) => m.id === currentUserId) ?? null;
+
+  // Chip tone helpers — surface urgency through tinted chips, not hairlines.
+  const dueChipTone =
+    overdue || (due && isToday(due))
+      ? "border-rose-200/70 bg-rose-50 text-rose-700"
+      : "border-border bg-card text-foreground";
+
+  const priorityChipTone: Record<Priority, string> = {
+    1: "border-rose-200/70 bg-rose-50 text-rose-700",
+    2: "border-amber-200/70 bg-amber-50 text-amber-700",
+    3: "border-emerald-200/70 bg-emerald-50 text-emerald-700",
+    4: "border-border bg-card text-foreground",
+  };
 
   return (
     <div className="flex h-full flex-col">
-      <Header onClose={onClose} title="Task" pending={pending} onDelete={remove} />
+      <Header onClose={onClose} pending={pending} onDelete={remove} />
 
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        {/* Status + title */}
-        <div className="flex items-start gap-3">
-          <button
-            onClick={toggleDone}
-            disabled={pending}
-            aria-label={done ? "Mark not done" : "Mark complete"}
-            className={cn(
-              "focus-ring mt-1 grid size-[20px] shrink-0 place-items-center rounded-[6px] border-[1.5px] bg-background transition-transform duration-150 ease-[var(--ease-out)] active:scale-95",
-              done
-                ? "border-emerald-600 bg-emerald-50"
-                : "border-border hover:border-foreground/40"
-            )}
-          >
-            {done && (
-              <Check size={12} weight="bold" className="text-emerald-600" />
-            )}
-          </button>
-          <textarea
-            ref={titleRef}
-            defaultValue={task.title}
-            onBlur={saveTitle}
-            rows={1}
-            className={cn(
-              "min-h-[28px] flex-1 resize-none bg-transparent text-[18px] font-semibold leading-snug tracking-tight text-foreground outline-none placeholder:text-muted-foreground/60",
-              done && "text-muted-foreground line-through"
-            )}
-          />
-        </div>
+      <div className="flex-1 overflow-y-auto">
+        {/* Title + checkbox + chips */}
+        <section className="px-6 pb-5 pt-5">
+          <div className="flex items-start gap-3">
+            <button
+              onClick={toggleDone}
+              disabled={pending}
+              aria-label={done ? "Mark not done" : "Mark complete"}
+              className={cn(
+                "focus-ring mt-1 grid size-[20px] shrink-0 place-items-center rounded-[6px] border-[1.5px] bg-background transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-95",
+                done
+                  ? "border-emerald-600 bg-emerald-600"
+                  : "border-border hover:border-foreground/40"
+              )}
+            >
+              {done && <Check size={12} weight="bold" className="text-white" />}
+            </button>
+            <textarea
+              ref={titleRef}
+              defaultValue={task.title}
+              onBlur={saveTitle}
+              rows={1}
+              placeholder="Untitled task"
+              className={cn(
+                "min-h-[28px] flex-1 resize-none bg-transparent text-[20px] font-semibold leading-snug tracking-tight text-foreground outline-none placeholder:text-muted-foreground/50",
+                done && "text-muted-foreground line-through"
+              )}
+            />
+          </div>
 
-        {/* Chips row */}
-        <div className="mt-4 flex flex-wrap items-center gap-1.5">
-          <Popover>
-            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground">
-              <CalendarBlank size={14} />
-              <span
-                className={
-                  overdue
-                    ? "text-rose-600"
-                    : due && isToday(due)
-                    ? "text-rose-600"
-                    : ""
-                }
+          {/* Tinted context chips */}
+          <div className="mt-4 flex flex-wrap items-center gap-1.5">
+            <Popover>
+              <PopoverTrigger
+                className={cn(
+                  "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors hover:brightness-[0.97]",
+                  dueChipTone
+                )}
               >
-                {formatDueShort(due)}
-              </span>
-            </PopoverTrigger>
-            <PopoverContent className="gap-0 p-0" align="start">
-              <DatePicker
-                value={due}
-                onChange={(d) =>
-                  patch({ dueAt: d ? d.toISOString() : null })
-                }
-              />
-            </PopoverContent>
-          </Popover>
+                <CalendarBlank size={13} weight="fill" />
+                <span className="tabular-nums">
+                  {due ? formatDueShort(due) : "Due date"}
+                </span>
+              </PopoverTrigger>
+              <PopoverContent className="gap-0 p-0" align="start">
+                <DatePicker
+                  value={due}
+                  onChange={(d) =>
+                    patch({ dueAt: d ? d.toISOString() : null })
+                  }
+                />
+              </PopoverContent>
+            </Popover>
 
-          <Popover>
-            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground">
-              <Flag size={14} className={priorityOpt.cls} weight="fill" />
-              {priorityOpt.label}
-            </PopoverTrigger>
-            <PopoverContent className="w-[180px] gap-0 p-1" align="start">
-              {PRIORITY_OPTIONS.map((o) => (
-                <PopoverItem
-                  key={o.p}
-                  selected={task.priority === o.p}
-                  onSelect={() => patch({ priority: o.p })}
-                >
-                  <Flag
-                    size={14}
-                    className={o.cls}
-                    weight={o.p === 4 ? "regular" : "fill"}
-                  />
-                  <span>{o.label}</span>
-                </PopoverItem>
-              ))}
-            </PopoverContent>
-          </Popover>
+            <Popover>
+              <PopoverTrigger
+                className={cn(
+                  "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors hover:brightness-[0.97]",
+                  priorityChipTone[task.priority as Priority]
+                )}
+              >
+                <Flag
+                  size={13}
+                  weight={task.priority === 4 ? "regular" : "fill"}
+                />
+                {priorityOpt.label}
+              </PopoverTrigger>
+              <PopoverContent className="w-[180px] gap-0 p-1" align="start">
+                {PRIORITY_OPTIONS.map((o) => (
+                  <PopoverItem
+                    key={o.p}
+                    selected={task.priority === o.p}
+                    onSelect={() => patch({ priority: o.p })}
+                  >
+                    <Flag
+                      size={14}
+                      className={o.cls}
+                      weight={o.p === 4 ? "regular" : "fill"}
+                    />
+                    <span>{o.label}</span>
+                  </PopoverItem>
+                ))}
+              </PopoverContent>
+            </Popover>
 
-          <Popover>
-            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground">
-              <UserPlus size={14} />
-              {task.assignee
-                ? task.assignee.id === currentUserId
-                  ? "Me"
-                  : task.assignee.name
-                : "Assign"}
-            </PopoverTrigger>
-            <PopoverContent className="w-[220px] gap-0 p-1" align="start">
-              {members.map((m) => (
-                <PopoverItem
-                  key={m.id}
-                  selected={task.assignee?.id === m.id}
-                  onSelect={() => patch({ assigneeId: m.id })}
-                >
+            <Popover>
+              <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2 pr-2.5 text-[12px] font-medium text-foreground transition-colors hover:brightness-[0.97]">
+                {task.assignee ? (
                   <Avatar
-                    src={m.avatar_url}
-                    initials={m.initials}
-                    color={m.avatar_color}
+                    src={task.assignee.avatar_url}
+                    initials={task.assignee.initials}
+                    color={task.assignee.avatar_color}
                     size={18}
                   />
-                  <span>
-                    {m.name}
-                    {m.id === currentUserId ? " (you)" : ""}
-                  </span>
-                </PopoverItem>
-              ))}
-            </PopoverContent>
-          </Popover>
+                ) : (
+                  <UserPlus size={13} className="text-muted-foreground" />
+                )}
+                {task.assignee
+                  ? task.assignee.id === currentUserId
+                    ? "Me"
+                    : task.assignee.name.split(/\s+/)[0]
+                  : "Assign"}
+              </PopoverTrigger>
+              <PopoverContent className="w-[220px] gap-0 p-1" align="start">
+                {members.map((m) => (
+                  <PopoverItem
+                    key={m.id}
+                    selected={task.assignee?.id === m.id}
+                    onSelect={() => patch({ assigneeId: m.id })}
+                  >
+                    <Avatar
+                      src={m.avatar_url}
+                      initials={m.initials}
+                      color={m.avatar_color}
+                      size={18}
+                    />
+                    <span>
+                      {m.name}
+                      {m.id === currentUserId ? " (you)" : ""}
+                    </span>
+                  </PopoverItem>
+                ))}
+              </PopoverContent>
+            </Popover>
 
-          <Popover>
-            <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2 text-[12px] text-muted-foreground hover:bg-accent/40 hover:text-foreground">
-              <Folder size={14} />
-              {task.project ? task.project.name : "Inbox"}
-            </PopoverTrigger>
-            <PopoverContent className="w-[240px] gap-0 p-1" align="start">
-              <PopoverItem
-                selected={task.project_id === null}
-                onSelect={() => patch({ projectId: null })}
-              >
-                <Folder size={14} className="text-muted-foreground" />
-                <span>Inbox (no project)</span>
-              </PopoverItem>
-              {projects.map((p) => (
+            <Popover>
+              <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12px] font-medium text-foreground transition-colors hover:brightness-[0.97]">
+                {task.project ? (
+                  <ProjectDot project={task.project as Project} size={9} />
+                ) : (
+                  <Tray size={13} className="text-muted-foreground" />
+                )}
+                {task.project ? task.project.name : "Inbox"}
+              </PopoverTrigger>
+              <PopoverContent className="w-[240px] gap-0 p-1" align="start">
                 <PopoverItem
-                  key={p.id}
-                  selected={task.project_id === p.id}
-                  onSelect={() => patch({ projectId: p.id })}
+                  selected={task.project_id === null}
+                  onSelect={() => patch({ projectId: null })}
                 >
-                  <ProjectDot project={p} size={9} />
-                  <span className="truncate">{p.name}</span>
+                  <Tray size={14} className="text-muted-foreground" />
+                  <span>Inbox (no project)</span>
                 </PopoverItem>
-              ))}
-            </PopoverContent>
-          </Popover>
-        </div>
+                {projects.map((p) => (
+                  <PopoverItem
+                    key={p.id}
+                    selected={task.project_id === p.id}
+                    onSelect={() => patch({ projectId: p.id })}
+                  >
+                    <ProjectDot project={p} size={9} />
+                    <span className="truncate">{p.name}</span>
+                  </PopoverItem>
+                ))}
+              </PopoverContent>
+            </Popover>
+          </div>
+        </section>
+
+        <SectionDivider />
 
         {/* Description */}
-        <div className="mt-6">
-          <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Description
-          </label>
+        <section className="px-6 py-5">
+          <SectionHeader icon={<Tray size={14} />} label="Description" />
           <textarea
             ref={descRef}
             defaultValue={task.description ?? ""}
             onBlur={saveDescription}
             placeholder="Add more details (optional)"
-            rows={4}
-            className="mt-1.5 w-full resize-none rounded-lg border border-border/60 bg-card p-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors focus:border-ring/40 placeholder:text-muted-foreground/60"
+            rows={3}
+            className="mt-2.5 w-full resize-none rounded-lg border border-border/60 bg-card p-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors focus:border-ring/40 placeholder:text-muted-foreground/50"
           />
-        </div>
+        </section>
 
-        {/* Metadata */}
-        <div className="mt-6 grid grid-cols-2 gap-3 text-[12.5px]">
-          {task.author && (
+        <SectionDivider />
+
+        {/* Created by | Added — two columns with a hairline between */}
+        <section className="px-6 py-5">
+          <div className="grid grid-cols-2 gap-0">
             <Meta label="Created by">
-              <span className="inline-flex items-center gap-1.5">
-                <Avatar
-                  src={task.author.avatar_url}
-                  initials={task.author.initials}
-                  color={task.author.avatar_color}
-                  size={16}
-                />
-                {task.author.name}
+              {task.author ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Avatar
+                    src={task.author.avatar_url}
+                    initials={task.author.initials}
+                    color={task.author.avatar_color}
+                    size={18}
+                  />
+                  <span className="text-[13px] text-foreground">
+                    {task.author.name}
+                  </span>
+                </span>
+              ) : (
+                <span className="text-[13px] text-muted-foreground">
+                  Unknown
+                </span>
+              )}
+            </Meta>
+            <Meta label="Added" leftBorder>
+              <span className="inline-flex items-center gap-1.5 text-[13px] text-foreground">
+                <Clock size={14} className="text-muted-foreground" />
+                {format(new Date(task.created_at), "d MMM, h:mm a")}
               </span>
             </Meta>
-          )}
-          <Meta label="Added">
-            {format(new Date(task.created_at), "d MMM, h:mm a")}
-          </Meta>
+          </div>
           {task.completed_at && (
-            <Meta label="Completed">
-              {format(new Date(task.completed_at), "d MMM, h:mm a")}
-            </Meta>
+            <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-emerald-700">
+              <CheckCircle size={13} weight="fill" />
+              Completed {format(new Date(task.completed_at), "d MMM, h:mm a")}
+            </div>
           )}
-        </div>
+        </section>
+
+        <SectionDivider />
 
         {/* Comments */}
-        <CommentsSection
-          taskId={task.id}
-          comments={comments}
-          setComments={setComments}
-          currentUserId={currentUserId}
-        />
+        <section className="px-6 py-5">
+          <CommentsSection
+            taskId={task.id}
+            comments={comments}
+            setComments={setComments}
+            currentUser={currentUser}
+            currentUserId={currentUserId}
+          />
+        </section>
       </div>
+
+      {/* Sticky footer */}
+      <DrawerFooter
+        done={done}
+        pending={pending}
+        onToggle={toggleDone}
+        onDelete={remove}
+      />
+    </div>
+  );
+}
+
+function SectionDivider() {
+  return <div className="h-px bg-border/60" />;
+}
+
+function SectionHeader({
+  icon,
+  label,
+  trailing,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  trailing?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="grid size-5 place-items-center rounded text-muted-foreground">
+        {icon}
+      </span>
+      <h3 className="text-[13px] font-semibold tracking-tight text-foreground">
+        {label}
+      </h3>
+      {trailing && <div className="ml-auto">{trailing}</div>}
+    </div>
+  );
+}
+
+function DrawerFooter({
+  done,
+  pending,
+  onToggle,
+  onDelete,
+}: {
+  done: boolean;
+  pending: boolean;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between border-t border-border/60 bg-popover px-5 py-3">
+      <button
+        onClick={onToggle}
+        disabled={pending}
+        className={cn(
+          "focus-ring inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors disabled:opacity-50",
+          done
+            ? "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+            : "text-emerald-700 hover:bg-emerald-50"
+        )}
+      >
+        <CheckCircle
+          size={15}
+          weight={done ? "regular" : "fill"}
+          className={done ? "text-muted-foreground" : "text-emerald-600"}
+        />
+        {done ? "Reopen task" : "Mark as complete"}
+      </button>
+      <button
+        onClick={onDelete}
+        disabled={pending}
+        className="focus-ring inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-50"
+      >
+        <Trash size={15} />
+        Delete task
+      </button>
     </div>
   );
 }
@@ -513,17 +649,25 @@ function CommentsSection({
   taskId,
   comments,
   setComments,
+  currentUser,
   currentUserId,
 }: {
   taskId: string;
   comments: CommentRow[];
   setComments: React.Dispatch<React.SetStateAction<CommentRow[]>>;
+  currentUser: Profile | null;
   currentUserId: string;
 }) {
-  const router = useRouter();
   const [body, setBody] = useState("");
   const [pending, startTransition] = useTransition();
+  const [sort, setSort] = useState<"recent" | "oldest">("recent");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const visible = [...comments].sort((a, b) =>
+    sort === "recent"
+      ? b.created_at.localeCompare(a.created_at)
+      : a.created_at.localeCompare(b.created_at)
+  );
 
   const submit = () => {
     const text = body.trim();
@@ -569,25 +713,55 @@ function CommentsSection({
   };
 
   return (
-    <div className="mt-8">
-      <div className="mb-2 flex items-baseline gap-2">
-        <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Comments
-        </label>
-        {comments.length > 0 && (
-          <span className="text-[11px] tabular-nums text-muted-foreground/70">
-            {comments.length}
-          </span>
-        )}
-      </div>
+    <div>
+      <SectionHeader
+        icon={<ChatCircle size={14} />}
+        label="Comments"
+        trailing={
+          comments.length > 0 ? (
+            <Popover>
+              <PopoverTrigger className="focus-ring inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground">
+                {sort === "recent" ? "Most recent" : "Oldest first"}
+                <CaretDown size={10} weight="bold" />
+              </PopoverTrigger>
+              <PopoverContent className="w-[160px] gap-0 p-1" align="end">
+                <PopoverItem
+                  selected={sort === "recent"}
+                  onSelect={() => setSort("recent")}
+                >
+                  Most recent
+                </PopoverItem>
+                <PopoverItem
+                  selected={sort === "oldest"}
+                  onSelect={() => setSort("oldest")}
+                >
+                  Oldest first
+                </PopoverItem>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <span className="text-[11.5px] tabular-nums text-muted-foreground/70">
+              0
+            </span>
+          )
+        }
+      />
 
       {comments.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-3 text-center text-[12px] text-muted-foreground">
-          Start the conversation.
-        </p>
+        <div className="mt-3 grid place-items-center rounded-xl border border-border/60 bg-card px-4 py-8 text-center">
+          <span className="grid size-8 place-items-center rounded-full bg-muted text-muted-foreground">
+            <ChatCircle size={16} />
+          </span>
+          <p className="mt-3 text-[13px] font-medium text-foreground">
+            Be the first to comment
+          </p>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            Ask questions, give updates, or share feedback.
+          </p>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {comments.map((c) => (
+        <ul className="mt-3 flex flex-col gap-3.5">
+          {visible.map((c) => (
             <CommentItem
               key={c.id}
               comment={c}
@@ -598,36 +772,53 @@ function CommentsSection({
         </ul>
       )}
 
-      {/* Composer */}
-      <div className="mt-3 rounded-md border border-border/60 bg-card focus-within:border-ring/40">
-        <textarea
-          ref={inputRef}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          placeholder="Add a comment…"
-          rows={2}
-          className="w-full resize-none rounded-md bg-transparent px-3 py-2 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
-        />
-        <div className="flex items-center justify-between gap-2 border-t border-border/40 px-2 py-1.5">
-          <span className="text-[11px] text-muted-foreground/70">
-            ⌘ + Enter to send
+      {/* Composer — avatar + input + send */}
+      <div className="mt-4 flex items-start gap-2.5">
+        {currentUser && (
+          <span className="mt-1 shrink-0">
+            <Avatar
+              src={currentUser.avatar_url}
+              initials={currentUser.initials}
+              color={currentUser.avatar_color}
+              size={28}
+            />
           </span>
-          <button
-            onClick={submit}
-            disabled={!body.trim() || pending}
-            className="focus-ring surface-brand surface-brand-hover flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
-          >
-            {pending && (
-              <CircleNotch size={12} className="animate-spin" />
-            )}
-            Send
-          </button>
+        )}
+        <div className="min-w-0 flex-1 rounded-xl border border-border/60 bg-card transition-colors focus-within:border-ring/40">
+          <textarea
+            ref={inputRef}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder="Add a comment..."
+            rows={2}
+            className="w-full resize-none rounded-t-xl bg-transparent px-3 py-2.5 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+          />
+          <div className="flex items-center justify-between gap-2 border-t border-border/40 px-2 py-1.5">
+            <span className="text-[11px] text-muted-foreground/70">
+              Tip: paste a link or @mention a teammate
+            </span>
+            <div className="flex items-center gap-1.5">
+              <kbd className="chip-3d hidden h-[18px] items-center justify-center rounded border border-border bg-background px-1.5 text-[10.5px] font-semibold text-muted-foreground sm:inline-flex">
+                ⌘ + Enter
+              </kbd>
+              <button
+                onClick={submit}
+                disabled={!body.trim() || pending}
+                className="focus-ring surface-brand surface-brand-hover flex items-center gap-1.5 rounded-md px-3 py-1 text-[12px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
+              >
+                {pending && (
+                  <CircleNotch size={12} className="animate-spin" />
+                )}
+                Send
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -681,33 +872,41 @@ function CommentItem({
 }
 
 function Header({
-  title,
   onClose,
   onDelete,
   pending,
 }: {
-  title: string;
   onClose: () => void;
   onDelete?: () => void;
   pending: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
+    <div className="flex items-center gap-2.5 border-b border-border/60 px-4 py-3">
+      <span className="grid size-7 place-items-center rounded-md bg-primary/10 text-primary">
+        <Hash size={13} weight="bold" />
+      </span>
       <h2 className="text-[13px] font-semibold tracking-tight text-foreground">
-        {title}
+        Task
       </h2>
       {pending && (
         <CircleNotch size={13} className="animate-spin text-muted-foreground" />
       )}
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-0.5">
         {onDelete && (
-          <button
-            onClick={onDelete}
-            disabled={pending}
-            className="focus-ring rounded-md px-2.5 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-accent hover:text-priority-1 disabled:opacity-50"
-          >
-            Delete
-          </button>
+          <Popover>
+            <PopoverTrigger
+              aria-label="More actions"
+              className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+            >
+              <DotsThree size={18} weight="bold" />
+            </PopoverTrigger>
+            <PopoverContent className="w-[180px] gap-0 p-1" align="end">
+              <PopoverItem onSelect={onDelete}>
+                <Trash size={13} className="text-rose-600" />
+                <span className="text-rose-600">Delete task</span>
+              </PopoverItem>
+            </PopoverContent>
+          </Popover>
         )}
         <button
           onClick={onClose}
@@ -749,16 +948,18 @@ function PopoverItem({
 function Meta({
   label,
   children,
+  leftBorder,
 }: {
   label: string;
   children: React.ReactNode;
+  leftBorder?: boolean;
 }) {
   return (
-    <div>
-      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+    <div className={cn(leftBorder && "border-l border-border/60 pl-4")}>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-      <div className="mt-0.5 text-[13px] text-foreground">{children}</div>
+      <div className="mt-1.5 text-[13px] text-foreground">{children}</div>
     </div>
   );
 }
