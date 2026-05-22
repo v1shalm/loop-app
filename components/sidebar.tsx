@@ -10,7 +10,6 @@ import {
   Crosshair,
   MagnifyingGlass,
   Plus,
-  Question,
   SidebarSimple,
   Tray,
 } from "@/components/icons";
@@ -21,7 +20,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { MemberPulse, Profile, Project, Workspace } from "@/lib/queries";
-import { SoundSwitch } from "@/components/sound-switch";
 import { ProfileMenu } from "@/components/profile-menu";
 import { Avatar } from "@/components/avatar";
 import { TeamPulse } from "@/components/team-pulse";
@@ -251,36 +249,13 @@ export function Sidebar({
         </Section>
       </div>
 
-      {/* ── Bottom: help, sound switch, profile ────────── */}
+      {/* ── Bottom: profile only (sounds + help live in the menu) ── */}
       <div
         className={cn(
           "border-t border-sidebar-border",
           collapsed ? "flex flex-col items-center gap-2 px-2 py-2" : "px-3 py-3"
         )}
       >
-        {!collapsed && (
-          <div className="mb-2 flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger
-                onClick={onOpenHelp}
-                aria-label="Keyboard shortcuts (?)"
-                className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-              >
-                <Question size={15} />
-              </TooltipTrigger>
-              <TooltipContent side="top">Keyboard shortcuts</TooltipContent>
-            </Tooltip>
-          </div>
-        )}
-
-        {/* Sound switch */}
-        {!collapsed && (
-          <div className="mb-2">
-            <SoundSwitch />
-          </div>
-        )}
-
-        {/* Profile card */}
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger
@@ -302,7 +277,7 @@ export function Sidebar({
             <TooltipContent side="right">{user.name}</TooltipContent>
           </Tooltip>
         ) : (
-          <ProfileMenu user={user} />
+          <ProfileMenu user={user} onOpenHelp={onOpenHelp} />
         )}
       </div>
     </aside>
