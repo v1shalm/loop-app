@@ -5,7 +5,6 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Bell,
-  CalendarBlank,
   CalendarDots,
   CheckCircle,
   CircleNotch,
@@ -56,8 +55,7 @@ type Group = { label: string; rows: ResultRow[] };
 
 const JUMP_TARGETS: JumpItem[] = [
   { kind: "jump", id: "inbox", label: "Inbox", href: "/inbox", Icon: Tray },
-  { kind: "jump", id: "assigned", label: "Assigned to me", href: "/assigned-to-me", Icon: Crosshair },
-  { kind: "jump", id: "today", label: "Today", href: "/today", Icon: CalendarBlank },
+  { kind: "jump", id: "my-work", label: "My work", href: "/assigned-to-me", Icon: Crosshair },
   { kind: "jump", id: "upcoming", label: "Upcoming", href: "/upcoming", Icon: CalendarDots },
   { kind: "jump", id: "team", label: "Team", href: "/team", Icon: UsersThree },
   { kind: "jump", id: "notifications", label: "Notifications", href: "/notifications", Icon: Bell },

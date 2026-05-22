@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
-  CalendarBlank,
   CalendarDots,
   CaretDown,
   Crosshair,
@@ -169,9 +168,12 @@ export function Sidebar({
         <NavItem
           href="/assigned-to-me"
           icon={Crosshair}
-          label="Assigned to me"
+          label="My work"
+          badge={counts.today || undefined}
           active={
-            pathname === "/assigned-to-me" || pathname === "/my-tasks"
+            pathname === "/assigned-to-me" ||
+            pathname === "/my-tasks" ||
+            pathname === "/today"
           }
           collapsed={collapsed}
         />
@@ -179,14 +181,6 @@ export function Sidebar({
 
       <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
         <Section title="Workspace" collapsed={collapsed}>
-          <NavItem
-            href="/today"
-            icon={CalendarBlank}
-            label="Today"
-            badge={counts.today || undefined}
-            active={pathname === "/today"}
-            collapsed={collapsed}
-          />
           <NavItem
             href="/upcoming"
             icon={CalendarDots}

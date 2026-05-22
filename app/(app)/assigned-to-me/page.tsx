@@ -14,7 +14,7 @@ import {
   type TaskWithRelations,
 } from "@/lib/queries";
 
-export const metadata = { title: "Assigned to me · Loop" };
+export const metadata = { title: "My work · Loop" };
 
 function greeting() {
   const h = new Date().getHours();
@@ -86,7 +86,7 @@ export default async function AssignedToMePage() {
     <div className="min-h-full">
       <PageHeader
         icon={<Crosshair size={16} />}
-        title="Assigned to me"
+        title="My work"
         subtitle={
           activeCount === 0
             ? "All clear"
