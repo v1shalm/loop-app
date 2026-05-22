@@ -1,0 +1,299 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-sans);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --color-priority-1: var(--priority-1);
+  --color-priority-2: var(--priority-2);
+  --color-priority-3: var(--priority-3);
+  --color-priority-4: var(--priority-4);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Layered shadows — more depth, cooler tint to match the blue palette. */
+  --shadow-soft-xs:
+    0 1px 2px oklch(0.3 0.05 250 / 0.05),
+    0 2px 4px -1px oklch(0.3 0.05 250 / 0.04);
+  --shadow-soft-sm:
+    0 1px 2px oklch(0.3 0.05 250 / 0.06),
+    0 4px 8px -2px oklch(0.3 0.05 250 / 0.06);
+  --shadow-soft:
+    0 2px 4px oklch(0.3 0.05 250 / 0.06),
+    0 8px 16px -4px oklch(0.3 0.05 250 / 0.08);
+  --shadow-soft-md:
+    0 4px 8px oklch(0.3 0.05 250 / 0.07),
+    0 12px 24px -6px oklch(0.3 0.05 250 / 0.1);
+  --shadow-soft-lg:
+    0 8px 16px oklch(0.3 0.05 250 / 0.08),
+    0 20px 40px -8px oklch(0.3 0.05 250 / 0.12);
+  --shadow-soft-xl:
+    0 24px 60px oklch(0.25 0.06 265 / 0.18),
+    0 12px 28px oklch(0.25 0.06 265 / 0.1),
+    0 0 0 1px oklch(0.25 0.06 265 / 0.05);
+
+  /* Primary CTA — Clerk-style: inset highlight, darker hairline ring,
+     neutral contact + drop shadows. No glow. */
+  --shadow-cta:
+    inset 0 1px 0 oklch(1 0 0 / 0.28),
+    inset 0 -1px 0 oklch(0 0 0 / 0.14),
+    0 0 0 1px color-mix(in oklch, var(--primary) 80%, black),
+    0 1px 1px oklch(0 0 0 / 0.1),
+    0 2px 4px -1px oklch(0 0 0 / 0.08);
+
+  /* Brand tile (workspace avatar) — same bevel pattern, no glow */
+  --shadow-brand-tile:
+    inset 0 1px 0 oklch(1 0 0 / 0.24),
+    inset 0 -1px 0 oklch(0 0 0 / 0.12),
+    0 0 0 1px color-mix(in oklch, var(--primary) 82%, black),
+    0 1px 2px oklch(0 0 0 / 0.1);
+
+  /* Subtle 3D treatment for circular member avatars across the app. */
+  --shadow-avatar:
+    inset 0 1px 0 oklch(1 0 0 / 0.35),
+    inset 0 -1px 0 oklch(0 0 0 / 0.06),
+    0 1px 2px oklch(0.3 0.05 250 / 0.1);
+
+  /* Active sidebar tab — kept for backward compat; primary tint is used now. */
+  --shadow-sidebar-active:
+    0 0 0 1px oklch(0.88 0.005 250),
+    0 1px 2px 0 rgba(0, 0, 0, 0.05),
+    0 1px 0 0 rgba(0, 0, 0, 0.08),
+    0 2px 4px -1px rgba(0, 0, 0, 0.04);
+
+  /* Brand gradient endpoints, derived from --primary so a brand re-tune
+     propagates automatically. */
+  --primary-light: color-mix(in oklch, var(--primary) 88%, white);
+  --primary-dark: color-mix(in oklch, var(--primary) 92%, black);
+
+  /* Custom easing curves — built-in CSS easings are too weak to feel
+     intentional. These are Emil Kowalski's defaults (animations.dev). */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root {
+  /* Cool neutral surface — pure white sidebar/cards on a subtle bluish-gray bg */
+  --background: oklch(0.975 0.004 250);
+  --foreground: oklch(0.18 0.008 250);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.008 250);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.008 250);
+
+  /* Brand: indigo blue, replaces the red. */
+  --primary: oklch(0.55 0.2 265);
+  --primary-foreground: oklch(0.995 0 0);
+
+  --secondary: oklch(0.965 0.004 250);
+  --secondary-foreground: oklch(0.22 0.008 250);
+
+  --muted: oklch(0.965 0.004 250);
+  --muted-foreground: oklch(0.5 0.012 250);
+
+  --accent: oklch(0.95 0.008 250);
+  --accent-foreground: oklch(0.22 0.008 250);
+
+  /* Destructive stays red, separate from brand. */
+  --destructive: oklch(0.62 0.197 27);
+
+  --border: oklch(0.92 0.005 250);
+  --input: oklch(0.92 0.005 250);
+  --ring: oklch(0.55 0.2 265);
+
+  --chart-1: oklch(0.55 0.2 265);
+  --chart-2: oklch(0.72 0.16 60);
+  --chart-3: oklch(0.62 0.15 220);
+  --chart-4: oklch(0.65 0.12 150);
+  --chart-5: oklch(0.6 0.16 320);
+
+  /* Smaller base radius — tighter, more architectural corners. */
+  --radius: 0.375rem;
+
+  /* Sidebar — pure white, slightly cooler border */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.22 0.008 250);
+  --sidebar-primary: oklch(0.55 0.2 265);
+  --sidebar-primary-foreground: oklch(0.995 0 0);
+  --sidebar-accent: oklch(0.95 0.008 250);
+  --sidebar-accent-foreground: oklch(0.18 0.008 250);
+  --sidebar-border: oklch(0.92 0.005 250);
+  --sidebar-ring: oklch(0.55 0.2 265);
+
+  /* Priority — pill colors set inline (rose/amber/emerald) */
+  --priority-1: oklch(0.62 0.197 27);
+  --priority-2: oklch(0.72 0.16 60);
+  --priority-3: oklch(0.65 0.12 150);
+  --priority-4: oklch(0.6 0.008 80);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.68 0.19 27);
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.68 0.19 27);
+  --chart-2: oklch(0.72 0.16 60);
+  --chart-3: oklch(0.62 0.15 240);
+  --chart-4: oklch(0.65 0.12 150);
+  --chart-5: oklch(0.6 0.16 320);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.68 0.19 27);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01", "ss03";
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /* Respect prefers-reduced-motion: keep opacity/color transitions
+     that aid comprehension, kill movement and durations. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@keyframes loop-skeleton-fade {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  /* Subtle inset shadow for elevated cards on the warm bg */
+  .ring-warm {
+    box-shadow: 0 0 0 1px oklch(0.9 0.008 75 / 0.7);
+  }
+
+  /* Gradient primary surface (brand tile + CTA buttons). Derived from
+     --primary so retuning the brand color updates the gradient too. */
+  .surface-brand {
+    background: linear-gradient(
+      180deg,
+      var(--primary-light),
+      var(--primary-dark)
+    );
+  }
+  .surface-brand-hover:hover {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--primary) 85%, white),
+      var(--primary)
+    );
+  }
+
+  /* Consistent keyboard focus indicator for every custom interactive surface.
+     shadcn-vendored components already ship their own; this is for the rest. */
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  /* Expand a button's hit area without enlarging its visible footprint.
+     Use on small icon buttons (≤24px visual) where bigger min-width would
+     break visual rhythm. The pseudo extends ~10px past each edge. */
+  .touch-expand {
+    position: relative;
+  }
+  .touch-expand::before {
+    content: "";
+    position: absolute;
+    inset: -10px;
+  }
+
+  /* Tactile chip — top inset highlight + bottom inner shadow + tiny drop.
+     Stacks on top of `ring-1 ring-inset ring-<color>` or `border` for the
+     outer hairline. Use on pills, status chips, kbd shortcuts. */
+  .chip-3d {
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.55),
+      inset 0 -1px 0 oklch(0 0 0 / 0.05),
+      0 1px 1.5px oklch(0 0 0 / 0.06),
+      0 2px 4px -1px oklch(0 0 0 / 0.05);
+  }
+}
