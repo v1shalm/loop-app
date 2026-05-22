@@ -88,7 +88,7 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
                   <span>{emoji}</span> <span>{label}</span>
                 </>
               ) : (
-                <span className="italic text-muted-foreground/60">
+                <span className="text-muted-foreground/60">
                   No status set
                 </span>
               )}

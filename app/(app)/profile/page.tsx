@@ -101,7 +101,7 @@ export default async function ProfilePage() {
             </a>
           </header>
           {recent.length === 0 ? (
-            <p className="px-3 py-3 text-[12.5px] italic text-muted-foreground/70">
+            <p className="px-3 py-3 text-[12.5px] text-muted-foreground/70">
               Nothing yet.
             </p>
           ) : (

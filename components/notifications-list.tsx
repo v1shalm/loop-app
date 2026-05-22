@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { CheckCircle, Tray } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/empty-state";
 import type { ActivityItem } from "@/lib/queries";
 
 type Tab = "all" | "tasks";
@@ -45,13 +46,12 @@ export function NotificationsList({
       </nav>
 
       {filtered.length === 0 ? (
-        <div className="grid place-items-center pt-12 text-center text-muted-foreground">
-          <div className="text-3xl">🔔</div>
-          <p className="mt-3 text-[14px] text-foreground">All caught up</p>
-          <p className="mt-1 text-[12.5px]">
-            New assignments and completions land here.
-          </p>
-        </div>
+        <EmptyState
+          emoji="🔔"
+          title="All caught up"
+          hint="New assignments and completions show up here as they happen."
+          showAction={false}
+        />
       ) : (
         <ul className="flex flex-col">
           {filtered.map((a, i) => (

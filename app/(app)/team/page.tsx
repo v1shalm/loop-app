@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UsersThree } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
 import { getCurrentProfile, getMembersWithPulse } from "@/lib/queries";
 import { statusEmoji, statusLabel } from "@/components/status-picker";
 
@@ -24,15 +25,12 @@ export default async function TeamPage() {
 
       <div className="mx-auto w-full max-w-[960px] px-8 pb-24 pt-8">
         {members.length === 0 ? (
-          <div className="grid place-items-center pt-16 text-center text-muted-foreground">
-            <div className="text-3xl">👋</div>
-            <p className="mt-3 text-[14px] text-foreground">
-              Just you in here for now
-            </p>
-            <p className="mt-1 text-[12.5px]">
-              Invite teammates from the sidebar so you can hand work off.
-            </p>
-          </div>
+          <EmptyState
+            emoji="👋"
+            title="Just you in here for now"
+            hint="Invite teammates so you can hand work off. Anyone you assign a task to will see it in their Inbox."
+            showAction={false}
+          />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {members.map((m) => (
@@ -94,7 +92,7 @@ function MemberCard({
                 <span>{label}</span>
               </>
             ) : (
-              <span className="italic text-muted-foreground/60">
+              <span className="text-muted-foreground/60">
                 No status set
               </span>
             )}

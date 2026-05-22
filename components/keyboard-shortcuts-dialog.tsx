@@ -109,7 +109,7 @@ function ShortcutRow({ keys, label }: { keys: string[]; label: string }) {
         {keys.map((k, i) => (
           <kbd
             key={`${k}-${i}`}
-            className="chip-3d inline-flex h-[20px] min-w-[20px] items-center justify-center rounded border border-border bg-background px-1.5 font-mono text-[11px] font-medium text-foreground"
+            className="chip-3d inline-flex h-[20px] min-w-[20px] items-center justify-center rounded border border-border bg-background px-1.5 text-[11.5px] font-semibold text-foreground"
           >
             {k}
           </kbd>

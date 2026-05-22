@@ -26,6 +26,11 @@ import { cn } from "@/lib/utils";
 import type { MemberPulse, Profile, Project, Workspace } from "@/lib/queries";
 import { SoundSwitch } from "@/components/sound-switch";
 import { TeamPulse } from "@/components/team-pulse";
+import {
+  SidebarEmptyCard,
+  ProjectsEmptyGraphic,
+  TeamPulseEmptyGraphic,
+} from "@/components/sidebar-empty-card";
 import { useSidebar } from "@/components/sidebar-context";
 
 export interface SidebarProps {
@@ -124,7 +129,7 @@ export function Sidebar({
           >
             <Plus size={15} weight="bold" />
             Add task
-            <kbd className="ml-auto rounded bg-white/15 px-1.5 py-px font-mono text-[10px] font-medium tracking-wider text-white/85">
+            <kbd className="ml-auto rounded bg-white/15 px-1.5 py-px text-[11px] font-semibold tracking-wide text-white/90">
               Q
             </kbd>
           </button>
@@ -180,9 +185,10 @@ export function Sidebar({
 
         <Section title="Projects" collapsed={collapsed}>
           {projects.length === 0 && !collapsed && (
-            <p className="px-2 py-1 text-[11.5px] italic text-muted-foreground/70">
-              No projects yet.
-            </p>
+            <SidebarEmptyCard
+              graphic={<ProjectsEmptyGraphic />}
+              hint="Group related tasks into projects. Start with one for your team."
+            />
           )}
           {projects.map((p) => (
             <NavItem
@@ -198,11 +204,18 @@ export function Sidebar({
         </Section>
 
         <Section title="Team Pulse" collapsed={collapsed}>
-          <TeamPulse
-            members={members}
-            currentUserId={user.id}
-            collapsed={collapsed}
-          />
+          {members.length <= 1 && !collapsed ? (
+            <SidebarEmptyCard
+              graphic={<TeamPulseEmptyGraphic />}
+              hint="See what teammates are working on. Invite the team to fill this list."
+            />
+          ) : (
+            <TeamPulse
+              members={members}
+              currentUserId={user.id}
+              collapsed={collapsed}
+            />
+          )}
         </Section>
       </div>
 

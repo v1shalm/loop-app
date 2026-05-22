@@ -5,56 +5,137 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getCurrentProfile, getDefaultWorkspace } from "@/lib/queries";
 import type { ProfileStatus } from "@/lib/queries";
 
+export interface SearchTaskResult {
+  id: string;
+  title: string;
+  status: string;
+  project_name: string | null;
+  project_emoji: string | null;
+  assignee_name: string | null;
+  assignee_color: string | null;
+  assignee_initials: string | null;
+}
+
+export interface SearchProjectResult {
+  id: string;
+  name: string;
+  emoji: string | null;
+  open_count: number;
+}
+
+export interface SearchPersonResult {
+  id: string;
+  name: string;
+  initials: string;
+  avatar_color: string;
+  role: string | null;
+}
+
+export interface SearchResults {
+  tasks: SearchTaskResult[];
+  projects: SearchProjectResult[];
+  people: SearchPersonResult[];
+}
+
 /**
- * Search tasks by title/description substring. Used by the Cmd+K palette.
- * Scoped to the current workspace by RLS — no extra filter needed.
+ * Cmd+K palette search. Looks across tasks, projects, and teammates in one
+ * call and groups the results. RLS scopes everything to the workspace.
  */
-export async function searchTasks(query: string): Promise<
-  Array<{
-    id: string;
-    title: string;
-    status: string;
-    project_name: string | null;
-    project_emoji: string | null;
-    assignee_name: string | null;
-    assignee_color: string | null;
-    assignee_initials: string | null;
-  }>
-> {
+export async function searchAll(query: string): Promise<SearchResults> {
+  const empty: SearchResults = { tasks: [], projects: [], people: [] };
   const q = query.trim();
-  if (q.length < 2) return [];
+  if (q.length < 2) return empty;
 
   const supabase = await getSupabaseServer();
-  if (!supabase) return [];
+  if (!supabase) return empty;
+
+  const like = `%${q}%`;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase
+  const tasksP = (supabase
     .from("tasks")
     .select(
       "id, title, status, project:projects(name, emoji), assignee:profiles!tasks_assignee_id_fkey(name, avatar_color, initials)"
     )
-    .or(`title.ilike.%${q}%,description.ilike.%${q}%`)
+    .or(`title.ilike.${like},description.ilike.${like}`)
     .order("created_at", { ascending: false })
-    .limit(8) as any);
+    .limit(6) as any);
 
-  type Row = {
+  const projectsP = supabase
+    .from("projects")
+    .select("id, name, emoji")
+    .ilike("name", like)
+    .limit(4);
+
+  const peopleP = supabase
+    .from("profiles")
+    .select("id, name, initials, avatar_color, role")
+    .ilike("name", like)
+    .limit(4);
+
+  const [tasksR, projectsR, peopleR] = await Promise.all([
+    tasksP,
+    projectsP,
+    peopleP,
+  ]);
+
+  type TaskRow = {
     id: string;
     title: string;
     status: string;
     project: { name: string; emoji: string | null } | null;
     assignee: { name: string; avatar_color: string; initials: string } | null;
   };
+  type ProjectRow = { id: string; name: string; emoji: string | null };
+  type PersonRow = {
+    id: string;
+    name: string;
+    initials: string;
+    avatar_color: string;
+    role: string | null;
+  };
 
-  return ((data ?? []) as Row[]).map((r) => ({
-    id: r.id,
-    title: r.title,
-    status: r.status,
-    project_name: r.project?.name ?? null,
-    project_emoji: r.project?.emoji ?? null,
-    assignee_name: r.assignee?.name ?? null,
-    assignee_color: r.assignee?.avatar_color ?? null,
-    assignee_initials: r.assignee?.initials ?? null,
-  }));
+  // Count open tasks per matched project so the result shows "N open"
+  const projectIds = ((projectsR.data ?? []) as ProjectRow[]).map((p) => p.id);
+  const counts = new Map<string, number>();
+  if (projectIds.length > 0) {
+    const { data: openTasks } = await supabase
+      .from("tasks")
+      .select("project_id")
+      .neq("status", "done")
+      .in("project_id", projectIds);
+    for (const row of openTasks ?? []) {
+      if (row.project_id) {
+        counts.set(row.project_id, (counts.get(row.project_id) ?? 0) + 1);
+      }
+    }
+  }
+
+  return {
+    tasks: ((tasksR.data ?? []) as TaskRow[]).map((r) => ({
+      id: r.id,
+      title: r.title,
+      status: r.status,
+      project_name: r.project?.name ?? null,
+      project_emoji: r.project?.emoji ?? null,
+      assignee_name: r.assignee?.name ?? null,
+      assignee_color: r.assignee?.avatar_color ?? null,
+      assignee_initials: r.assignee?.initials ?? null,
+    })),
+    projects: ((projectsR.data ?? []) as ProjectRow[]).map((p) => ({
+      id: p.id,
+      name: p.name,
+      emoji: p.emoji,
+      open_count: counts.get(p.id) ?? 0,
+    })),
+    people: ((peopleR.data ?? []) as PersonRow[]).map((p) => ({
+      id: p.id,
+      name: p.name,
+      initials: p.initials,
+      avatar_color: p.avatar_color,
+      role: p.role,
+    })),
+  };
 }
 
 export interface CreateTaskInput {

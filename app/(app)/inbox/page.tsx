@@ -1,6 +1,7 @@
 import { Tray } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { InboxList } from "@/components/inbox-list";
+import { EmptyState } from "@/components/empty-state";
 import { getInboxAssignments } from "@/lib/queries";
 
 export const metadata = { title: "Inbox · Loop" };
@@ -22,13 +23,12 @@ export default async function InboxPage() {
 
       <div className="mx-auto w-full max-w-[760px] px-8 pb-24 pt-8">
         {tasks.length === 0 ? (
-          <div className="grid place-items-center pt-16 text-center text-muted-foreground">
-            <div className="text-3xl">📬</div>
-            <p className="mt-3 text-[14px] text-foreground">All caught up</p>
-            <p className="mt-1 text-[12.5px]">
-              New assignments from teammates land here first.
-            </p>
-          </div>
+          <EmptyState
+            emoji="📬"
+            title="All caught up"
+            hint="New assignments from teammates land here. Accept them or snooze for later."
+            showAction={false}
+          />
         ) : (
           <>
             <header className="mb-2 flex items-baseline justify-between border-b border-border/50 pb-2">
