@@ -2,12 +2,25 @@ import { Tray } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { InboxList } from "@/components/inbox-list";
 import { EmptyState } from "@/components/empty-state";
-import { getInboxAssignments } from "@/lib/queries";
+import { RightRail } from "@/components/right-rail";
+import {
+  getCurrentProfile,
+  getInboxAssignments,
+  getMembersWithPulse,
+  getMyStats,
+  getRecentActivity,
+} from "@/lib/queries";
 
 export const metadata = { title: "Inbox · Loop" };
 
 export default async function InboxPage() {
-  const tasks = await getInboxAssignments();
+  const [tasks, profile, members, activity, stats] = await Promise.all([
+    getInboxAssignments(),
+    getCurrentProfile(),
+    getMembersWithPulse(),
+    getRecentActivity(),
+    getMyStats(),
+  ]);
 
   return (
     <div className="min-h-full">
@@ -21,27 +34,41 @@ export default async function InboxPage() {
         }
       />
 
-      <div className="mx-auto w-full max-w-[760px] px-8 pb-24 pt-8">
-        {tasks.length === 0 ? (
-          <EmptyState
-            emoji="📬"
-            title="All caught up"
-            hint="New assignments from teammates land here. Accept them or snooze for later."
-            showAction={false}
-          />
-        ) : (
-          <>
-            <header className="mb-2 flex items-baseline justify-between border-b border-border/50 pb-2">
-              <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
-                New assignments
-              </h2>
-              <span className="text-[12px] tabular-nums text-muted-foreground">
-                {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
-              </span>
-            </header>
-            <InboxList tasks={tasks} />
-          </>
-        )}
+      <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0">
+            {tasks.length === 0 ? (
+              <EmptyState
+                emoji="📬"
+                title="All caught up"
+                hint="New assignments from teammates land here. Accept them or snooze for later."
+                showAction={false}
+              />
+            ) : (
+              <>
+                <header className="mb-2 flex items-baseline justify-between border-b border-border/50 pb-2">
+                  <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
+                    New assignments
+                  </h2>
+                  <span className="text-[12px] tabular-nums text-muted-foreground">
+                    {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
+                  </span>
+                </header>
+                <InboxList tasks={tasks} />
+              </>
+            )}
+          </div>
+
+          {profile && (
+            <RightRail
+              completedToday={stats.completed_today}
+              activeToday={stats.open_assigned}
+              members={members}
+              currentUserId={profile.id}
+              activity={activity}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

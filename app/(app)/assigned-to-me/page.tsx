@@ -5,9 +5,12 @@ import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
 import { CompletedSection } from "@/components/completed-section";
 import { EmptyState } from "@/components/empty-state";
+import { RightRail } from "@/components/right-rail";
 import {
   getAssignedToMe,
   getCurrentProfile,
+  getMembersWithPulse,
+  getRecentActivity,
   type TaskWithRelations,
 } from "@/lib/queries";
 
@@ -23,8 +26,17 @@ function greeting() {
 }
 
 export default async function AssignedToMePage() {
-  const [{ overdue, today, upcoming, completedToday }, profile] =
-    await Promise.all([getAssignedToMe(), getCurrentProfile()]);
+  const [
+    { overdue, today, upcoming, completedToday },
+    profile,
+    members,
+    activity,
+  ] = await Promise.all([
+    getAssignedToMe(),
+    getCurrentProfile(),
+    getMembersWithPulse(),
+    getRecentActivity(),
+  ]);
   const activeCount = overdue.length + today.length + upcoming.length;
   const firstName = profile?.name?.split(/\s+/)[0] ?? "friend";
 
@@ -82,7 +94,7 @@ export default async function AssignedToMePage() {
         }
       />
 
-      <div className="mx-auto w-full max-w-[760px] px-8 pb-24 pt-10">
+      <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-10">
         {/* Greeting */}
         <header className="mb-10">
           <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.01em] text-foreground">
@@ -93,55 +105,69 @@ export default async function AssignedToMePage() {
           </p>
         </header>
 
-        {activeCount === 0 && completedToday.length === 0 ? (
-          <EmptyState
-            emoji="🙌"
-            title="Nothing's on you right now"
-            hint="Add one for yourself, or wait for a teammate to assign you something."
-          />
-        ) : (
-          <>
-            {sections.map((s, i) => (
-              <Section
-                key={s.key}
-                title={s.title}
-                subtitle={s.subtitle}
-                count={s.tasks.length}
-                tone={s.tone}
-                addFooter={i === lastIdx}
-              >
-                {s.tasks.map((t) => (
-                  <TaskRow key={t.id} task={t} />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0">
+            {activeCount === 0 && completedToday.length === 0 ? (
+              <EmptyState
+                emoji="🙌"
+                title="Nothing's on you right now"
+                hint="Add one for yourself, or wait for a teammate to assign you something."
+              />
+            ) : (
+              <>
+                {sections.map((s, i) => (
+                  <Section
+                    key={s.key}
+                    title={s.title}
+                    subtitle={s.subtitle}
+                    count={s.tasks.length}
+                    tone={s.tone}
+                    addFooter={i === lastIdx}
+                  >
+                    {s.tasks.map((t) => (
+                      <TaskRow key={t.id} task={t} />
+                    ))}
+                  </Section>
                 ))}
-              </Section>
-            ))}
 
-            {sections.length === 0 && (
-              <div className="mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
-                {/* AddTaskInline already lives in TaskTable footer — render
-                    a bare card with only the footer for the no-active case
-                    so the user still has the quick-add affordance. */}
-                <TaskTable>{null}</TaskTable>
-              </div>
+                {sections.length === 0 && (
+                  <div className="mb-8 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
+                    {/* AddTaskInline already lives in TaskTable footer — render
+                        a bare card with only the footer for the no-active case
+                        so the user still has the quick-add affordance. */}
+                    <TaskTable>{null}</TaskTable>
+                  </div>
+                )}
+
+                <CompletedSection count={completedToday.length}>
+                  {completedToday.length === 0 ? (
+                    <p className="px-4 py-4 text-[12.5px] text-muted-foreground">
+                      Nothing completed yet today.
+                    </p>
+                  ) : (
+                    completedToday.map((t) => (
+                      <CompletedRow
+                        key={t.id}
+                        title={t.title}
+                        at={t.completed_at}
+                      />
+                    ))
+                  )}
+                </CompletedSection>
+              </>
             )}
+          </div>
 
-            <CompletedSection count={completedToday.length}>
-              {completedToday.length === 0 ? (
-                <p className="px-4 py-4 text-[12.5px] text-muted-foreground">
-                  Nothing completed yet today.
-                </p>
-              ) : (
-                completedToday.map((t) => (
-                  <CompletedRow
-                    key={t.id}
-                    title={t.title}
-                    at={t.completed_at}
-                  />
-                ))
-              )}
-            </CompletedSection>
-          </>
-        )}
+          {profile && (
+            <RightRail
+              completedToday={completedToday.length}
+              activeToday={today.length + overdue.length}
+              members={members}
+              currentUserId={profile.id}
+              activity={activity}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

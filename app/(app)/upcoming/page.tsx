@@ -4,12 +4,26 @@ import { PageHeader } from "@/components/page-header";
 import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
 import { EmptyState } from "@/components/empty-state";
-import { getUpcomingBuckets } from "@/lib/queries";
+import { RightRail } from "@/components/right-rail";
+import {
+  getCurrentProfile,
+  getMembersWithPulse,
+  getMyStats,
+  getRecentActivity,
+  getUpcomingBuckets,
+} from "@/lib/queries";
 
 export const metadata = { title: "Upcoming · Loop" };
 
 export default async function UpcomingPage() {
-  const { tomorrow, thisWeek, nextWeek } = await getUpcomingBuckets();
+  const [{ tomorrow, thisWeek, nextWeek }, profile, members, activity, stats] =
+    await Promise.all([
+      getUpcomingBuckets(),
+      getCurrentProfile(),
+      getMembersWithPulse(),
+      getRecentActivity(),
+      getMyStats(),
+    ]);
   const total = tomorrow.length + thisWeek.length + nextWeek.length;
 
   const tomorrowDate = new Date();
@@ -23,24 +37,38 @@ export default async function UpcomingPage() {
         subtitle="Next two weeks"
       />
 
-      <div className="mx-auto w-full max-w-[760px] px-8 pb-24 pt-8">
-        {total === 0 ? (
-          <EmptyState
-            emoji="🗓️"
-            title="Nothing on the horizon"
-            hint="Schedule something for later this week or pass work to a teammate."
-          />
-        ) : (
-          <>
-            <Bucket
-              title="Tomorrow"
-              subtitle={format(tomorrowDate, "EEEE, d MMM")}
-              tasks={tomorrow}
+      <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0">
+            {total === 0 ? (
+              <EmptyState
+                emoji="🗓️"
+                title="Nothing on the horizon"
+                hint="Schedule something for later this week or pass work to a teammate."
+              />
+            ) : (
+              <>
+                <Bucket
+                  title="Tomorrow"
+                  subtitle={format(tomorrowDate, "EEEE, d MMM")}
+                  tasks={tomorrow}
+                />
+                <Bucket title="This week" tasks={thisWeek} />
+                <Bucket title="Next week" tasks={nextWeek} />
+              </>
+            )}
+          </div>
+
+          {profile && (
+            <RightRail
+              completedToday={stats.completed_today}
+              activeToday={tomorrow.length + thisWeek.length}
+              members={members}
+              currentUserId={profile.id}
+              activity={activity}
             />
-            <Bucket title="This week" tasks={thisWeek} />
-            <Bucket title="Next week" tasks={nextWeek} />
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
