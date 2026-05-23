@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { LoginForm } from "./login-form";
 
@@ -35,9 +36,13 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-5 text-center text-[12px] text-muted-foreground">
-          Trouble signing in?{" "}
-          <span className="text-foreground">Ask your workspace admin</span> for
-          an invite.
+          Reviewing this take-home?{" "}
+          <Link
+            href="/process"
+            className="text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+          >
+            Read the case study →
+          </Link>
         </p>
       </div>
     </main>

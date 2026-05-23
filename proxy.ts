@@ -44,14 +44,21 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthRoute = path.startsWith("/login") || path.startsWith("/auth");
   const isPublicAsset = path.startsWith("/_next") || path.startsWith("/api");
+  // /process is the case-study landing — public to anyone hitting the URL
+  const isPublicMarketing = path === "/process" || path.startsWith("/process/");
 
-  if (!user && !isAuthRoute && !isPublicAsset) {
+  if (!user && !isAuthRoute && !isPublicAsset && !isPublicMarketing) {
     const next = new URL("/login", request.url);
     next.searchParams.set("next", path);
     return NextResponse.redirect(next);
   }
   if (user && path === "/login") {
     return NextResponse.redirect(new URL("/assigned-to-me", request.url));
+  }
+  // Unauthenticated hits to "/" → case study (reviewer's first view).
+  // Authenticated hits to "/" → into the app.
+  if (!user && path === "/") {
+    return NextResponse.redirect(new URL("/process", request.url));
   }
   if (user && path === "/") {
     return NextResponse.redirect(new URL("/assigned-to-me", request.url));
