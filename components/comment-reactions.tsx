@@ -1,7 +1,8 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { sileo } from "sileo";
 import { Smiley } from "@/components/icons";
 import {
   Popover,
@@ -59,37 +60,48 @@ function groupReactions(
  */
 export function CommentReactions({
   commentId,
-  reactions,
+  reactions: serverReactions,
   currentUserId,
 }: {
   commentId: string;
   reactions: RawReaction[];
   currentUserId: string;
 }) {
-  const [optimistic, applyOptimistic] = useOptimistic(
-    reactions,
-    (state: RawReaction[], emoji: string) => {
-      const has = state.some(
-        (r) => r.emoji === emoji && r.user_id === currentUserId
-      );
-      if (has) {
-        return state.filter(
-          (r) => !(r.emoji === emoji && r.user_id === currentUserId)
-        );
-      }
-      return [...state, { emoji, user_id: currentUserId }];
+  // Local state so the optimistic update survives across the round-trip.
+  // useOptimistic snaps back to props the moment the transition settles,
+  // and the task drawer doesn't re-fetch comments after a reaction toggle,
+  // so the reaction would visibly disappear. Plain state owns the source
+  // of truth for the lifetime of the open drawer; we still sync from
+  // props once on mount and again if the comment id changes (different
+  // comment, different reaction list).
+  const [reactions, setReactions] = useState<RawReaction[]>(serverReactions);
+  const lastCommentId = useRef(commentId);
+  useEffect(() => {
+    if (lastCommentId.current !== commentId) {
+      lastCommentId.current = commentId;
+      setReactions(serverReactions);
     }
-  );
-  const [, startTransition] = useTransition();
+  }, [commentId, serverReactions]);
 
-  const toggle = (emoji: string) => {
-    startTransition(async () => {
-      applyOptimistic(emoji);
-      await toggleCommentReaction(commentId, emoji);
-    });
+  const toggle = async (emoji: string) => {
+    const has = reactions.some(
+      (r) => r.emoji === emoji && r.user_id === currentUserId
+    );
+    const next = has
+      ? reactions.filter(
+          (r) => !(r.emoji === emoji && r.user_id === currentUserId)
+        )
+      : [...reactions, { emoji, user_id: currentUserId }];
+    const previous = reactions;
+    setReactions(next);
+    const res = await toggleCommentReaction(commentId, emoji);
+    if (res.error) {
+      setReactions(previous);
+      sileo.error({ title: res.error });
+    }
   };
 
-  const groups = groupReactions(optimistic, currentUserId);
+  const groups = groupReactions(reactions, currentUserId);
   if (groups.length === 0) {
     return (
       <div className="mt-1.5">
