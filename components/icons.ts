@@ -15,6 +15,7 @@
 
 export {
   Archive,
+  ArrowUp,
   Bell,
   CalendarBlank,
   CalendarDots,

@@ -21,6 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  ArrowUp,
   CalendarBlank,
   CaretDown,
   Check,
@@ -784,12 +785,13 @@ function CommentsSection({
           </p>
         </div>
       ) : (
-        <ul className="mt-3 flex flex-col gap-3.5">
-          {visible.map((c) => (
+        <ul className="mt-3 flex flex-col">
+          {visible.map((c, i) => (
             <CommentItem
               key={c.id}
               comment={c}
               isMe={c.author_id === currentUserId}
+              isLast={i === visible.length - 1}
               onDelete={() => remove(c.id)}
             />
           ))}
@@ -827,13 +829,16 @@ function CommentsSection({
             <Button
               onClick={submit}
               disabled={!body.trim() || pending}
-              size="sm"
+              size="icon-sm"
               variant="default"
+              aria-label="Send comment"
+              className="rounded-full"
             >
-              {pending && (
-                <CircleNotch size={12} className="animate-spin" />
+              {pending ? (
+                <CircleNotch size={13} className="animate-spin" />
+              ) : (
+                <ArrowUp size={13} weight="bold" />
               )}
-              Send
             </Button>
           </div>
         </div>
@@ -884,10 +889,12 @@ const AutoTextarea = forwardRef<HTMLTextAreaElement, AutoTextareaProps>(
 function CommentItem({
   comment,
   isMe,
+  isLast,
   onDelete,
 }: {
   comment: CommentRow;
   isMe: boolean;
+  isLast: boolean;
   onDelete: () => void;
 }) {
   const ago = formatDistanceToNow(new Date(comment.created_at), {
@@ -895,16 +902,24 @@ function CommentItem({
   });
 
   return (
-    <li className="flex items-start gap-2.5">
-      <span className="mt-0.5">
+    <li className="flex gap-2.5">
+      {/* Left column: avatar + connector line down to the next comment */}
+      <div className="flex shrink-0 flex-col items-center">
         <Avatar
           src={comment.author?.avatar_url ?? null}
           initials={comment.author?.initials ?? "?"}
           color={comment.author?.avatar_color ?? "#D4D4D4"}
           size={24}
         />
-      </span>
-      <div className="min-w-0 flex-1">
+        {!isLast && (
+          <span
+            aria-hidden
+            className="mt-1 w-px flex-1 bg-border/70"
+          />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1 pb-3.5">
         <div className="flex items-baseline gap-2">
           <span className="text-[12.5px] font-semibold text-foreground">
             {isMe ? "You" : comment.author?.name ?? "Someone"}
