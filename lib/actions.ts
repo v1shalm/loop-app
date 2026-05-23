@@ -241,7 +241,6 @@ export interface UpdateTaskInput {
   dueAt?: string | null;
   projectId?: string | null;
   assigneeId?: string | null;
-  workflowStatus?: import("@/lib/queries").WorkflowStatus | null;
 }
 
 export async function updateTask(
@@ -258,7 +257,6 @@ export async function updateTask(
     due_at?: string | null;
     project_id?: string | null;
     assignee_id?: string | null;
-    workflow_status?: string | null;
   } = {};
   if (patch.title !== undefined) update.title = patch.title.trim();
   if (patch.description !== undefined) update.description = patch.description;
@@ -266,17 +264,45 @@ export async function updateTask(
   if (patch.dueAt !== undefined) update.due_at = patch.dueAt;
   if (patch.projectId !== undefined) update.project_id = patch.projectId;
   if (patch.assigneeId !== undefined) update.assignee_id = patch.assigneeId;
+  if (Object.keys(update).length === 0) return { ok: true };
+
+  const { error } = await supabase.from("tasks").update(update).eq("id", id);
+  if (error) return { error: error.message };
+  revalidateTaskRoutes(patch.projectId ?? undefined);
+  return { ok: true };
+}
+
+export interface UpdateProjectInput {
+  name?: string;
+  emoji?: string | null;
+  workflowStatus?: import("@/lib/queries").WorkflowStatus | null;
+}
+
+export async function updateProject(
+  id: string,
+  patch: UpdateProjectInput
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const update: {
+    name?: string;
+    emoji?: string | null;
+    workflow_status?: string | null;
+  } = {};
+  if (patch.name !== undefined) update.name = patch.name.trim();
+  if (patch.emoji !== undefined) update.emoji = patch.emoji;
   if (patch.workflowStatus !== undefined)
     update.workflow_status = patch.workflowStatus;
   if (Object.keys(update).length === 0) return { ok: true };
 
   const { error } = await supabase
-    .from("tasks")
+    .from("projects")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .update(update as any)
     .eq("id", id);
   if (error) return { error: error.message };
-  revalidateTaskRoutes(patch.projectId ?? undefined);
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

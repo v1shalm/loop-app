@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/page-header";
 import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
 import { EmptyState } from "@/components/empty-state";
+import { ProjectStatusPicker } from "@/components/project-status-picker";
+import type { WorkflowStatus } from "@/components/workflow-status-picker";
 import {
   getProject,
   getProjectTasks,
@@ -56,6 +58,16 @@ export default async function ProjectPage({ params }: PageProps) {
       />
 
       <div className="mx-auto w-full max-w-[820px] px-8 pb-24 pt-8">
+        {/* Status */}
+        <div className="mb-6">
+          <ProjectStatusPicker
+            projectId={project.id}
+            initialStatus={
+              (project.workflow_status as WorkflowStatus | null) ?? null
+            }
+          />
+        </div>
+
         {/* Overview */}
         <section className="mb-8 grid grid-cols-3 gap-3">
           <StatTile

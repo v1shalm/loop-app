@@ -214,7 +214,20 @@ export function Sidebar({
         <Section
           title="Projects"
           collapsed={collapsed}
-          headerAction={!collapsed ? <AddProjectPopover /> : undefined}
+          headerAction={
+            !collapsed ? (
+              <div className="flex items-center gap-0.5">
+                <Link
+                  href="/projects"
+                  className="focus-ring rounded px-1.5 py-0.5 text-[10.5px] font-medium text-muted-foreground/80 transition-colors hover:bg-sidebar-accent/40 hover:text-foreground"
+                  title="View all projects"
+                >
+                  All
+                </Link>
+                <AddProjectPopover />
+              </div>
+            ) : undefined
+          }
         >
           {projects.length === 0 && !collapsed && (
             <SidebarEmptyCard

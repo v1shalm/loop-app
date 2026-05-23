@@ -136,7 +136,8 @@ export function WorkflowStatusPicker({
       <PopoverTrigger
         aria-label="Set workflow status"
         className={cn(
-          "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors hover:brightness-[0.97]",
+          STATUS_CHIP_BASE,
+          "transition-colors hover:brightness-[0.97]",
           meta
             ? meta.pill
             : "border-border bg-card text-muted-foreground hover:text-foreground"
@@ -152,36 +153,49 @@ export function WorkflowStatusPicker({
       </PopoverTrigger>
       <PopoverContent
         align={align}
-        className="w-[196px] gap-1 p-1.5"
+        className="w-fit min-w-[180px] gap-1 p-1.5"
         sideOffset={6}
       >
-        <PickerRow
-          selected={value === null}
-          onSelect={() => onChange(null)}
-          variant="plain"
+        {/* No status — plain row, no pill */}
+        <button
+          onClick={() => onChange(null)}
+          className={cn(
+            "focus-ring flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors",
+            value === null
+              ? "bg-accent/50 font-medium text-foreground"
+              : "text-foreground hover:bg-accent/40"
+          )}
         >
           <Prohibit size={13} className="text-muted-foreground" />
-          <span className="text-foreground">No status</span>
-        </PickerRow>
+          <span className="flex-1">No status</span>
+          {value === null && (
+            <Check size={13} weight="bold" className="text-muted-foreground" />
+          )}
+        </button>
+
+        {/* Status pills — same dimensions as the trigger chip; selected
+            gets a stronger ring instead of a trailing checkmark so the
+            chip stays the unit of meaning */}
         <div className="mt-1 flex flex-col gap-1">
           {ORDER.map((status) => {
             const m = WORKFLOW_STATUS_META[status];
+            const selected = value === status;
             return (
-              <PickerRow
+              <button
                 key={status}
-                selected={value === status}
-                onSelect={() => onChange(status)}
+                onClick={() => onChange(status)}
+                aria-pressed={selected}
+                className={cn(
+                  STATUS_CHIP_BASE,
+                  "w-full justify-start transition-[transform,filter]",
+                  "hover:brightness-[0.97] active:scale-[0.98]",
+                  m.pill,
+                  selected && "ring-2 ring-inset ring-current/40"
+                )}
               >
-                <span
-                  className={cn(
-                    "inline-flex w-full items-center gap-1.5 rounded-md border px-2 py-1 text-[12.5px] font-medium",
-                    m.pill
-                  )}
-                >
-                  <span className={m.iconColor}>{m.icon}</span>
-                  {m.label}
-                </span>
-              </PickerRow>
+                <span className={m.iconColor}>{m.icon}</span>
+                <span className="truncate">{m.label}</span>
+              </button>
             );
           })}
         </div>
@@ -190,38 +204,10 @@ export function WorkflowStatusPicker({
   );
 }
 
-function PickerRow({
-  children,
-  selected,
-  onSelect,
-  variant = "tinted",
-}: {
-  children: React.ReactNode;
-  selected: boolean;
-  onSelect: () => void;
-  variant?: "tinted" | "plain";
-}) {
-  return (
-    <button
-      onClick={onSelect}
-      className={cn(
-        "focus-ring group/row flex w-full items-center gap-2 rounded-md text-left transition-colors",
-        variant === "plain"
-          ? "px-2 py-1.5 text-[13px] hover:bg-accent/40"
-          : "p-0.5 hover:brightness-[0.98]"
-      )}
-    >
-      <span className="flex-1">{children}</span>
-      {selected && (
-        <Check
-          size={13}
-          weight="bold"
-          className="mr-1.5 text-muted-foreground"
-        />
-      )}
-    </button>
-  );
-}
+// Shared chip dimensions — used by both the trigger pill and every option
+// inside the popover so the trigger looks like one of its own options.
+const STATUS_CHIP_BASE =
+  "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium";
 
 /**
  * Read-only chip — used in task rows and other display surfaces.

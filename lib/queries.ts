@@ -22,11 +22,10 @@ export type WorkflowStatus =
   | "archived"
   | "do_not_use";
 
-export type Task = Tables["tasks"]["Row"] & {
-  triaged_at?: string | null;
+export type Task = Tables["tasks"]["Row"] & { triaged_at?: string | null };
+export type Project = Tables["projects"]["Row"] & {
   workflow_status?: WorkflowStatus | null;
 };
-export type Project = Tables["projects"]["Row"];
 export type Workspace = Tables["workspaces"]["Row"];
 
 export type TaskWithRelations = Task & {
@@ -90,7 +89,67 @@ export const getProjects = cache(async (): Promise<Project[]> => {
     .from("projects")
     .select("*")
     .order("created_at");
-  return data ?? [];
+  return (data ?? []) as Project[];
+});
+
+export interface ProjectOverview {
+  project: Project;
+  open_count: number;
+  done_count: number;
+  recent_titles: string[];
+}
+
+/**
+ * Used by the /projects index. Counts open/done per project and picks the
+ * three most recent open task titles so the card has scannable content.
+ */
+export const getProjectsOverview = cache(async (): Promise<ProjectOverview[]> => {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return [];
+
+  const projects = await getProjects();
+  if (projects.length === 0) return [];
+
+  const ids = projects.map((p) => p.id);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase
+    .from("tasks")
+    .select("id, title, status, project_id, created_at")
+    .in("project_id", ids)
+    .order("created_at", { ascending: false }) as any);
+
+  type Row = {
+    id: string;
+    title: string;
+    status: string;
+    project_id: string;
+    created_at: string;
+  };
+  const rows = (data ?? []) as Row[];
+
+  const byProject = new Map<
+    string,
+    { open: Row[]; doneCount: number }
+  >();
+  for (const r of rows) {
+    if (!r.project_id) continue;
+    const bucket =
+      byProject.get(r.project_id) ?? { open: [], doneCount: 0 };
+    if (r.status === "done") bucket.doneCount += 1;
+    else bucket.open.push(r);
+    byProject.set(r.project_id, bucket);
+  }
+
+  return projects.map((p) => {
+    const b = byProject.get(p.id) ?? { open: [], doneCount: 0 };
+    return {
+      project: p,
+      open_count: b.open.length,
+      done_count: b.doneCount,
+      recent_titles: b.open.slice(0, 3).map((t) => t.title),
+    };
+  });
 });
 
 export const getWorkspaceMembers = cache(async (): Promise<Profile[]> => {
