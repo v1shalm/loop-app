@@ -152,7 +152,7 @@ export function WorkflowStatusPicker({
       </PopoverTrigger>
       <PopoverContent
         align={align}
-        className="w-[240px] gap-1 p-2"
+        className="w-[196px] gap-1 p-1.5"
         sideOffset={6}
       >
         <PickerRow
