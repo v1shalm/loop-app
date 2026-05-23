@@ -77,27 +77,36 @@ export type Database = {
           color: string | null
           created_at: string
           created_by: string | null
+          description: string | null
           emoji: string | null
           id: string
           name: string
+          team_id: string | null
+          workflow_status: string | null
           workspace_id: string
         }
         Insert: {
           color?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           emoji?: string | null
           id?: string
           name: string
+          team_id?: string | null
+          workflow_status?: string | null
           workspace_id: string
         }
         Update: {
           color?: string | null
           created_at?: string
           created_by?: string | null
+          description?: string | null
           emoji?: string | null
           id?: string
           name?: string
+          team_id?: string | null
+          workflow_status?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -106,6 +115,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
           {
@@ -168,6 +184,7 @@ export type Database = {
           priority: number
           project_id: string | null
           status: string
+          team_id: string | null
           title: string
           triaged_at: string | null
           workspace_id: string
@@ -183,6 +200,7 @@ export type Database = {
           priority?: number
           project_id?: string | null
           status?: string
+          team_id?: string | null
           title: string
           triaged_at?: string | null
           workspace_id: string
@@ -198,6 +216,7 @@ export type Database = {
           priority?: number
           project_id?: string | null
           status?: string
+          team_id?: string | null
           title?: string
           triaged_at?: string | null
           workspace_id?: string
@@ -225,7 +244,82 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          joined_at: string
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          role?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          workspace_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          workspace_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -295,7 +389,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_team_admin: { Args: { t: string }; Returns: boolean }
       is_workspace_member: { Args: { ws_id: string }; Returns: boolean }
+      my_team_id: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

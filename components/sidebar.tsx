@@ -18,7 +18,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { MemberPulse, Profile, Project, Workspace } from "@/lib/queries";
+import type {
+  MemberPulse,
+  Profile,
+  Project,
+  Team,
+  Workspace,
+} from "@/lib/queries";
 import { ProfileMenu } from "@/components/profile-menu";
 import { Avatar } from "@/components/avatar";
 import { TeamPulse } from "@/components/team-pulse";
@@ -35,6 +41,8 @@ import { useSidebar } from "@/components/sidebar-context";
 export interface SidebarProps {
   user: Profile;
   workspace: Workspace | null;
+  team: Team | null;
+  teamRole: "admin" | "member" | null;
   projects: Project[];
   members: MemberPulse[];
   counts: {
@@ -50,6 +58,8 @@ export interface SidebarProps {
 export function Sidebar({
   user,
   workspace,
+  team,
+  teamRole,
   projects,
   members,
   counts,
@@ -60,6 +70,7 @@ export function Sidebar({
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
   const workspaceName = workspace?.name ?? "Loop";
+  const isAdmin = teamRole === "admin";
 
   return (
     <aside
@@ -88,9 +99,26 @@ export function Sidebar({
           </Tooltip>
         ) : (
           <>
-            <span className="min-w-0 flex-1 truncate px-1.5 text-[14.5px] font-semibold tracking-tight text-foreground">
-              {workspaceName}
-            </span>
+            <div className="min-w-0 flex-1 px-1.5">
+              <p className="truncate text-[14.5px] font-semibold leading-tight tracking-tight text-foreground">
+                {workspaceName}
+              </p>
+              {team && (
+                <p className="mt-0.5 inline-flex items-center gap-1 text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <span
+                    aria-hidden
+                    className="inline-block size-1.5 rounded-full"
+                    style={{ backgroundColor: team.color ?? "#94a3b8" }}
+                  />
+                  {team.name}
+                  {isAdmin && (
+                    <span className="rounded bg-violet-100/70 px-1 text-[9.5px] font-semibold normal-case tracking-normal text-violet-700">
+                      Admin
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
             <Tooltip>
               <TooltipTrigger
                 onClick={onOpenSearch}

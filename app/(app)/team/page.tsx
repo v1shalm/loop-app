@@ -1,17 +1,22 @@
 import Link from "next/link";
-import { UsersThree } from "@/components/icons";
+import { Gear, UsersThree } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
-import { getCurrentProfile, getMembersWithPulse } from "@/lib/queries";
+import {
+  getCurrentProfile,
+  getMembersWithPulse,
+  getMyTeamRole,
+} from "@/lib/queries";
 import { statusLabel } from "@/components/status-picker";
 import { Avatar } from "@/components/avatar";
 
 export const metadata = { title: "Team · Loop" };
 
 export default async function TeamPage() {
-  const [me, members] = await Promise.all([
+  const [me, members, role] = await Promise.all([
     getCurrentProfile(),
     getMembersWithPulse(),
+    getMyTeamRole(),
   ]);
 
   return (
@@ -25,6 +30,21 @@ export default async function TeamPage() {
       />
 
       <div className="mx-auto w-full max-w-[960px] px-8 pb-24 pt-8">
+        {role === "admin" && (
+          <div className="mb-5 flex items-center justify-between rounded-xl border border-violet-200/60 bg-violet-50/50 px-4 py-3">
+            <p className="text-[12.5px] text-violet-700">
+              You&apos;re an admin. Add or remove members, change roles.
+            </p>
+            <Link
+              href="/team/manage"
+              className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-violet-300/70 bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-violet-700 transition-colors hover:bg-violet-100"
+            >
+              <Gear size={13} />
+              Manage team
+            </Link>
+          </div>
+        )}
+
         {members.length === 0 ? (
           <EmptyState
             icon={<UsersThree size={22} />}

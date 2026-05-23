@@ -23,7 +23,7 @@ export type WorkflowStatus =
   | "do_not_use";
 
 export type Task = Tables["tasks"]["Row"] & { triaged_at?: string | null };
-export type Project = Tables["projects"]["Row"] & {
+export type Project = Omit<Tables["projects"]["Row"], "workflow_status"> & {
   workflow_status?: WorkflowStatus | null;
   description?: string | null;
 };
@@ -151,15 +151,93 @@ export const getProjectsBoard = cache(
   }
 );
 
+// ── Teams ────────────────────────────────────────────────────────────────────
+
+export interface Team {
+  id: string;
+  workspace_id: string;
+  name: string;
+  color: string | null;
+}
+
+export interface TeamMember extends Profile {
+  team_role: "admin" | "member";
+}
+
+/** The team the current user belongs to. One per user (enforced by unique idx). */
+export const getMyTeam = cache(async (): Promise<Team | null> => {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return null;
+  const profile = await getCurrentProfile();
+  if (!profile) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase
+    .from("team_members")
+    .select("role, team:teams(id, workspace_id, name, color)")
+    .eq("user_id", profile.id)
+    .maybeSingle() as any);
+  if (!data || !data.team) return null;
+  return data.team as Team;
+});
+
+/** Is the current user an admin of their team? */
+export const getMyTeamRole = cache(
+  async (): Promise<"admin" | "member" | null> => {
+    const supabase = await getSupabaseServer();
+    if (!supabase) return null;
+    const profile = await getCurrentProfile();
+    if (!profile) return null;
+
+    const { data } = await supabase
+      .from("team_members")
+      .select("role")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    return (data?.role as "admin" | "member" | null) ?? null;
+  }
+);
+
+/**
+ * Members of the current user's team — the universe for assignee pickers,
+ * Team Pulse, the manage-team page, etc. The brief says "users can only
+ * be assigned tasks within their team", so every member-facing surface
+ * goes through here instead of returning the whole workspace.
+ */
 export const getWorkspaceMembers = cache(async (): Promise<Profile[]> => {
   const supabase = await getSupabaseServer();
   if (!supabase) return [];
-  const { data } = await supabase
-    .from("workspace_members")
-    .select("profiles!inner(*)")
-    .order("joined_at");
-  return ((data ?? []) as Array<{ profiles: Profile }>).map((r) => r.profiles);
+  const team = await getMyTeam();
+  if (!team) return [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase
+    .from("team_members")
+    .select("profile:profiles!inner(*)")
+    .eq("team_id", team.id)
+    .order("joined_at") as any);
+  return ((data ?? []) as Array<{ profile: Profile }>).map((r) => r.profile);
 });
+
+/** Same as getWorkspaceMembers but each row carries its team role. */
+export const getTeamMembersWithRole = cache(
+  async (): Promise<TeamMember[]> => {
+    const supabase = await getSupabaseServer();
+    if (!supabase) return [];
+    const team = await getMyTeam();
+    if (!team) return [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase
+      .from("team_members")
+      .select("role, profile:profiles!inner(*)")
+      .eq("team_id", team.id)
+      .order("joined_at") as any);
+    return ((data ?? []) as Array<{ role: string; profile: Profile }>).map(
+      (r) => ({ ...r.profile, team_role: r.role as "admin" | "member" })
+    );
+  }
+);
 
 // ── Task lists ────────────────────────────────────────────────────────────────
 
@@ -388,7 +466,7 @@ export async function getProject(id: string): Promise<Project | null> {
     .select("*")
     .eq("id", id)
     .maybeSingle();
-  return data ?? null;
+  return (data as Project | null) ?? null;
 }
 
 /**

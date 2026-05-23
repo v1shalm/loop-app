@@ -3,6 +3,8 @@ import { AppShell } from "@/components/app-shell";
 import {
   getCurrentProfile,
   getDefaultWorkspace,
+  getMyTeam,
+  getMyTeamRole,
   getProjects,
   getMembersWithPulse,
   getSidebarCounts,
@@ -18,17 +20,22 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  const [workspace, projects, members, counts] = await Promise.all([
-    getDefaultWorkspace(),
-    getProjects(),
-    getMembersWithPulse(),
-    getSidebarCounts(),
-  ]);
+  const [workspace, team, teamRole, projects, members, counts] =
+    await Promise.all([
+      getDefaultWorkspace(),
+      getMyTeam(),
+      getMyTeamRole(),
+      getProjects(),
+      getMembersWithPulse(),
+      getSidebarCounts(),
+    ]);
 
   return (
     <AppShell
       user={profile}
       workspace={workspace}
+      team={team}
+      teamRole={teamRole}
       projects={projects}
       members={members}
       counts={counts}

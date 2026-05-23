@@ -37,6 +37,8 @@ const RealtimeBridge = dynamic(
 export function AppShell({
   user,
   workspace,
+  team,
+  teamRole,
   projects,
   members,
   counts,
@@ -87,6 +89,8 @@ export function AppShell({
             <Sidebar
               user={user}
               workspace={workspace}
+              team={team}
+              teamRole={teamRole}
               projects={projects}
               members={members}
               counts={counts}

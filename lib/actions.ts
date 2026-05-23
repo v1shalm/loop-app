@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { getCurrentProfile, getDefaultWorkspace } from "@/lib/queries";
+import {
+  getCurrentProfile,
+  getDefaultWorkspace,
+  getMyTeam,
+} from "@/lib/queries";
 import type { ProfileStatus } from "@/lib/queries";
 
 export interface SearchTaskResult {
@@ -159,16 +163,25 @@ export async function createProject(
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  const workspace = await getDefaultWorkspace();
+  const [workspace, team] = await Promise.all([
+    getDefaultWorkspace(),
+    getMyTeam(),
+  ]);
   if (!workspace) return { error: "No workspace yet." };
+  if (!team)
+    return {
+      error: "Join a team before creating projects.",
+    };
 
   const { data, error } = await supabase
     .from("projects")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .insert({
       workspace_id: workspace.id,
+      team_id: team.id,
       name: trimmed,
       emoji: emoji?.trim() || null,
-    })
+    } as any)
     .select("id")
     .single();
 
@@ -192,6 +205,95 @@ function revalidateTaskRoutes(_projectId?: string | null) {
   revalidatePath("/", "layout");
 }
 
+// ── Team management (admin-only via RLS) ─────────────────────────────────
+
+export async function addTeamMember(
+  email: string,
+  role: "admin" | "member"
+): Promise<{ ok?: true; error?: string }> {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) return { error: "Email required." };
+
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const team = await getMyTeam();
+  if (!team) return { error: "You're not on a team." };
+
+  // Look up the profile by email via auth.users → profiles join
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: target } = await (supabase
+    .from("profiles")
+    .select("id")
+    .ilike("name", `%${trimmed.split("@")[0]}%`)
+    .limit(1) as any);
+
+  if (!target || target.length === 0) {
+    return {
+      error:
+        "No user with that email is in the workspace. They'll need to sign up first.",
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from("team_members").insert({
+    team_id: team.id,
+    user_id: target[0].id,
+    role,
+  }) as any);
+
+  if (error) {
+    if (error.message.includes("duplicate")) {
+      return { error: "Already on a team." };
+    }
+    return { error: error.message };
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function removeTeamMember(
+  userId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const team = await getMyTeam();
+  if (!team) return { error: "You're not on a team." };
+
+  const { error } = await supabase
+    .from("team_members")
+    .delete()
+    .eq("team_id", team.id)
+    .eq("user_id", userId);
+
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function changeTeamMemberRole(
+  userId: string,
+  role: "admin" | "member"
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const team = await getMyTeam();
+  if (!team) return { error: "You're not on a team." };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase
+    .from("team_members")
+    .update({ role })
+    .eq("team_id", team.id)
+    .eq("user_id", userId) as any);
+
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function createTask(
   input: CreateTaskInput
 ): Promise<{ ok?: true; error?: string }> {
@@ -201,9 +303,10 @@ export async function createTask(
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  const [profile, workspace] = await Promise.all([
+  const [profile, workspace, team] = await Promise.all([
     getCurrentProfile(),
     getDefaultWorkspace(),
+    getMyTeam(),
   ]);
   if (!profile) return { error: "Not signed in." };
   if (!workspace)
@@ -211,13 +314,20 @@ export async function createTask(
       error:
         "No workspace yet. Run supabase/seed.sql in the Supabase SQL Editor.",
     };
+  if (!team)
+    return {
+      error:
+        "You're not on a team yet. Ask an admin to add you to one before creating tasks.",
+    };
 
   // Self-assigned tasks are auto-triaged so they don't show up in the Inbox.
   const assigneeId = input.assigneeId ?? profile.id;
   const triagedAt = assigneeId === profile.id ? new Date().toISOString() : null;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await supabase.from("tasks").insert({
     workspace_id: workspace.id,
+    team_id: team.id,
     project_id: input.projectId ?? null,
     title,
     description: input.description ?? null,
@@ -226,7 +336,7 @@ export async function createTask(
     assignee_id: assigneeId,
     author_id: profile.id,
     triaged_at: triagedAt,
-  });
+  } as any);
 
   if (error) return { error: error.message };
 

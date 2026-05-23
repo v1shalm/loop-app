@@ -8,11 +8,23 @@ import { GoogleG } from "@/components/google-g-icon";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { sendMagicLink } from "./actions";
 
-// Demo account — intentionally public so reviewers / automated agents can
-// poke at the app without their own Google account. The account is a
-// regular Supabase email/password user with the same RLS as everyone else.
-const DEMO_EMAIL = "demo@loop.app";
-const DEMO_PASSWORD = "demo-loop-2026";
+// Demo accounts — intentionally public so reviewers can compare what each
+// role / team sees. Two teams (Design, Engineering), each with an admin
+// and a member, so team isolation + role gating are both demonstrable.
+interface DemoAccount {
+  email: string;
+  password: string;
+  name: string;
+  team: "Design" | "Engineering";
+  role: "Admin" | "Member";
+}
+
+const DEMO_ACCOUNTS: DemoAccount[] = [
+  { email: "alex@loop.app", password: "alex-loop-2026", name: "Alex", team: "Design", role: "Admin" },
+  { email: "mia@loop.app", password: "mia-loop-2026", name: "Mia", team: "Design", role: "Member" },
+  { email: "ravi@loop.app", password: "ravi-loop-2026", name: "Ravi", team: "Engineering", role: "Admin" },
+  { email: "priya@loop.app", password: "priya-loop-2026", name: "Priya", team: "Engineering", role: "Member" },
+];
 
 export function LoginForm() {
   const router = useRouter();
@@ -26,19 +38,23 @@ export function LoginForm() {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const signInWithDemo = async () => {
+  const [demoSlug, setDemoSlug] = useState<string | null>(null);
+
+  const signInWithDemo = async (account: DemoAccount) => {
     const supabase = getSupabaseBrowser();
     if (!supabase) {
       sileo.error({ title: "Sign-in isn't configured yet." });
       return;
     }
+    setDemoSlug(account.email);
     setDemoPending(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email: DEMO_EMAIL,
-      password: DEMO_PASSWORD,
+      email: account.email,
+      password: account.password,
     });
     if (error) {
       setDemoPending(false);
+      setDemoSlug(null);
       sileo.error({
         title: "Demo account not ready yet.",
         description: error.message,
@@ -182,22 +198,41 @@ export function LoginForm() {
         </p>
       </form>
 
-      {/* Demo account — no email needed. */}
-      <div className="mt-1 rounded-lg border border-dashed border-border bg-muted/30 p-3 text-center">
-        <p className="text-[12px] text-muted-foreground">
-          Just looking around? Sign in to the demo workspace.
+      {/* Demo accounts — one per role per team. Lets reviewers compare
+          what each role sees without juggling passwords. */}
+      <div className="mt-1 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+        <p className="text-center text-[12px] text-muted-foreground">
+          Reviewers — sign in as one of these demo accounts to compare roles
         </p>
-        <button
-          type="button"
-          onClick={signInWithDemo}
-          disabled={anyPending}
-          className="focus-ring mt-2 inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40 disabled:opacity-60"
-        >
-          {demoPending && (
-            <CircleNotch size={12} className="animate-spin text-muted-foreground" />
-          )}
-          {demoPending ? "Signing in…" : "Try the demo →"}
-        </button>
+        <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+          {DEMO_ACCOUNTS.map((acc) => {
+            const isThisPending = demoPending && demoSlug === acc.email;
+            return (
+              <button
+                key={acc.email}
+                type="button"
+                onClick={() => signInWithDemo(acc)}
+                disabled={anyPending}
+                className="focus-ring group flex items-center justify-between gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-left transition-colors hover:bg-accent/40 disabled:opacity-60"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[12.5px] font-semibold text-foreground">
+                    {acc.name}
+                  </p>
+                  <p className="truncate text-[10.5px] text-muted-foreground">
+                    {acc.team} · {acc.role}
+                  </p>
+                </div>
+                {isThisPending && (
+                  <CircleNotch
+                    size={12}
+                    className="shrink-0 animate-spin text-muted-foreground"
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
