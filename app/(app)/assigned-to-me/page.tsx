@@ -6,6 +6,7 @@ import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
 import { CompletedSection } from "@/components/completed-section";
 import { EmptyState, Kbd } from "@/components/empty-state";
+import { BulkSelectToggle } from "@/components/bulk-select-toggle";
 import { RightRail } from "@/components/right-rail";
 import {
   getAssignedToMe,
@@ -93,6 +94,7 @@ export default async function AssignedToMePage() {
             ? "All clear"
             : `${activeCount} active · ${completedToday.length} done today`
         }
+        right={<BulkSelectToggle />}
       />
 
       <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-10">

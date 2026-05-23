@@ -690,6 +690,190 @@ export async function toggleCommentReaction(
   return { ok: true, added: true };
 }
 
+// ── Bulk actions ─────────────────────────────────────────────────────────
+
+/**
+ * Mark all of `ids` complete (or undo). Server-side bulk update means
+ * one DB round-trip instead of N. RLS still scopes the write per row.
+ */
+export async function bulkSetTaskStatus(
+  ids: string[],
+  status: "todo" | "done"
+): Promise<{ ok?: true; error?: string }> {
+  if (ids.length === 0) return { ok: true };
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const upd = await (supabase as any)
+    .from("tasks")
+    .update({
+      status,
+      completed_at: status === "done" ? new Date().toISOString() : null,
+    })
+    .in("id", ids);
+  if (upd.error) return { error: upd.error.message };
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+export async function bulkSetTaskAssignee(
+  ids: string[],
+  userId: string | null
+): Promise<{ ok?: true; error?: string }> {
+  if (ids.length === 0) return { ok: true };
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const upd = await (supabase as any)
+    .from("tasks")
+    .update({ assignee_id: userId })
+    .in("id", ids);
+  if (upd.error) return { error: upd.error.message };
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+export async function bulkSetTaskDueDate(
+  ids: string[],
+  dueAt: string | null
+): Promise<{ ok?: true; error?: string }> {
+  if (ids.length === 0) return { ok: true };
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const upd = await (supabase as any)
+    .from("tasks")
+    .update({ due_at: dueAt })
+    .in("id", ids);
+  if (upd.error) return { error: upd.error.message };
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+export async function bulkDeleteTasks(
+  ids: string[]
+): Promise<{ ok?: true; error?: string }> {
+  if (ids.length === 0) return { ok: true };
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const { error } = await supabase.from("tasks").delete().in("id", ids);
+  if (error) return { error: error.message };
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+/**
+ * Add a co-assignee to a task. The primary `assignee_id` column is
+ * untouched (existing queries depend on it); this row goes into the
+ * task_assignees join table so the drawer's avatar stack can show
+ * multiple owners.
+ */
+export async function addTaskAssignee(
+  taskId: string,
+  userId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ins = await (supabase as any)
+    .from("task_assignees")
+    .insert({ task_id: taskId, user_id: userId });
+  if (ins.error && !String(ins.error.message).includes("duplicate")) {
+    return { error: ins.error.message };
+  }
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+export async function removeTaskAssignee(
+  taskId: string,
+  userId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  // If removing the primary, also clear assignee_id (otherwise the
+  // trigger would re-add the row on the next task update).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const task = await (supabase as any)
+    .from("tasks")
+    .select("assignee_id")
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (task.data?.assignee_id === userId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from("tasks")
+      .update({ assignee_id: null } as any)
+      .eq("id", taskId);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const del = await (supabase as any)
+    .from("task_assignees")
+    .delete()
+    .eq("task_id", taskId)
+    .eq("user_id", userId);
+  if (del.error) return { error: del.error.message };
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+/**
+ * Subtask creation. The child inherits the parent's workspace, team,
+ * and project so the kanban board doesn't drop it into an orphan column.
+ * Assignee defaults to the parent's assignee so quick-checklists don't
+ * force the user through a picker; can be changed in the drawer later.
+ */
+export async function createSubtask(input: {
+  parentId: string;
+  title: string;
+}): Promise<{ ok?: true; id?: string; error?: string }> {
+  const title = input.title?.trim();
+  if (!title) return { error: "Title required." };
+
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parent = await (supabase as any)
+    .from("tasks")
+    .select("id, workspace_id, team_id, project_id, assignee_id")
+    .eq("id", input.parentId)
+    .maybeSingle();
+
+  if (parent.error || !parent.data) {
+    return { error: "Parent task not found." };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ins = await (supabase as any)
+    .from("tasks")
+    .insert({
+      workspace_id: parent.data.workspace_id,
+      team_id: parent.data.team_id,
+      project_id: parent.data.project_id,
+      parent_task_id: input.parentId,
+      title,
+      description: null,
+      priority: 4,
+      status: "todo",
+      assignee_id: parent.data.assignee_id ?? profile.id,
+      author_id: profile.id,
+      triaged_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (ins.error) return { error: ins.error.message };
+  revalidateTaskRoutes();
+  return { ok: true, id: ins.data.id };
+}
+
 export async function deleteTask(
   id: string
 ): Promise<{ ok?: true; error?: string }> {

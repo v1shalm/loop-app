@@ -6,6 +6,8 @@ import { Sidebar, type SidebarProps } from "@/components/sidebar";
 import { SidebarProvider } from "@/components/sidebar-context";
 import { TeamProvider } from "@/components/team-provider";
 import { QuickAddProvider } from "@/components/quick-add-context";
+import { BulkSelectionProvider } from "@/components/bulk-selection";
+import { BulkActionBar } from "@/components/bulk-action-bar";
 
 // Heavy client modules — only ship their code once the user actually triggers
 // them. Each carries motion + popovers + date-picker code that would
@@ -85,6 +87,7 @@ export function AppShell({
         currentUserId={user.id}
       >
         <QuickAddProvider open={() => setQuickOpen(true)}>
+         <BulkSelectionProvider>
           <div className="flex h-dvh w-full overflow-hidden bg-background">
             <Sidebar
               user={user}
@@ -119,7 +122,9 @@ export function AppShell({
             {workspace && (
               <RealtimeBridge userId={user.id} workspaceId={workspace.id} />
             )}
+            <BulkActionBar members={members} />
           </div>
+         </BulkSelectionProvider>
         </QuickAddProvider>
       </TeamProvider>
     </SidebarProvider>

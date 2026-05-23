@@ -32,6 +32,7 @@ import { playSound } from "@/lib/sounds";
 import type { TaskWithRelations } from "@/lib/queries";
 import { useTeamContext } from "@/components/team-provider";
 import { Avatar } from "@/components/avatar";
+import { useBulkSelection } from "@/components/bulk-selection";
 
 type Priority = 1 | 2 | 3 | 4;
 
@@ -63,6 +64,9 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
   const pathname = usePathname();
   const params = useSearchParams();
   const { members, currentUserId } = useTeamContext();
+  const { mode: selectionMode, ids: selectedIds, toggle: toggleSelection } =
+    useBulkSelection();
+  const selected = selectedIds.has(task.id);
 
   const [optPriority, setOptPriority] = useState<Priority>(
     task.priority as Priority
@@ -194,17 +198,41 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
           className="group rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
         >
           <div className="flex items-start gap-3">
-            {/* Checkbox */}
+            {/* Checkbox — toggles completion by default, toggles bulk
+                selection when the page has entered selection mode. */}
             <button
-              onClick={toggle}
+              onClick={() => {
+                if (selectionMode) {
+                  toggleSelection(task.id);
+                } else {
+                  toggle();
+                }
+              }}
               disabled={pending}
-              aria-label={`Mark "${task.title}" complete`}
-              className="focus-ring touch-expand mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-border bg-background transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] hover:border-foreground/40 active:scale-95"
+              aria-label={
+                selectionMode
+                  ? selected
+                    ? `Deselect ${task.title}`
+                    : `Select ${task.title}`
+                  : `Mark "${task.title}" complete`
+              }
+              aria-pressed={selectionMode ? selected : undefined}
+              className={cn(
+                "focus-ring touch-expand mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-[5px] border bg-background transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-95",
+                selectionMode && selected
+                  ? "border-primary bg-primary"
+                  : "border-border hover:border-foreground/40"
+              )}
             >
               <Check
                 size={11}
                 weight="bold"
-                className="text-foreground/0 transition-colors group-hover:text-muted-foreground/40"
+                className={cn(
+                  "transition-colors",
+                  selectionMode && selected
+                    ? "text-primary-foreground"
+                    : "text-foreground/0 group-hover:text-muted-foreground/40"
+                )}
               />
             </button>
 

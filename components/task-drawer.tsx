@@ -33,6 +33,7 @@ import {
   Flag,
   Folder,
   Hash,
+  Plus,
   Trash,
   Tray,
   UserPlus,
@@ -42,8 +43,11 @@ import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import {
   addComment,
+  addTaskAssignee,
+  createSubtask,
   deleteComment,
   deleteTask,
+  removeTaskAssignee,
   setTaskStatus,
   updateTask,
   type CommentRow,
@@ -51,6 +55,11 @@ import {
 import { playSound } from "@/lib/sounds";
 import { RelativeTime } from "@/components/relative-time";
 import { CommentReactions } from "@/components/comment-reactions";
+import {
+  MentionInput,
+  MentionRenderer,
+  type MentionInputHandle,
+} from "@/components/mention-input";
 import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
 import { ProjectDot } from "@/components/project-dot";
@@ -165,6 +174,9 @@ function DrawerInner({
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [pending, startTransition] = useTransition();
+  // Multi-assignee state — co-assignees on top of the primary
+  // tasks.assignee_id. Source: task_assignees join table.
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
 
@@ -193,12 +205,25 @@ function DrawerInner({
       .eq("task_id", taskId)
       .order("created_at", { ascending: true }) as any);
 
-    Promise.all([taskP, commentsP]).then(([taskRes, cRes]) => {
-      if (!active) return;
-      setTask((taskRes.data as TaskWithRelations | null) ?? null);
-      setComments((cRes.data as CommentRow[] | null) ?? []);
-      setLoading(false);
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const assigneesP = ((supabase as any)
+      .from("task_assignees")
+      .select("user_id")
+      .eq("task_id", taskId));
+
+    Promise.all([taskP, commentsP, assigneesP]).then(
+      ([taskRes, cRes, aRes]: [
+        { data: TaskWithRelations | null },
+        { data: CommentRow[] | null },
+        { data: { user_id: string }[] | null }
+      ]) => {
+        if (!active) return;
+        setTask(taskRes.data ?? null);
+        setComments(cRes.data ?? []);
+        setAssigneeIds((aRes.data ?? []).map((r) => r.user_id));
+        setLoading(false);
+      }
+    );
 
     return () => {
       active = false;
@@ -451,45 +476,15 @@ function DrawerInner({
               </PopoverContent>
             </Popover>
 
-            <Popover>
-              <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2 pr-2.5 text-[12px] font-medium text-foreground transition-colors hover:brightness-[0.97]">
-                {task.assignee ? (
-                  <Avatar
-                    src={task.assignee.avatar_url}
-                    initials={task.assignee.initials}
-                    color={task.assignee.avatar_color}
-                    size={18}
-                  />
-                ) : (
-                  <UserPlus size={13} className="text-muted-foreground" />
-                )}
-                {task.assignee
-                  ? task.assignee.id === currentUserId
-                    ? "Me"
-                    : task.assignee.name.split(/\s+/)[0]
-                  : "Assign"}
-              </PopoverTrigger>
-              <PopoverContent className="w-[220px] gap-0 p-1" align="start">
-                {members.map((m) => (
-                  <PopoverItem
-                    key={m.id}
-                    selected={task.assignee?.id === m.id}
-                    onSelect={() => patch({ assigneeId: m.id })}
-                  >
-                    <Avatar
-                      src={m.avatar_url}
-                      initials={m.initials}
-                      color={m.avatar_color}
-                      size={18}
-                    />
-                    <span>
-                      {m.name}
-                      {m.id === currentUserId ? " (you)" : ""}
-                    </span>
-                  </PopoverItem>
-                ))}
-              </PopoverContent>
-            </Popover>
+            <AssigneeStackPicker
+              taskId={task.id}
+              members={members}
+              currentUserId={currentUserId}
+              assigneeIds={assigneeIds}
+              setAssigneeIds={setAssigneeIds}
+              primaryId={task.assignee?.id ?? null}
+              onSetPrimary={(id) => patch({ assigneeId: id })}
+            />
 
             <Popover>
               <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12px] font-medium text-foreground transition-colors hover:brightness-[0.97]">
@@ -540,6 +535,18 @@ function DrawerInner({
 
         <SectionDivider />
 
+        {/* Subtasks — only on parent tasks (a subtask itself doesn't
+            nest). Stays mounted with the section header so users can
+            see the affordance even when the list is empty. */}
+        {!task.parent_task_id && (
+          <>
+            <section className="px-6 py-5">
+              <SubtasksSection taskId={task.id} />
+            </section>
+            <SectionDivider />
+          </>
+        )}
+
         {/* Created by | Added — two columns with a hairline between */}
         <section className="px-6 py-5">
           <div className="grid grid-cols-2 gap-0">
@@ -587,6 +594,7 @@ function DrawerInner({
             setComments={setComments}
             currentUser={currentUser}
             currentUserId={currentUserId}
+            members={members}
           />
         </section>
       </div>
@@ -678,17 +686,19 @@ function CommentsSection({
   setComments,
   currentUser,
   currentUserId,
+  members,
 }: {
   taskId: string;
   comments: CommentRow[];
   setComments: React.Dispatch<React.SetStateAction<CommentRow[]>>;
   currentUser: Profile | null;
   currentUserId: string;
+  members: Profile[];
 }) {
   const [body, setBody] = useState("");
   const [pending, startTransition] = useTransition();
   const [sort, setSort] = useState<"recent" | "oldest">("recent");
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<MentionInputHandle>(null);
 
   const visible = [...comments].sort((a, b) =>
     sort === "recent"
@@ -801,7 +811,7 @@ function CommentsSection({
         </ul>
       )}
 
-      {/* Composer — avatar + textarea + send */}
+      {/* Composer — avatar + mention-aware textarea + send */}
       <div className="mt-4 flex items-start gap-2.5">
         {currentUser && (
           <span className="mt-1 shrink-0">
@@ -814,19 +824,16 @@ function CommentsSection({
           </span>
         )}
         <div className="min-w-0 flex-1 rounded-xl border border-border/60 bg-card transition-colors focus-within:border-ring/40">
-          <AutoTextarea
+          <MentionInput
             ref={inputRef}
             value={body}
-            onChange={(e) => setBody(e.target.value)}
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            placeholder="Add a comment..."
+            onChange={setBody}
+            onSubmit={submit}
+            members={members}
+            placeholder="Add a comment. Type @ to mention a teammate."
             minRows={2}
-            className="w-full resize-none rounded-xl bg-transparent px-3 py-2.5 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+            ariaLabel="Add a comment"
+            className="rounded-xl px-3 py-2.5 text-[13px]"
           />
           <div className="flex items-center justify-end gap-2 px-2 pb-2">
             <Button
@@ -938,9 +945,10 @@ function CommentItem({
             </button>
           )}
         </div>
-        <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-relaxed text-foreground">
-          {comment.body}
-        </p>
+        <MentionRenderer
+          text={comment.body}
+          className="mt-0.5 block text-[13px] leading-relaxed text-foreground"
+        />
         <CommentReactions
           commentId={comment.id}
           reactions={comment.reactions ?? []}
@@ -1049,5 +1057,367 @@ function Meta({
       </p>
       <div className="mt-1.5 text-[13px] text-foreground">{children}</div>
     </div>
+  );
+}
+
+// ── Subtasks ───────────────────────────────────────────────────────────────
+
+interface SubtaskRow {
+  id: string;
+  title: string;
+  status: "todo" | "doing" | "done";
+}
+
+function SubtasksSection({ taskId }: { taskId: string }) {
+  const [subtasks, setSubtasks] = useState<SubtaskRow[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [, startTransition] = useTransition();
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  // Initial fetch + realtime sync. Comments use the same pattern.
+  useEffect(() => {
+    let active = true;
+    const supabase = getSupabaseBrowser();
+    if (!supabase) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("tasks")
+      .select("id, title, status")
+      .eq("parent_task_id", taskId)
+      .order("created_at", { ascending: true })
+      .then((res: { data: SubtaskRow[] | null }) => {
+        if (!active) return;
+        setSubtasks(res.data ?? []);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [taskId]);
+
+  const done = subtasks.filter((s) => s.status === "done").length;
+  const total = subtasks.length;
+
+  const submit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+    // Optimistic mirror — server confirms with the real id later.
+    const tempId = `temp-${Date.now()}`;
+    setSubtasks((prev) => [...prev, { id: tempId, title: text, status: "todo" }]);
+    setDraft("");
+    addInputRef.current?.focus();
+    startTransition(async () => {
+      const res = await createSubtask({ parentId: taskId, title: text });
+      if (res.error) {
+        setSubtasks((prev) => prev.filter((s) => s.id !== tempId));
+        sileo.error({ title: res.error });
+        return;
+      }
+      if (res.id) {
+        setSubtasks((prev) =>
+          prev.map((s) => (s.id === tempId ? { ...s, id: res.id! } : s))
+        );
+      }
+    });
+  };
+
+  const toggle = (s: SubtaskRow) => {
+    const next: "todo" | "done" = s.status === "done" ? "todo" : "done";
+    setSubtasks((prev) =>
+      prev.map((x) => (x.id === s.id ? { ...x, status: next } : x))
+    );
+    startTransition(async () => {
+      const res = await setTaskStatus(s.id, next);
+      if (res.error) {
+        setSubtasks((prev) =>
+          prev.map((x) => (x.id === s.id ? { ...x, status: s.status } : x))
+        );
+        sileo.error({ title: res.error });
+      }
+    });
+  };
+
+  const remove = (id: string) => {
+    const snapshot = subtasks;
+    setSubtasks((prev) => prev.filter((s) => s.id !== id));
+    startTransition(async () => {
+      const res = await deleteTask(id);
+      if (res.error) {
+        setSubtasks(snapshot);
+        sileo.error({ title: res.error });
+      }
+    });
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        icon={<CheckCircle size={14} />}
+        label="Subtasks"
+        trailing={
+          total > 0 ? (
+            <span className="text-[11.5px] tabular-nums text-muted-foreground">
+              {done}/{total}
+            </span>
+          ) : (
+            <span className="text-[11.5px] tabular-nums text-muted-foreground/70">
+              0
+            </span>
+          )
+        }
+      />
+
+      {/* Progress bar — quiet by default, fills as items are checked. */}
+      {total > 0 && (
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+          <motion.div
+            className="h-full bg-primary"
+            initial={false}
+            animate={{ width: `${(done / total) * 100}%` }}
+            transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
+          />
+        </div>
+      )}
+
+      <ul className="mt-2.5 flex flex-col">
+        <AnimatePresence initial={false}>
+          {subtasks.map((s) => (
+            <motion.li
+              key={s.id}
+              layout
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{
+                type: "spring",
+                duration: 0.28,
+                bounce: 0.18,
+              }}
+              className="group flex items-center gap-2.5 rounded-md px-1 py-1.5 transition-colors hover:bg-accent/30"
+            >
+              <button
+                type="button"
+                onClick={() => toggle(s)}
+                aria-label={
+                  s.status === "done" ? "Mark not done" : "Mark complete"
+                }
+                className={cn(
+                  "focus-ring grid size-[18px] shrink-0 place-items-center rounded-[5px] border-[1.5px] transition-colors duration-150 ease-[var(--ease-out)] active:scale-95",
+                  s.status === "done"
+                    ? "border-emerald-600 bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-500"
+                    : "border-border hover:border-foreground/40 bg-background"
+                )}
+              >
+                {s.status === "done" && (
+                  <Check
+                    size={11}
+                    weight="bold"
+                    className="text-white"
+                  />
+                )}
+              </button>
+              <span
+                className={cn(
+                  "min-w-0 flex-1 truncate text-[13px]",
+                  s.status === "done"
+                    ? "text-muted-foreground line-through decoration-muted-foreground/40"
+                    : "text-foreground"
+                )}
+              >
+                {s.title}
+              </span>
+              <button
+                type="button"
+                onClick={() => remove(s.id)}
+                aria-label="Delete subtask"
+                className="focus-ring grid size-6 place-items-center rounded text-muted-foreground/60 opacity-0 transition-colors hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
+              >
+                <X size={12} weight="bold" />
+              </button>
+            </motion.li>
+          ))}
+        </AnimatePresence>
+      </ul>
+
+      {/* Add-subtask row — inline, no popover. Hitting Enter adds and
+          keeps focus so users can hammer in a checklist quickly. */}
+      {adding ? (
+        <form onSubmit={submit} className="mt-1 flex items-center gap-2 px-1">
+          <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border-[1.5px] border-dashed border-muted-foreground/40" />
+          <input
+            ref={addInputRef}
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={() => {
+              if (!draft.trim()) setAdding(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setDraft("");
+                setAdding(false);
+              }
+            }}
+            placeholder="Subtask name"
+            className="focus-ring h-7 flex-1 rounded-md bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+          />
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="focus-ring mt-1 flex items-center gap-2 rounded-md px-1 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Plus size={12} weight="bold" />
+          Add subtask
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Assignee avatar-stack picker ───────────────────────────────────────────
+
+function AssigneeStackPicker({
+  taskId,
+  members,
+  currentUserId,
+  assigneeIds,
+  setAssigneeIds,
+  primaryId,
+  onSetPrimary,
+}: {
+  taskId: string;
+  members: Profile[];
+  currentUserId: string;
+  assigneeIds: string[];
+  setAssigneeIds: React.Dispatch<React.SetStateAction<string[]>>;
+  primaryId: string | null;
+  onSetPrimary: (id: string | null) => void;
+}) {
+  const [, startTransition] = useTransition();
+  const byId = new Map(members.map((m) => [m.id, m]));
+  const assignees = assigneeIds
+    .map((id) => byId.get(id))
+    .filter((m): m is Profile => Boolean(m));
+  // Sort so primary comes first in the stack.
+  const sorted = [...assignees].sort((a, b) => {
+    if (a.id === primaryId) return -1;
+    if (b.id === primaryId) return 1;
+    return 0;
+  });
+
+  const toggle = (m: Profile) => {
+    const has = assigneeIds.includes(m.id);
+    if (has) {
+      // Optimistic remove
+      const next = assigneeIds.filter((id) => id !== m.id);
+      setAssigneeIds(next);
+      startTransition(async () => {
+        const res = await removeTaskAssignee(taskId, m.id);
+        if (res.error) {
+          setAssigneeIds(assigneeIds);
+          sileo.error({ title: res.error });
+        } else if (m.id === primaryId) {
+          // The action also cleared assignee_id; reflect that here.
+          onSetPrimary(next[0] ?? null);
+        }
+      });
+    } else {
+      // Optimistic add. First add becomes the primary so legacy queries
+      // (My work, Inbox) see the task.
+      const next = [...assigneeIds, m.id];
+      setAssigneeIds(next);
+      const shouldPromote = assigneeIds.length === 0;
+      startTransition(async () => {
+        const res = await addTaskAssignee(taskId, m.id);
+        if (res.error) {
+          setAssigneeIds(assigneeIds);
+          sileo.error({ title: res.error });
+          return;
+        }
+        if (shouldPromote) onSetPrimary(m.id);
+      });
+    }
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-1.5 pr-2.5 text-[12px] font-medium text-foreground transition-colors hover:brightness-[0.97]">
+        {sorted.length === 0 ? (
+          <>
+            <UserPlus size={13} className="text-muted-foreground" />
+            Assign
+          </>
+        ) : (
+          <>
+            <span className="flex items-center">
+              {sorted.slice(0, 3).map((m, i) => (
+                <span
+                  key={m.id}
+                  className="ring-1 ring-card"
+                  style={{ marginLeft: i === 0 ? 0 : -6 }}
+                >
+                  <Avatar
+                    src={m.avatar_url}
+                    initials={m.initials}
+                    color={m.avatar_color}
+                    size={18}
+                  />
+                </span>
+              ))}
+            </span>
+            <span>
+              {sorted.length === 1
+                ? sorted[0].id === currentUserId
+                  ? "Me"
+                  : sorted[0].name.split(/\s+/)[0]
+                : `${sorted.length} assignees`}
+            </span>
+          </>
+        )}
+      </PopoverTrigger>
+      <PopoverContent className="w-[240px] gap-0 p-1" align="start">
+        <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Assignees
+        </p>
+        {members.map((m) => {
+          const isAssigned = assigneeIds.includes(m.id);
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => toggle(m)}
+              aria-pressed={isAssigned}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-accent/40",
+                isAssigned && "bg-primary/8 text-primary"
+              )}
+            >
+              <Avatar
+                src={m.avatar_url}
+                initials={m.initials}
+                color={m.avatar_color}
+                size={20}
+              />
+              <span className="min-w-0 flex-1 truncate">
+                {m.name}
+                {m.id === currentUserId ? " (you)" : ""}
+              </span>
+              {isAssigned && (
+                <Check
+                  size={12}
+                  weight="bold"
+                  className="shrink-0 text-primary"
+                />
+              )}
+            </button>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
   );
 }

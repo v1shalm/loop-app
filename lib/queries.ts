@@ -25,7 +25,10 @@ export type WorkflowStatus =
   | "archived"
   | "do_not_use";
 
-export type Task = Tables["tasks"]["Row"] & { triaged_at?: string | null };
+export type Task = Tables["tasks"]["Row"] & {
+  triaged_at?: string | null;
+  parent_task_id?: string | null;
+};
 export type Project = Omit<Tables["projects"]["Row"], "workflow_status"> & {
   workflow_status?: WorkflowStatus | null;
   description?: string | null;

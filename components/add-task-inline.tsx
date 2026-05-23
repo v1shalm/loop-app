@@ -18,12 +18,14 @@ import {
   Plus,
   User,
 } from "@/components/icons";
+import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { createTask } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
 import { parseTask, type ParseHint } from "@/lib/parse-task";
 import { useTeamContext } from "@/components/team-provider";
 import { useQuickAdd } from "@/components/quick-add-context";
+import { Avatar } from "@/components/avatar";
 
 /**
  * Footer row on every task list. Click → expands into a real inline
@@ -43,6 +45,64 @@ export function AddTaskInline({
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // @mention picker state — matches the same picker shape as the comment
+  // composer (see mention-input.tsx). Here we use it as an autocomplete
+  // assist: the picker inserts a plain "@firstname " token that the
+  // parser then resolves into an assignee.
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionIdx, setMentionIdx] = useState(0);
+
+  const mentionMatches = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase().trim();
+    return members
+      .filter((m) =>
+        q === ""
+          ? true
+          : m.name.toLowerCase().includes(q) ||
+            m.initials.toLowerCase().includes(q)
+      )
+      .slice(0, 6);
+  }, [mentionQuery, members]);
+
+  const detectAtToken = (input: string, caret: number) => {
+    let i = caret - 1;
+    while (i >= 0) {
+      const ch = input[i];
+      if (ch === "@") {
+        const prev = i > 0 ? input[i - 1] : "";
+        if (i === 0 || /\s/.test(prev)) {
+          return { start: i, query: input.slice(i + 1, caret) };
+        }
+        return null;
+      }
+      if (/\s/.test(ch)) return null;
+      if (caret - i > 24) return null;
+      i--;
+    }
+    return null;
+  };
+
+  const insertMention = (name: string) => {
+    const input = inputRef.current;
+    if (!input) return;
+    const caret = input.selectionStart ?? text.length;
+    const detected = detectAtToken(text, caret);
+    if (!detected) return;
+    const firstName = name.split(/\s+/)[0].toLowerCase();
+    const before = text.slice(0, detected.start);
+    const after = text.slice(caret);
+    const token = `@${firstName} `;
+    const next = `${before}${token}${after}`;
+    setText(next);
+    setMentionQuery(null);
+    const newCaret = before.length + token.length;
+    requestAnimationFrame(() => {
+      input.focus();
+      input.setSelectionRange(newCaret, newCaret);
+    });
+  };
 
   const parsed = useMemo(
     () =>
@@ -119,7 +179,7 @@ export function AddTaskInline({
   return (
     <div
       ref={containerRef}
-      className="rounded-xl border border-border bg-card shadow-soft-xs"
+      className="relative rounded-xl border border-border bg-card shadow-soft-xs"
     >
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-muted-foreground/40 text-muted-foreground/70">
@@ -130,8 +190,44 @@ export function AddTaskInline({
           autoFocus
           value={text}
           disabled={pending}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setText(next);
+            const caret = e.target.selectionStart ?? next.length;
+            const det = detectAtToken(next, caret);
+            if (det) {
+              setMentionQuery(det.query);
+              setMentionIdx(0);
+            } else {
+              setMentionQuery(null);
+            }
+          }}
           onKeyDown={(e) => {
+            if (mentionQuery !== null && mentionMatches.length > 0) {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setMentionIdx((i) => (i + 1) % mentionMatches.length);
+                return;
+              }
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setMentionIdx(
+                  (i) =>
+                    (i - 1 + mentionMatches.length) % mentionMatches.length
+                );
+                return;
+              }
+              if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                insertMention(mentionMatches[mentionIdx].name);
+                return;
+              }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setMentionQuery(null);
+                return;
+              }
+            }
             if (e.key === "Enter") {
               e.preventDefault();
               submit();
@@ -159,6 +255,57 @@ export function AddTaskInline({
       {(parsed.hints.length > 0 || text.trim().length > 0) && (
         <HintRow hints={parsed.hints} hasText={text.trim().length > 0} />
       )}
+
+      {/* @mention picker — same shape as the comment composer's, but
+          inserts a plain "@firstname " token so the natural-language
+          parser handles the resolution. */}
+      <AnimatePresence>
+        {mentionQuery !== null && mentionMatches.length > 0 && (
+          <motion.div
+            key="mention-pop-inline"
+            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97 }}
+            transition={{ type: "spring", duration: 0.22, bounce: 0.12 }}
+            role="listbox"
+            aria-label="Assignee suggestions"
+            className="absolute left-12 z-50 mt-1 min-w-[220px] max-w-[280px] overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-soft-md ring-1 ring-foreground/5"
+          >
+            {mentionMatches.map((m, i) => {
+              const active = i === mentionIdx;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onMouseEnter={() => setMentionIdx(i)}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    insertMention(m.name);
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors duration-150 ease-[var(--ease-out)]",
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-accent/40"
+                  )}
+                >
+                  <Avatar
+                    src={m.avatar_url}
+                    initials={m.initials}
+                    color={m.avatar_color}
+                    size={22}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+                    {m.name}
+                  </span>
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
