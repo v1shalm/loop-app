@@ -1,0 +1,26 @@
+[
+  {
+    "name": "login",
+    "label": "Login — four demo accounts in a 2×2 grid"
+  },
+  {
+    "name": "my-work",
+    "label": "My work — greeting, today, right rail"
+  },
+  {
+    "name": "inbox",
+    "label": "Inbox — reply-first triage with snooze"
+  },
+  {
+    "name": "projects-board",
+    "label": "Projects — kanban with workflow status"
+  },
+  {
+    "name": "task-drawer",
+    "label": "Task drawer — floating SHOP-style panel"
+  },
+  {
+    "name": "manage-team",
+    "label": "Manage team (admin-only)"
+  }
+]

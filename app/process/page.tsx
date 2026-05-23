@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowUp,
@@ -16,6 +17,7 @@ export default function ProcessPage() {
       <Hero />
       <Brief />
       <WhatWeBuilt />
+      <Screens />
       <Decisions />
       <AILoop />
       <DemoAccounts />
@@ -160,6 +162,90 @@ function Feature({
         </p>
       </div>
     </li>
+  );
+}
+
+// ── Screens ─────────────────────────────────────────────────────────────────
+
+const SCREENS: Array<{ src: string; alt: string; caption: string }> = [
+  {
+    src: "/screens/login.png",
+    alt: "Login page with four demo accounts in a 2x2 grid",
+    caption: "Login — four demo accounts so reviewers compare roles in two clicks",
+  },
+  {
+    src: "/screens/my-work.png",
+    alt: "My work page with greeting, today's tasks, and right rail",
+    caption: "My work — greeting, today's list, and a consolidated right rail with progress + team pulse + activity",
+  },
+  {
+    src: "/screens/inbox.png",
+    alt: "Inbox with filter chips and triage actions",
+    caption: "Inbox — filter chips (All / Unread / High / Snoozed), reply-first composer, snooze with explicit wake times",
+  },
+  {
+    src: "/screens/projects-board.png",
+    alt: "Kanban-style project board with gray columns and white task cards",
+    caption: "Projects — kanban board, one column per project, white task cards stacked inside",
+  },
+  {
+    src: "/screens/task-drawer.png",
+    alt: "Floating task drawer with title, chips, description, metadata, comments",
+    caption: "Task drawer — floats inset from the edges with the Vaul/SHOP slide curve",
+  },
+  {
+    src: "/screens/manage-team.png",
+    alt: "Admin-only manage team page with invite form and member list",
+    caption: "Manage team (admin only) — invite by email, change roles, remove members. RLS gates the writes",
+  },
+];
+
+function Screens() {
+  return (
+    <Section title="The interface">
+      <Prose>
+        <p>
+          A few of the surfaces. The full app is one click away — these
+          are here so the writeup stands on its own if you&apos;re
+          skimming.
+        </p>
+      </Prose>
+      <div className="mt-6 flex flex-col gap-5">
+        {SCREENS.map((s) => (
+          <ScreenFrame key={s.src} {...s} />
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function ScreenFrame({
+  src,
+  alt,
+  caption,
+}: {
+  src: string;
+  alt: string;
+  caption: string;
+}) {
+  return (
+    <figure className="flex flex-col gap-2">
+      <div className="overflow-hidden rounded-2xl border border-border/60 bg-foreground/[0.04] p-3 sm:p-4">
+        <div className="overflow-hidden rounded-lg border border-border/60 bg-card shadow-soft-sm">
+          <Image
+            src={src}
+            alt={alt}
+            width={1440}
+            height={880}
+            className="block h-auto w-full"
+            unoptimized
+          />
+        </div>
+      </div>
+      <figcaption className="px-1 text-[12px] leading-relaxed text-muted-foreground">
+        {caption}
+      </figcaption>
+    </figure>
   );
 }
 
