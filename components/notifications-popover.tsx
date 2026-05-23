@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
+import { RelativeTime } from "@/components/relative-time";
 import {
   Bell,
   CheckCircle,
@@ -213,7 +213,6 @@ function NotificationRow({
   item: Item;
   onClose: () => void;
 }) {
-  const ago = formatDistanceToNow(new Date(item.at), { addSuffix: true });
   const href = item.project_id
     ? `/projects/${item.project_id}?task=${item.task_id}`
     : `/assigned-to-me?task=${item.task_id}`;
@@ -253,7 +252,10 @@ function NotificationRow({
             </>
           )}
         </p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground/70">{ago}</p>
+        <RelativeTime
+          date={item.at}
+          className="mt-0.5 block text-[11px] text-muted-foreground/70"
+        />
       </div>
     </Link>
   );

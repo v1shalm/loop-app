@@ -45,3 +45,6 @@ next-env.d.ts
 # supabase CLI cache
 supabase/.temp/
 supabase/.branches/
+
+# UX walkthrough artifacts (regenerated on demand by scripts/ux-walkthrough.mjs)
+public/ux-audit/

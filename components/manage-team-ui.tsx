@@ -57,8 +57,8 @@ function InvitePanel() {
         Add a teammate
       </h3>
       <p className="mt-1 text-[12.5px] text-muted-foreground">
-        They need to be in the workspace already. We&apos;ll add them to this
-        team with the role you pick.
+        Add someone who already signed in to Loop. We&apos;ll give them the
+        role you pick.
       </p>
 
       <div className="mt-4 flex items-center gap-2">

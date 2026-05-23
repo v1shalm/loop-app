@@ -49,7 +49,8 @@ import {
   type CommentRow,
 } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
-import { formatDistanceToNow } from "date-fns";
+import { RelativeTime } from "@/components/relative-time";
+import { CommentReactions } from "@/components/comment-reactions";
 import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
 import { ProjectDot } from "@/components/project-dot";
@@ -187,7 +188,7 @@ function DrawerInner({
     const commentsP = (supabase
       .from("task_comments")
       .select(
-        "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color, avatar_url)"
+        "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
       )
       .eq("task_id", taskId)
       .order("created_at", { ascending: true }) as any);
@@ -328,7 +329,7 @@ function DrawerInner({
   if (!task) {
     return (
       <div className="flex h-full flex-col">
-        <Header onClose={onClose} pending={false} />
+        <Header onClose={onClose} pending={false} task={null} />
         <div className="grid flex-1 place-items-center text-center text-muted-foreground">
           <div>
             <span className="mx-auto grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
@@ -364,7 +365,7 @@ function DrawerInner({
 
   return (
     <div className="flex h-full flex-col">
-      <Header onClose={onClose} pending={pending} onDelete={remove} />
+      <Header onClose={onClose} pending={pending} onDelete={remove} task={task} />
 
       <div className="flex-1 overflow-y-auto">
         {/* Title + checkbox + chips */}
@@ -793,6 +794,7 @@ function CommentsSection({
               isMe={c.author_id === currentUserId}
               isLast={i === visible.length - 1}
               onDelete={() => remove(c.id)}
+              currentUserId={currentUserId}
             />
           ))}
         </ul>
@@ -891,16 +893,14 @@ function CommentItem({
   isMe,
   isLast,
   onDelete,
+  currentUserId,
 }: {
   comment: CommentRow;
   isMe: boolean;
   isLast: boolean;
   onDelete: () => void;
+  currentUserId: string;
 }) {
-  const ago = formatDistanceToNow(new Date(comment.created_at), {
-    addSuffix: true,
-  });
-
   return (
     <li className="flex gap-2.5">
       {/* Left column: avatar + connector line down to the next comment */}
@@ -924,7 +924,10 @@ function CommentItem({
           <span className="text-[12.5px] font-semibold text-foreground">
             {isMe ? "You" : comment.author?.name ?? "Someone"}
           </span>
-          <span className="text-[11px] text-muted-foreground/70">{ago}</span>
+          <RelativeTime
+            date={comment.created_at}
+            className="text-[11px] text-muted-foreground/70"
+          />
           {isMe && (
             <button
               onClick={onDelete}
@@ -937,6 +940,11 @@ function CommentItem({
         <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-relaxed text-foreground">
           {comment.body}
         </p>
+        <CommentReactions
+          commentId={comment.id}
+          reactions={comment.reactions ?? []}
+          currentUserId={currentUserId}
+        />
       </div>
     </li>
   );
@@ -946,18 +954,26 @@ function Header({
   onClose,
   onDelete,
   pending,
+  task,
 }: {
   onClose: () => void;
   onDelete?: () => void;
   pending: boolean;
+  task?: TaskWithRelations | null;
 }) {
+  const project = task?.project as Project | null | undefined;
+  const label = project?.name ?? "Inbox";
   return (
     <div className="flex items-center gap-2.5 border-b border-border/60 px-4 py-3">
-      <span className="grid size-7 place-items-center rounded-md bg-primary/10 text-primary">
-        <Hash size={13} weight="bold" />
-      </span>
-      <h2 className="text-[13px] font-semibold tracking-tight text-foreground">
-        Task
+      {project ? (
+        <ProjectDot project={project} size={9} />
+      ) : (
+        <span className="grid size-7 place-items-center rounded-md bg-primary/10 text-primary">
+          <Hash size={13} weight="bold" />
+        </span>
+      )}
+      <h2 className="min-w-0 truncate text-[13px] font-semibold tracking-tight text-foreground">
+        {label}
       </h2>
       {pending && (
         <CircleNotch size={13} className="animate-spin text-muted-foreground" />

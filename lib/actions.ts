@@ -432,6 +432,10 @@ export interface CommentRow {
     avatar_color: string;
     avatar_url: string | null;
   } | null;
+  /** Raw reaction rows for this comment, joined from comment_reactions.
+   *  The UI rolls them up into emoji + count + did-I-react. Server-side
+   *  joining means we avoid an extra round-trip when the drawer opens. */
+  reactions?: { emoji: string; user_id: string }[];
 }
 
 export async function addComment(
@@ -452,7 +456,7 @@ export async function addComment(
     .from("task_comments")
     .insert({ task_id: taskId, author_id: profile.id, body: text })
     .select(
-      "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color, avatar_url)"
+      "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
     )
     .single() as any);
 
@@ -470,6 +474,60 @@ export async function deleteComment(
   if (error) return { error: error.message };
   revalidateTaskRoutes();
   return { ok: true };
+}
+
+/**
+ * Toggle the current user's reaction on a comment. Returns the new state
+ * so the client can drop its optimistic mirror with confidence.
+ *
+ * Behaviour:
+ *  - if the (comment, user, emoji) row exists → delete it (removes reaction)
+ *  - otherwise → insert it (adds reaction)
+ *
+ * RLS in 0010 already constrains writes to (user_id = auth.uid()), so we
+ * can trust the action without re-checking in app code.
+ */
+export async function toggleCommentReaction(
+  commentId: string,
+  emoji: string
+): Promise<{ ok?: true; added?: boolean; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const existing = await (supabase as any)
+    .from("comment_reactions")
+    .select("comment_id")
+    .eq("comment_id", commentId)
+    .eq("user_id", profile.id)
+    .eq("emoji", emoji)
+    .maybeSingle();
+
+  if (existing.data) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const del = await (supabase as any)
+      .from("comment_reactions")
+      .delete()
+      .eq("comment_id", commentId)
+      .eq("user_id", profile.id)
+      .eq("emoji", emoji);
+    if (del.error) return { error: del.error.message };
+    revalidateTaskRoutes();
+    return { ok: true, added: false };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ins = await (supabase as any).from("comment_reactions").insert({
+    comment_id: commentId,
+    user_id: profile.id,
+    emoji,
+  });
+  if (ins.error) return { error: ins.error.message };
+  revalidateTaskRoutes();
+  return { ok: true, added: true };
 }
 
 export async function deleteTask(

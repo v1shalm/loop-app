@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { format, formatDistanceToNow } from "date-fns";
+import { RelativeTime } from "@/components/relative-time";
 import { CheckCircle, UserPlus } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { statusLabel } from "@/components/status-picker";
@@ -87,7 +87,7 @@ function TodaySection({
       : completed === 0
       ? "Pick one and get started."
       : ratio === 1
-      ? "Inbox zero — nice."
+      ? "All done for today."
       : `${active} left to wrap up.`;
 
   return (
@@ -274,8 +274,6 @@ function ActivityRow({
   currentUserId: string;
 }) {
   const { kind, task, at } = item;
-  const ago = formatDistanceToNow(new Date(at), { addSuffix: true });
-  const timeTitle = format(new Date(at), "PPp");
 
   if (kind === "i-completed") {
     return (
@@ -291,9 +289,10 @@ function ActivityRow({
             completed{" "}
             <span className="font-medium text-foreground">{task.title}</span>
           </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground/70" title={timeTitle}>
-            {ago}
-          </p>
+          <RelativeTime
+            date={at}
+            className="mt-0.5 block text-[11px] text-muted-foreground/70"
+          />
         </div>
       </li>
     );
@@ -329,9 +328,10 @@ function ActivityRow({
           assigned you{" "}
           <span className="font-medium text-foreground">{task.title}</span>
         </p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground/70" title={timeTitle}>
-          {ago}
-        </p>
+        <RelativeTime
+          date={at}
+          className="mt-0.5 block text-[11px] text-muted-foreground/70"
+        />
       </div>
     </li>
   );

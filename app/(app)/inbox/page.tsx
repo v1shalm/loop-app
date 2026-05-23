@@ -1,7 +1,7 @@
 import { Tray } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { InboxList } from "@/components/inbox-list";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState, Kbd } from "@/components/empty-state";
 import { RightRail } from "@/components/right-rail";
 import {
   getCurrentProfile,
@@ -50,7 +50,10 @@ export default async function InboxPage() {
                 tips={[
                   "Tasks someone else assigns to you appear here first.",
                   "Hit Accept to add them to your day, or Mark later to push them out a week.",
-                  "Press ⌘K to jump anywhere, Q to quickly add a task.",
+                  <>
+                    Press <Kbd>Cmd</Kbd>
+                    <Kbd>K</Kbd> to jump anywhere, <Kbd>Q</Kbd> to add a task.
+                  </>,
                 ]}
               />
             ) : (

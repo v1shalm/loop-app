@@ -54,7 +54,7 @@ export default async function ProjectsBoardPage() {
             tips={[
               "Open the sidebar Projects header and hit + to make one.",
               "Add #project-name when creating a task to drop it into a project.",
-              "Each project gets its own column here — tasks stack inside.",
+              "Each project gets its own column here, with tasks stacked inside.",
             ]}
           />
         </div>

@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
+import { RelativeTime } from "@/components/relative-time";
 import { sileo } from "sileo";
 import {
   ArrowUp,
@@ -137,9 +138,6 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
   const dueLabel = task.due_at
     ? format(new Date(task.due_at), "EEE, d MMM")
     : null;
-  const created = formatDistanceToNow(new Date(task.created_at), {
-    addSuffix: true,
-  });
   const snoozedUntil =
     task.triaged_at && task.due_at && new Date(task.due_at) > new Date()
       ? new Date(task.due_at)
@@ -204,7 +202,7 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
             <span className="font-medium text-foreground">
               {task.author?.name ?? "Someone"}
             </span>{" "}
-            sent you · {created}
+            sent you · <RelativeTime date={task.created_at} />
           </p>
           <p className="mt-1 text-[14px] font-medium leading-snug text-foreground">
             {task.title}

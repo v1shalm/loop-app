@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { sileo } from "sileo";
-import { CircleNotch, Tray } from "@/components/icons";
+import { CircleNotch, Eye, EyeSlash, Tray } from "@/components/icons";
 import { GoogleG } from "@/components/google-g-icon";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { sendMagicLink } from "./actions";
@@ -26,19 +26,25 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
   { email: "priya@loop.app", password: "priya-loop-2026", name: "Priya", team: "Engineering", role: "Member" },
 ];
 
+type Mode = "password" | "magic";
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/assigned-to-me";
 
+  const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+
   const [pending, setPending] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
   const [demoPending, setDemoPending] = useState(false);
+  const [demoSlug, setDemoSlug] = useState<string | null>(null);
+
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const [demoSlug, setDemoSlug] = useState<string | null>(null);
 
   const signInWithDemo = async (account: DemoAccount) => {
     const supabase = getSupabaseBrowser();
@@ -84,6 +90,41 @@ export function LoginForm() {
     // On success the browser is redirected to Google, no further action here.
   };
 
+  const signInWithPassword = async () => {
+    const supabase = getSupabaseBrowser();
+    if (!supabase) {
+      setError("Sign-in isn't configured yet.");
+      return;
+    }
+    setPending(true);
+    setError(null);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) {
+      setPending(false);
+      // Friendlier copy for the most common failure
+      setError(
+        error.message.toLowerCase().includes("invalid")
+          ? "That email and password don't match an account."
+          : error.message
+      );
+      return;
+    }
+    router.push(next);
+    router.refresh();
+  };
+
+  const submitMagicLink = async () => {
+    setPending(true);
+    setError(null);
+    const res = await sendMagicLink(email.trim(), next);
+    setPending(false);
+    if (res.error) setError(res.error);
+    else setSentTo(email.trim());
+  };
+
   if (sentTo) {
     return (
       <div className="rounded-md border border-border/60 bg-muted/40 px-5 py-6 text-center">
@@ -101,6 +142,7 @@ export function LoginForm() {
           onClick={() => {
             setSentTo(null);
             setEmail("");
+            setMode("password");
           }}
           className="focus-ring mt-4 rounded-md px-3 py-1.5 text-[12.5px] text-primary transition-colors hover:bg-primary/8"
         >
@@ -111,6 +153,10 @@ export function LoginForm() {
   }
 
   const anyPending = pending || googlePending || demoPending;
+  const canSubmit =
+    mode === "password"
+      ? Boolean(email.trim() && password)
+      : Boolean(email.trim());
 
   return (
     <div className="flex flex-col gap-4">
@@ -138,17 +184,14 @@ export function LoginForm() {
         <div className="h-px flex-1 bg-border" />
       </div>
 
-      {/* Email magic link */}
+      {/* Email + password (primary). Toggles to email-only when the
+          user picks magic-link instead. */}
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          if (!email.trim()) return;
-          setPending(true);
-          setError(null);
-          const res = await sendMagicLink(email.trim(), next);
-          setPending(false);
-          if (res.error) setError(res.error);
-          else setSentTo(email.trim());
+          if (!canSubmit || anyPending) return;
+          if (mode === "password") await signInWithPassword();
+          else await submitMagicLink();
         }}
         className="flex flex-col gap-3"
       >
@@ -168,24 +211,64 @@ export function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             aria-invalid={!!error}
-            aria-describedby={error ? "email-error" : undefined}
+            aria-describedby={error ? "login-error" : undefined}
             disabled={anyPending}
             className="focus-ring h-10 w-full rounded-md border border-border bg-background px-3 text-[13.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/50 disabled:opacity-60"
           />
         </div>
 
+        {mode === "password" && (
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-1.5 block text-[12.5px] font-medium text-foreground"
+            >
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPw ? "text" : "password"}
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                aria-invalid={!!error}
+                aria-describedby={error ? "login-error" : undefined}
+                disabled={anyPending}
+                className="focus-ring h-10 w-full rounded-md border border-border bg-background px-3 pr-10 text-[13.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/50 disabled:opacity-60"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPw ? "Hide password" : "Show password"}
+                className="focus-ring absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+              >
+                {showPw ? <EyeSlash size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={anyPending || !email.trim()}
+          disabled={anyPending || !canSubmit}
           className="focus-ring surface-brand surface-brand-hover mt-1 flex h-10 items-center justify-center gap-1.5 rounded-md px-4 text-[13.5px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100"
         >
           {pending && <CircleNotch size={14} className="animate-spin" />}
-          {pending ? "Sending link…" : "Continue with email"}
+          {pending
+            ? mode === "password"
+              ? "Signing in…"
+              : "Sending link…"
+            : mode === "password"
+              ? "Sign in"
+              : "Send magic link"}
         </button>
 
         {error && (
           <p
-            id="email-error"
+            id="login-error"
             role="alert"
             className="rounded-md border border-rose-200/70 bg-rose-50 px-3 py-2 text-[12px] text-rose-700"
           >
@@ -193,16 +276,28 @@ export function LoginForm() {
           </p>
         )}
 
-        <p className="mt-1 text-center text-[11.5px] text-muted-foreground">
-          We&apos;ll email you a one-tap sign-in link. No password.
-        </p>
+        {/* Tertiary: swap between password and magic-link. Small text link
+            so it doesn't compete with the primary CTA. */}
+        <button
+          type="button"
+          onClick={() => {
+            setMode(mode === "password" ? "magic" : "password");
+            setError(null);
+          }}
+          disabled={anyPending}
+          className="focus-ring mt-0.5 self-center rounded px-1.5 py-1 text-[11.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+        >
+          {mode === "password"
+            ? "Email me a magic link instead"
+            : "Use password instead"}
+        </button>
       </form>
 
       {/* Demo accounts — one per role per team. Lets reviewers compare
           what each role sees without juggling passwords. */}
       <div className="mt-1 rounded-lg border border-dashed border-border bg-muted/30 p-3">
         <p className="text-center text-[12px] text-muted-foreground">
-          Reviewers — sign in as one of these demo accounts to compare roles
+          Reviewers, sign in as one of these demo accounts to compare roles
         </p>
         <div className="mt-2.5 grid grid-cols-2 gap-1.5">
           {DEMO_ACCOUNTS.map((acc) => {

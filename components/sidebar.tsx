@@ -109,7 +109,19 @@ export function Sidebar({
                 >
                   <MagnifyingGlass size={15} />
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Search</TooltipContent>
+                <TooltipContent side="bottom">
+                  <span className="inline-flex items-center gap-1.5">
+                    Search
+                    <span className="inline-flex items-center gap-0.5">
+                      <kbd className="rounded bg-background/15 px-1 py-px text-[10px] font-semibold leading-none text-background/85">
+                        Cmd
+                      </kbd>
+                      <kbd className="rounded bg-background/15 px-1 py-px text-[10px] font-semibold leading-none text-background/85">
+                        K
+                      </kbd>
+                    </span>
+                  </span>
+                </TooltipContent>
               </Tooltip>
               <NotificationsPopover
                 unreadCount={counts.inbox}
@@ -253,20 +265,19 @@ export function Sidebar({
           ))}
         </Section>
 
-        <Section title="Team Pulse" collapsed={collapsed}>
-          {members.length <= 1 && !collapsed ? (
-            <SidebarEmptyCard
-              graphic={<TeamPulseEmptyGraphic />}
-              hint="See what teammates are working on. Invite the team to fill this list."
-            />
-          ) : (
+        {/* Team Pulse lives in the right rail now (richer data, more
+            space). When the sidebar is collapsed we still surface
+            teammates here as small avatars so the user can jump to
+            people from any page. */}
+        {collapsed && (
+          <Section title="Team Pulse" collapsed={collapsed}>
             <TeamPulse
               members={members}
               currentUserId={user.id}
               collapsed={collapsed}
             />
-          )}
-        </Section>
+          </Section>
+        )}
       </div>
 
       {/* ── Bottom: profile only (sounds + help live in the menu) ── */}

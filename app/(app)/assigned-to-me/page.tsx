@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
 import { CompletedSection } from "@/components/completed-section";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState, Kbd } from "@/components/empty-state";
 import { RightRail } from "@/components/right-rail";
 import {
   getAssignedToMe,
@@ -119,9 +119,12 @@ export default async function AssignedToMePage() {
                   href: "/team",
                 }}
                 tips={[
-                  "Self-assigned tasks land straight here — no inbox step.",
+                  "Self-assigned tasks land straight here, no inbox step.",
                   "Use # to drop a task into a project, @ to assign it to someone.",
-                  "Press ⌘K to jump anywhere, Q to quickly add a task.",
+                  <>
+                    Press <Kbd>Cmd</Kbd>
+                    <Kbd>K</Kbd> to jump anywhere, <Kbd>Q</Kbd> to add a task.
+                  </>,
                 ]}
               />
             ) : (

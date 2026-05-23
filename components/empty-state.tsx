@@ -24,8 +24,11 @@ interface EmptyStateProps {
   showAction?: boolean;
   /** Optional secondary CTA shown next to the primary. */
   secondary?: EmptyStateAction;
-  /** Short list of "things you can do here" rendered under the CTAs. */
-  tips?: string[];
+  /** Short list of "things you can do here" rendered under the CTAs.
+   *  Pass React nodes (not just strings) so call sites can wrap keyboard
+   *  shortcuts in <kbd> chips — the bare ⌘ glyph collides with adjacent
+   *  letters in most UI fonts. */
+  tips?: React.ReactNode[];
 }
 
 /**
@@ -120,6 +123,17 @@ export function EmptyState({
         )}
       </div>
     </div>
+  );
+}
+
+/** Inline keyboard chip for hint copy. Use one per key so adjacent
+ *  shortcuts (Cmd+K) render as two chips instead of one collision-prone
+ *  glyph cluster. */
+export function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="chip-3d mx-px inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 align-middle font-sans text-[10.5px] font-semibold leading-none text-foreground/80">
+      {children}
+    </kbd>
   );
 }
 

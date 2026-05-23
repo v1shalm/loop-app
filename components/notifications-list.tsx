@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
 import { Bell, CheckCircle, Tray } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import { EmptyState } from "@/components/empty-state";
+import { RelativeTime } from "@/components/relative-time";
 import type { ActivityItem } from "@/lib/queries";
 
 type Tab = "all" | "tasks";
@@ -46,12 +45,17 @@ export function NotificationsList({
       </nav>
 
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={<Bell size={22} />}
-          title="All caught up"
-          hint="New assignments and completions show up here as they happen."
-          showAction={false}
-        />
+        <div className="rounded-2xl border border-border/60 bg-card px-6 py-10 text-center shadow-soft-xs">
+          <span className="mx-auto grid size-12 place-items-center rounded-xl bg-primary/10 text-primary">
+            <Bell size={18} />
+          </span>
+          <p className="mt-4 text-[15px] font-semibold tracking-tight text-foreground">
+            All caught up
+          </p>
+          <p className="mx-auto mt-1.5 max-w-[360px] text-[13px] leading-relaxed text-muted-foreground">
+            New assignments and completions show up here as they happen.
+          </p>
+        </div>
       ) : (
         <ul className="flex flex-col">
           {filtered.map((a, i) => (
@@ -66,7 +70,6 @@ export function NotificationsList({
 }
 
 function NotificationRow({ item }: { item: ActivityItem }) {
-  const ago = formatDistanceToNow(new Date(item.at), { addSuffix: true });
   const href = item.task.project
     ? `/projects/${item.task.project.id}`
     : "/assigned-to-me";
@@ -106,9 +109,10 @@ function NotificationRow({ item }: { item: ActivityItem }) {
       <p className="min-w-0 flex-1 truncate text-[13.5px] text-muted-foreground">
         {body}
       </p>
-      <span className="shrink-0 text-[11.5px] tabular-nums text-muted-foreground/70">
-        {ago}
-      </span>
+      <RelativeTime
+        date={item.at}
+        className="shrink-0 text-[11.5px] tabular-nums text-muted-foreground/70"
+      />
     </Link>
   );
 }
