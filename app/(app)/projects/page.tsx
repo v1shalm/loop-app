@@ -155,7 +155,7 @@ function TaskBoardCard({
     <Link
       href={`/projects/${projectId}?task=${task.id}`}
       scroll={false}
-      className="focus-ring group flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-3.5 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
+      className="focus-ring group flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-3.5 shadow-soft-sm transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-md"
     >
       <h4 className="text-[13.5px] font-semibold leading-snug tracking-tight text-foreground">
         {task.title}
