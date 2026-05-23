@@ -95,7 +95,7 @@ export function Sidebar({
               <TooltipTrigger
                 onClick={onOpenSearch}
                 aria-label="Search (⌘K)"
-                className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
               >
                 <MagnifyingGlass size={16} />
               </TooltipTrigger>
@@ -109,7 +109,7 @@ export function Sidebar({
               <TooltipTrigger
                 onClick={toggle}
                 aria-label="Collapse sidebar"
-                className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
               >
                 <SidebarSimple size={16} />
               </TooltipTrigger>
@@ -384,7 +384,7 @@ function NavItem({
         <TooltipContent side="right" sideOffset={6}>
           {label}
           {badge !== undefined && (
-            <span className="ml-2 text-muted-foreground">{badge}</span>
+            <span className="ml-2 text-background/70">{badge}</span>
           )}
         </TooltipContent>
       </Tooltip>
@@ -443,7 +443,7 @@ function ProjectNavItem({
         <TooltipContent side="right" sideOffset={6}>
           {project.name}
           {badge !== undefined && (
-            <span className="ml-2 text-muted-foreground">{badge}</span>
+            <span className="ml-2 text-background/70">{badge}</span>
           )}
         </TooltipContent>
       </Tooltip>

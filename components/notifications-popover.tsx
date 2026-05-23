@@ -111,7 +111,7 @@ export function NotificationsPopover({
             <PopoverTrigger
               aria-label="Notifications"
               className={cn(
-                "focus-ring relative grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground",
+                "focus-ring relative grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]",
                 className
               )}
             >
@@ -119,8 +119,11 @@ export function NotificationsPopover({
               {unreadCount > 0 && (
                 <span
                   aria-hidden
-                  className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-rose-500 ring-2 ring-sidebar"
-                />
+                  className="absolute right-1.5 top-1.5 grid size-1.5 place-items-center"
+                >
+                  <span className="absolute inline-flex size-1.5 animate-ping rounded-full bg-rose-400 opacity-75" />
+                  <span className="relative size-1.5 rounded-full bg-rose-500 ring-2 ring-sidebar" />
+                </span>
               )}
             </PopoverTrigger>
           }
@@ -128,7 +131,7 @@ export function NotificationsPopover({
         <TooltipContent side="bottom">
           Notifications
           {unreadCount > 0 && (
-            <span className="ml-1.5 text-muted-foreground">
+            <span className="ml-1.5 text-background/70">
               · {unreadCount} unread
             </span>
           )}
