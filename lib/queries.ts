@@ -25,6 +25,7 @@ export type WorkflowStatus =
 export type Task = Tables["tasks"]["Row"] & { triaged_at?: string | null };
 export type Project = Tables["projects"]["Row"] & {
   workflow_status?: WorkflowStatus | null;
+  description?: string | null;
 };
 export type Workspace = Tables["workspaces"]["Row"];
 

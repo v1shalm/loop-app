@@ -7,6 +7,7 @@ import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
 import { EmptyState } from "@/components/empty-state";
 import { ProjectStatusPicker } from "@/components/project-status-picker";
+import { ProjectDescription } from "@/components/project-description";
 import type { WorkflowStatus } from "@/components/workflow-status-picker";
 import {
   getProject,
@@ -58,13 +59,17 @@ export default async function ProjectPage({ params }: PageProps) {
       />
 
       <div className="mx-auto w-full max-w-[820px] px-8 pb-24 pt-8">
-        {/* Status */}
-        <div className="mb-6">
+        {/* Status + description — surface what the index card needs */}
+        <div className="mb-8 flex flex-col gap-3">
           <ProjectStatusPicker
             projectId={project.id}
             initialStatus={
               (project.workflow_status as WorkflowStatus | null) ?? null
             }
+          />
+          <ProjectDescription
+            projectId={project.id}
+            initial={project.description ?? null}
           />
         </div>
 

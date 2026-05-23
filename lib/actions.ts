@@ -275,6 +275,7 @@ export async function updateTask(
 export interface UpdateProjectInput {
   name?: string;
   emoji?: string | null;
+  description?: string | null;
   workflowStatus?: import("@/lib/queries").WorkflowStatus | null;
 }
 
@@ -288,10 +289,12 @@ export async function updateProject(
   const update: {
     name?: string;
     emoji?: string | null;
+    description?: string | null;
     workflow_status?: string | null;
   } = {};
   if (patch.name !== undefined) update.name = patch.name.trim();
   if (patch.emoji !== undefined) update.emoji = patch.emoji;
+  if (patch.description !== undefined) update.description = patch.description;
   if (patch.workflowStatus !== undefined)
     update.workflow_status = patch.workflowStatus;
   if (Object.keys(update).length === 0) return { ok: true };
