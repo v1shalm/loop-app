@@ -61,6 +61,42 @@ const JUMP_TARGETS: JumpItem[] = [
   { kind: "jump", id: "notifications", label: "Notifications", href: "/notifications", Icon: Bell },
 ];
 
+// Recents — five most-recent palette picks per browser. Stored as the
+// flat row payload so we can render without a re-fetch (Notion-style
+// "Recently viewed" when the query box is empty).
+const RECENTS_KEY = "loop:search-recents";
+const RECENTS_MAX = 5;
+
+function loadRecents(): ResultRow[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(RECENTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (r): r is ResultRow =>
+        r && typeof r === "object" && typeof r.kind === "string" && r.kind !== "jump"
+    );
+  } catch {
+    return [];
+  }
+}
+
+function pushRecent(row: ResultRow) {
+  if (typeof window === "undefined") return;
+  if (row.kind === "jump") return; // jumps are already listed below
+  const key = (r: ResultRow) => `${r.kind}:${"id" in r ? r.id : ""}`;
+  const existing = loadRecents();
+  const next = [row, ...existing.filter((r) => key(r) !== key(row))].slice(
+    0,
+    RECENTS_MAX
+  );
+  try {
+    window.localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+  } catch {}
+}
+
 export function SearchPalette({
   open,
   onOpenChange,
@@ -80,12 +116,14 @@ export function SearchPalette({
   });
   const [active, setActive] = useState(0);
   const [pending, startTransition] = useTransition();
+  const [recents, setRecents] = useState<ResultRow[]>([]);
 
   useEffect(() => {
     if (open) {
       setQuery("");
       setResults({ tasks: [], projects: [], people: [] });
       setActive(0);
+      setRecents(loadRecents());
     }
   }, [open]);
 
@@ -112,7 +150,12 @@ export function SearchPalette({
   const groups: Group[] = useMemo(() => {
     const q = query.trim();
     if (q.length < 2) {
-      return [{ label: "Jump to", rows: JUMP_TARGETS }];
+      const out: Group[] = [];
+      if (recents.length > 0) {
+        out.push({ label: "Recent", rows: recents });
+      }
+      out.push({ label: "Jump to", rows: JUMP_TARGETS });
+      return out;
     }
     const out: Group[] = [];
     if (results.tasks.length > 0) {
@@ -168,6 +211,7 @@ export function SearchPalette({
   const totalRows = flatRows.length;
 
   const go = (row: ResultRow) => {
+    pushRecent(row);
     if (row.kind === "jump") {
       router.push(row.href);
     } else if (row.kind === "task") {

@@ -220,6 +220,11 @@ function revalidateTaskRoutes(_projectId?: string | null) {
 export async function createTeam(input: {
   name: string;
   color?: string | null;
+  /** When true, seed 5 starter tasks + 1 sample project so the new
+   *  team's surfaces aren't empty on first paint. Mirrors how Todoist
+   *  defaults a fresh inbox into a partly-filled state instead of a
+   *  blank canvas. */
+  seedSamples?: boolean;
 }): Promise<{ ok?: true; teamId?: string; error?: string }> {
   const name = input.name?.trim();
   if (!name) return { error: "Team name is required." };
@@ -270,6 +275,92 @@ export async function createTeam(input: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("teams").delete().eq("id", teamIns.data.id);
     return { error: memberIns.error.message };
+  }
+
+  // Optional starter content. Five short, generic tasks that work for
+  // any team type (eng / design / marketing / etc.). One sample project
+  // so the projects board has a column. Failures here don't fail the
+  // create — the team exists, the user can still use the app.
+  if (input.seedSamples) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const proj = await (supabase as any)
+      .from("projects")
+      .insert({
+        workspace_id: workspace.id,
+        team_id: teamIns.data.id,
+        name: "Starter project",
+        emoji: "✨",
+        color: input.color ?? "#8B5CF6",
+        created_by: profile.id,
+        workflow_status: "in_progress",
+        description:
+          "Sample project so the board has a column on first paint. " +
+          "Delete it when your real work is in.",
+      })
+      .select("id")
+      .single();
+
+    const projectId = proj.data?.id ?? null;
+    const now = new Date();
+    const day = (offset: number) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() + offset);
+      return d.toISOString();
+    };
+
+    const samples = [
+      {
+        title: "Welcome to Loop. Take a quick look around.",
+        description:
+          "My work is your daily list. Inbox is anything teammates send you. Upcoming covers the next two weeks.",
+        priority: 3,
+        due_at: day(0),
+      },
+      {
+        title: "Invite a teammate from /team",
+        description:
+          "Loop works best with at least one other person. Open Team from the sidebar to invite someone.",
+        priority: 2,
+        due_at: day(1),
+      },
+      {
+        title: "Add a project for your real work",
+        description:
+          "Group related tasks under a project. Use the + next to Projects in the sidebar.",
+        priority: 2,
+        due_at: day(2),
+      },
+      {
+        title: "Try the natural-language quick add",
+        description:
+          "Hit Q anywhere to open Add task. Type something like \"Spec review @teammate p1 friday\".",
+        priority: 3,
+        due_at: null,
+      },
+      {
+        title: "Delete this starter project when you're done",
+        description: "Right-click the project in the sidebar to remove it.",
+        priority: 4,
+        due_at: day(7),
+      },
+    ];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("tasks").insert(
+      samples.map((s) => ({
+        workspace_id: workspace.id,
+        team_id: teamIns.data.id,
+        project_id: projectId,
+        title: s.title,
+        description: s.description,
+        priority: s.priority,
+        status: "todo",
+        assignee_id: profile.id,
+        author_id: profile.id,
+        triaged_at: new Date().toISOString(),
+        due_at: s.due_at,
+      }))
+    );
   }
 
   revalidatePath("/", "layout");
@@ -681,6 +772,123 @@ export async function snoozeTask(
   if (error) return { error: error.message };
   revalidateTaskRoutes();
   return { ok: true };
+}
+
+/**
+ * Saved views — currently scoped to /inbox. `config` is freeform JSON
+ * so we can add filter dimensions without a schema migration each time.
+ * The component owns the shape; the action only needs name + scope +
+ * config + an optional id for updates.
+ */
+export interface SavedView {
+  id: string;
+  scope: "inbox";
+  name: string;
+  config: Record<string, unknown>;
+}
+
+export async function listSavedViews(
+  scope: "inbox"
+): Promise<{ views?: SavedView[]; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const res = await (supabase as any)
+    .from("saved_views")
+    .select("id, scope, name, config")
+    .eq("user_id", profile.id)
+    .eq("scope", scope)
+    .order("created_at", { ascending: true });
+
+  if (res.error) return { error: res.error.message };
+  return { views: (res.data ?? []) as SavedView[] };
+}
+
+export async function saveView(input: {
+  scope: "inbox";
+  name: string;
+  config: Record<string, unknown>;
+}): Promise<{ ok?: true; view?: SavedView; error?: string }> {
+  const name = input.name?.trim();
+  if (!name) return { error: "Name is required." };
+  if (name.length > 40) return { error: "Name is too long." };
+
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ins = await (supabase as any)
+    .from("saved_views")
+    .insert({
+      user_id: profile.id,
+      scope: input.scope,
+      name,
+      config: input.config,
+    })
+    .select("id, scope, name, config")
+    .single();
+
+  if (ins.error) return { error: ins.error.message };
+  revalidatePath("/", "layout");
+  return { ok: true, view: ins.data as SavedView };
+}
+
+export async function deleteSavedView(
+  id: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const del = await (supabase as any).from("saved_views").delete().eq("id", id);
+  if (del.error) return { error: del.error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Toggle a project's pin state for the current user. Pins are stored as
+ * an ordered uuid[] on profiles so the slot order in the sidebar is the
+ * insertion order (new pins go to the top, removing collapses the gap).
+ */
+export async function togglePinnedProject(
+  projectId: string
+): Promise<{ ok?: true; pinned?: boolean; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cur = await (supabase as any)
+    .from("profiles")
+    .select("pinned_project_ids")
+    .eq("id", profile.id)
+    .maybeSingle();
+
+  const existing: string[] = cur.data?.pinned_project_ids ?? [];
+  const has = existing.includes(projectId);
+  const next = has
+    ? existing.filter((id) => id !== projectId)
+    : [projectId, ...existing].slice(0, 12); // cap to keep the section sane
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const upd = await (supabase as any)
+    .from("profiles")
+    .update({ pinned_project_ids: next })
+    .eq("id", profile.id);
+
+  if (upd.error) return { error: upd.error.message };
+  revalidatePath("/", "layout");
+  return { ok: true, pinned: !has };
 }
 
 export async function updateMyProfile(patch: {

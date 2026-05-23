@@ -270,7 +270,7 @@ export function LoginForm() {
           <p
             id="login-error"
             role="alert"
-            className="rounded-md border border-rose-200/70 bg-rose-50 px-3 py-2 text-[12px] text-rose-700"
+            className="rounded-md border border-rose-200/70 bg-rose-50 px-3 py-2 text-[12px] text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200"
           >
             {error}
           </p>

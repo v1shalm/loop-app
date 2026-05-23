@@ -156,7 +156,7 @@ function StatTile({
       <div
         className={`mb-2 grid size-8 place-items-center rounded-lg ${
           tone === "emerald"
-            ? "bg-emerald-50 text-emerald-700"
+            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
             : "bg-muted text-muted-foreground"
         }`}
       >

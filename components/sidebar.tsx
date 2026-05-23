@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { sileo } from "sileo";
 import {
   CalendarDots,
   CaretDown,
@@ -10,8 +11,10 @@ import {
   MagnifyingGlass,
   Plus,
   SidebarSimple,
+  Star,
   Tray,
 } from "@/components/icons";
+import { togglePinnedProject } from "@/lib/actions";
 import {
   Tooltip,
   TooltipContent,
@@ -152,7 +155,7 @@ export function Sidebar({
                 {team.name}
               </p>
               {isAdmin && (
-                <span className="shrink-0 rounded-md border border-violet-200/70 bg-violet-50 px-1.5 py-0.5 text-[10.5px] font-semibold text-violet-700">
+                <span className="shrink-0 rounded-md border border-violet-200/70 bg-violet-50 px-1.5 py-0.5 text-[10.5px] font-semibold text-violet-700 dark:border-violet-400/30 dark:bg-violet-500/15 dark:text-violet-200">
                   Admin
                 </span>
               )}
@@ -230,6 +233,32 @@ export function Sidebar({
       </nav>
 
       <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
+        {/* Pinned section — only shown when the user has pinned anything.
+            Order in the array is the pin order. */}
+        {(() => {
+          const pinIds = user.pinned_project_ids ?? [];
+          if (pinIds.length === 0) return null;
+          const byId = new Map(projects.map((p) => [p.id, p]));
+          const pinned = pinIds
+            .map((id) => byId.get(id))
+            .filter((p): p is Project => Boolean(p));
+          if (pinned.length === 0) return null;
+          return (
+            <Section title="Pinned" collapsed={collapsed}>
+              {pinned.map((p) => (
+                <ProjectNavItem
+                  key={p.id}
+                  project={p}
+                  pinned
+                  badge={counts.projectCounts[p.id] || undefined}
+                  active={pathname === `/projects/${p.id}`}
+                  collapsed={collapsed}
+                />
+              ))}
+            </Section>
+          );
+        })()}
+
         <Section
           title="Projects"
           collapsed={collapsed}
@@ -254,15 +283,19 @@ export function Sidebar({
               hint="Group related tasks into projects. Start with one for your team."
             />
           )}
-          {projects.map((p) => (
-            <ProjectNavItem
-              key={p.id}
-              project={p}
-              badge={counts.projectCounts[p.id] || undefined}
-              active={pathname === `/projects/${p.id}`}
-              collapsed={collapsed}
-            />
-          ))}
+          {(() => {
+            const pinIds = new Set(user.pinned_project_ids ?? []);
+            const unpinned = projects.filter((p) => !pinIds.has(p.id));
+            return unpinned.map((p) => (
+              <ProjectNavItem
+                key={p.id}
+                project={p}
+                badge={counts.projectCounts[p.id] || undefined}
+                active={pathname === `/projects/${p.id}`}
+                collapsed={collapsed}
+              />
+            ));
+          })()}
         </Section>
 
         {/* Team Pulse lives in the right rail now (richer data, more
@@ -440,44 +473,29 @@ function ProjectNavItem({
   badge,
   active,
   collapsed,
+  pinned,
 }: {
   project: Project;
   badge?: string | number;
   active?: boolean;
   collapsed: boolean;
+  pinned?: boolean;
 }) {
-  const link = (
-    <Link
-      href={`/projects/${project.id}`}
-      prefetch
-      className={cn(
-        "focus-ring group flex items-center text-[13.5px] transition-colors duration-150 ease-[var(--ease-out)]",
-        collapsed
-          ? "size-9 justify-center rounded-md"
-          : "h-8 gap-2.5 rounded-lg px-2.5",
-        active
-          ? "bg-primary/8 font-medium text-primary"
-          : "text-sidebar-foreground/90 hover:bg-accent/40 hover:text-foreground"
-      )}
-    >
-      <ProjectDot project={project} size={9} />
-      {!collapsed && <span className="truncate flex-1">{project.name}</span>}
-      {!collapsed && badge !== undefined && (
-        <span
-          className={cn(
-            "ml-auto rounded-md px-1.5 text-[11px] tabular-nums",
-            active
-              ? "bg-primary/15 text-primary"
-              : "text-muted-foreground"
-          )}
-        >
-          {badge}
-        </span>
-      )}
-    </Link>
-  );
-
   if (collapsed) {
+    const link = (
+      <Link
+        href={`/projects/${project.id}`}
+        prefetch
+        className={cn(
+          "focus-ring group flex size-9 items-center justify-center rounded-md text-[13.5px] transition-colors duration-150 ease-[var(--ease-out)]",
+          active
+            ? "bg-primary/8 font-medium text-primary"
+            : "text-sidebar-foreground/90 hover:bg-accent/40 hover:text-foreground"
+        )}
+      >
+        <ProjectDot project={project} size={9} />
+      </Link>
+    );
     return (
       <Tooltip>
         <TooltipTrigger render={link} />
@@ -491,5 +509,87 @@ function ProjectNavItem({
     );
   }
 
-  return link;
+  // Expanded: outer row owns hover state. Star button reveals on hover,
+  // stays visible when pinned. Link covers the row but stops at the
+  // star slot so the star can take its own click.
+  return (
+    <div
+      className={cn(
+        "group/proj relative flex items-center text-[13.5px] transition-colors duration-150 ease-[var(--ease-out)]",
+        "h-8 gap-2.5 rounded-lg px-2.5",
+        active
+          ? "bg-primary/8 font-medium text-primary"
+          : "text-sidebar-foreground/90 hover:bg-accent/40 hover:text-foreground"
+      )}
+    >
+      <Link
+        href={`/projects/${project.id}`}
+        prefetch
+        className="focus-ring flex min-w-0 flex-1 items-center gap-2.5 rounded-md outline-none"
+      >
+        <ProjectDot project={project} size={9} />
+        <span className="truncate">{project.name}</span>
+      </Link>
+      <PinToggle projectId={project.id} pinned={!!pinned} />
+      {badge !== undefined && (
+        <span
+          className={cn(
+            "rounded-md px-1.5 text-[11px] tabular-nums",
+            active ? "bg-primary/15 text-primary" : "text-muted-foreground",
+            // Hide badge while the star is being shown on hover to keep
+            // the row width stable. The star is always visible when
+            // pinned so the swap only happens for unpinned hover.
+            !pinned && "group-hover/proj:hidden"
+          )}
+        >
+          {badge}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function PinToggle({
+  projectId,
+  pinned,
+}: {
+  projectId: string;
+  pinned: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [optimistic, setOptimistic] = useState(pinned);
+  // Keep in sync if the server-rendered prop changes (e.g. after a route
+  // refresh adds a new pin).
+  useEffect(() => setOptimistic(pinned), [pinned]);
+
+  const toggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (pending) return;
+    setOptimistic(!optimistic);
+    startTransition(async () => {
+      const res = await togglePinnedProject(projectId);
+      if (res.error) {
+        setOptimistic(pinned);
+        sileo.error({ title: res.error });
+      }
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={optimistic ? "Unpin project" : "Pin project"}
+      aria-pressed={optimistic}
+      className={cn(
+        "focus-ring grid size-5 shrink-0 place-items-center rounded transition-[opacity,color,background-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.9]",
+        optimistic
+          ? "text-amber-500 hover:text-amber-600"
+          : "text-muted-foreground/60 opacity-0 hover:bg-accent/60 hover:text-foreground group-hover/proj:opacity-100 focus-visible:opacity-100"
+      )}
+    >
+      <Star size={12} weight={optimistic ? "fill" : "regular"} />
+    </button>
+  );
 }

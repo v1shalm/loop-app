@@ -10,17 +10,21 @@ import {
   getMyStats,
   getRecentActivity,
 } from "@/lib/queries";
+import { listSavedViews } from "@/lib/actions";
 
 export const metadata = { title: "Inbox · Loop" };
 
 export default async function InboxPage() {
-  const [tasks, profile, members, activity, stats] = await Promise.all([
-    getInboxAssignments(),
-    getCurrentProfile(),
-    getMembersWithPulse(),
-    getRecentActivity(),
-    getMyStats(),
-  ]);
+  const [tasks, profile, members, activity, stats, savedViewsRes] =
+    await Promise.all([
+      getInboxAssignments(),
+      getCurrentProfile(),
+      getMembersWithPulse(),
+      getRecentActivity(),
+      getMyStats(),
+      listSavedViews("inbox"),
+    ]);
+  const savedViews = savedViewsRes.views ?? [];
 
   return (
     <div className="min-h-full">
@@ -66,7 +70,7 @@ export default async function InboxPage() {
                     {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
                   </span>
                 </header>
-                <InboxList tasks={tasks} />
+                <InboxList tasks={tasks} savedViews={savedViews} />
               </>
             )}
           </div>

@@ -14,7 +14,14 @@ import {
   Flag,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import { addComment, snoozeTask, triageTask } from "@/lib/actions";
+import {
+  addComment,
+  deleteSavedView,
+  saveView,
+  snoozeTask,
+  triageTask,
+  type SavedView,
+} from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
 import type { TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
@@ -42,8 +49,26 @@ const priorityClass: Record<number, string> = {
   4: "text-priority-4",
 };
 
-export function InboxList({ tasks }: { tasks: TaskWithRelations[] }) {
+export function InboxList({
+  tasks,
+  savedViews: initialViews = [],
+}: {
+  tasks: TaskWithRelations[];
+  savedViews?: SavedView[];
+}) {
   const [filter, setFilter] = useState<Filter>("all");
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
+  const [views, setViews] = useState<SavedView[]>(initialViews);
+
+  const projects = useMemo(() => {
+    const seen = new Map<string, { id: string; name: string }>();
+    for (const t of tasks) {
+      if (t.project && !seen.has(t.project.id)) {
+        seen.set(t.project.id, { id: t.project.id, name: t.project.name });
+      }
+    }
+    return [...seen.values()];
+  }, [tasks]);
 
   const counts = useMemo(
     () => ({
@@ -58,19 +83,39 @@ export function InboxList({ tasks }: { tasks: TaskWithRelations[] }) {
   );
 
   const visible = useMemo(() => {
+    let out = tasks;
+    if (projectFilter) {
+      out = out.filter((t) => t.project?.id === projectFilter);
+    }
     switch (filter) {
       case "unread":
-        return tasks.filter((t) => !t.triaged_at);
+        return out.filter((t) => !t.triaged_at);
       case "high":
-        return tasks.filter((t) => t.priority <= 2);
+        return out.filter((t) => t.priority <= 2);
       case "snoozed":
-        return tasks.filter(
+        return out.filter(
           (t) => t.triaged_at && t.due_at && new Date(t.due_at) > new Date()
         );
       default:
-        return tasks;
+        return out;
     }
-  }, [tasks, filter]);
+  }, [tasks, filter, projectFilter]);
+
+  const applyView = (v: SavedView) => {
+    const cfg = (v.config ?? {}) as {
+      filter?: Filter;
+      projectId?: string | null;
+    };
+    if (
+      cfg.filter === "all" ||
+      cfg.filter === "unread" ||
+      cfg.filter === "high" ||
+      cfg.filter === "snoozed"
+    ) {
+      setFilter(cfg.filter);
+    }
+    setProjectFilter(cfg.projectId ?? null);
+  };
 
   return (
     <div>
@@ -102,6 +147,43 @@ export function InboxList({ tasks }: { tasks: TaskWithRelations[] }) {
             </button>
           );
         })}
+
+        {/* Project filter — only when the inbox spans more than one
+            project. Otherwise the option is meaningless. */}
+        {projects.length > 1 && (
+          <ProjectFilterChip
+            value={projectFilter}
+            projects={projects}
+            onChange={setProjectFilter}
+          />
+        )}
+
+        {/* Saved views — Linear-style. The action also captures the
+            project filter so saving a view is a real time-saver. */}
+        <SavedViewsChip
+          views={views}
+          onPick={applyView}
+          onSave={async (name) => {
+            const res = await saveView({
+              scope: "inbox",
+              name,
+              config: { filter, projectId: projectFilter },
+            });
+            if (res.error) {
+              sileo.error({ title: res.error });
+              return;
+            }
+            if (res.view) setViews((v) => [...v, res.view!]);
+          }}
+          onDelete={async (id) => {
+            const res = await deleteSavedView(id);
+            if (res.error) {
+              sileo.error({ title: res.error });
+              return;
+            }
+            setViews((v) => v.filter((x) => x.id !== id));
+          }}
+        />
       </div>
 
       {visible.length === 0 ? (
@@ -237,7 +319,7 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
               </span>
             )}
             {snoozedUntil && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
                 <Clock size={11} weight="fill" />
                 Back {formatWake(snoozedUntil)}
               </span>
@@ -419,4 +501,167 @@ function nextWeekday(targetDay: number, hour: number): Date {
   d.setDate(d.getDate() + diff);
   d.setHours(hour, 0, 0, 0);
   return d;
+}
+
+// ── Project filter chip ────────────────────────────────────────────────────
+
+function ProjectFilterChip({
+  value,
+  projects,
+  onChange,
+}: {
+  value: string | null;
+  projects: { id: string; name: string }[];
+  onChange: (id: string | null) => void;
+}) {
+  const active = projects.find((p) => p.id === value);
+  return (
+    <Popover>
+      <PopoverTrigger
+        className={cn(
+          "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors",
+          value
+            ? "border-primary/60 bg-primary/8 text-primary"
+            : "border-border bg-card text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+        )}
+      >
+        {active ? active.name : "All projects"}
+        <CaretDown size={10} weight="bold" />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[220px] gap-0 p-1">
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className={cn(
+            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-accent/40",
+            value === null && "bg-accent/40 font-medium"
+          )}
+        >
+          <span className="inline-block size-2 rounded-full border border-dashed border-muted-foreground/60" />
+          All projects
+        </button>
+        {projects.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onChange(p.id)}
+            className={cn(
+              "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-accent/40",
+              value === p.id && "bg-accent/40 font-medium"
+            )}
+          >
+            <span className="inline-block size-2 rounded-full bg-foreground/30" />
+            <span className="truncate">{p.name}</span>
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ── Saved views chip ───────────────────────────────────────────────────────
+
+function SavedViewsChip({
+  views,
+  onPick,
+  onSave,
+  onDelete,
+}: {
+  views: SavedView[];
+  onPick: (v: SavedView) => void;
+  onSave: (name: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    startTransition(async () => {
+      await onSave(trimmed);
+      setName("");
+      setNaming(false);
+      setOpen(false);
+    });
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-dashed border-border bg-transparent px-2.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground">
+        Saved views
+        <CaretDown size={10} weight="bold" />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-[240px] gap-0 p-1">
+        {views.length === 0 ? (
+          <p className="px-2 py-3 text-center text-[12px] text-muted-foreground">
+            No saved views yet.
+          </p>
+        ) : (
+          <div className="flex flex-col">
+            {views.map((v) => (
+              <div
+                key={v.id}
+                className="group flex items-center rounded-md transition-colors hover:bg-accent/40"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPick(v);
+                    setOpen(false);
+                  }}
+                  className="flex flex-1 items-center gap-2 px-2 py-1.5 text-left text-[13px]"
+                >
+                  <span className="truncate">{v.name}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    startTransition(async () => onDelete(v.id))
+                  }
+                  aria-label={`Delete saved view ${v.name}`}
+                  className="focus-ring mr-1 grid size-6 place-items-center rounded text-muted-foreground/60 opacity-0 transition-colors hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="my-1 h-px bg-border/60" />
+
+        {naming ? (
+          <form onSubmit={submit} className="flex items-center gap-1 p-1">
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="View name"
+              maxLength={40}
+              className="focus-ring h-7 flex-1 rounded-md border border-border bg-background px-2 text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+            />
+            <button
+              type="submit"
+              disabled={pending || !name.trim()}
+              className="focus-ring inline-flex h-7 items-center gap-1 rounded-md bg-primary px-2 text-[11.5px] font-semibold text-primary-foreground disabled:opacity-60"
+            >
+              Save
+            </button>
+          </form>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setNaming(true)}
+            className="focus-ring flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] text-primary transition-colors hover:bg-primary/8"
+          >
+            + Save current filter as a view
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
 }

@@ -11,6 +11,9 @@ export type Profile = Tables["profiles"]["Row"] & {
   status?: ProfileStatus;
   role?: string | null;
   avatar_url?: string | null;
+  /** Per-user pinned projects (Notion-style favourites). Insertion
+   *  order is the slot order in the sidebar. */
+  pinned_project_ids?: string[] | null;
 };
 export type WorkflowStatus =
   | "draft"
@@ -425,6 +428,28 @@ export async function getUpcomingBuckets(): Promise<UpcomingBuckets> {
     else result.nextWeek.push(t);
   }
   return result;
+}
+
+/**
+ * Wider range than getUpcomingBuckets — used by the calendar view on
+ * /upcoming so the month grid has data. Fetches all open tasks assigned
+ * to me with a due_at between `start` and `end`, sorted ascending.
+ */
+export async function getUpcomingTasksInRange(
+  start: Date,
+  end: Date
+): Promise<TaskWithRelations[]> {
+  const profile = await getCurrentProfile();
+  if (!profile) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return fetchTasks((q: any) =>
+    q
+      .eq("assignee_id", profile.id)
+      .neq("status", "done")
+      .gte("due_at", start.toISOString())
+      .lte("due_at", end.toISOString())
+      .order("due_at", { ascending: true })
+  );
 }
 
 /**

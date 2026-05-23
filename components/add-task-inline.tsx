@@ -192,10 +192,18 @@ function HintChip({ hint }: { hint: ParseHint }) {
   };
 
   const TONE: Record<ParseHint["kind"], string> = {
-    project: "border-blue-500/30 bg-blue-50 text-blue-700",
-    assignee: "border-violet-500/30 bg-violet-50 text-violet-700",
-    priority: "border-amber-500/30 bg-amber-50 text-amber-700",
-    due: "border-emerald-500/30 bg-emerald-50 text-emerald-700",
+    project:
+      "border-blue-500/30 bg-blue-50 text-blue-700 " +
+      "dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-400/30",
+    assignee:
+      "border-violet-500/30 bg-violet-50 text-violet-700 " +
+      "dark:bg-violet-500/15 dark:text-violet-200 dark:border-violet-400/30",
+    priority:
+      "border-amber-500/30 bg-amber-50 text-amber-700 " +
+      "dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-400/30",
+    due:
+      "border-emerald-500/30 bg-emerald-50 text-emerald-700 " +
+      "dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-400/30",
   };
 
   const label =

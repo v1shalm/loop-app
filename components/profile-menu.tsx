@@ -4,13 +4,17 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   Bell,
+  Desktop,
   Gear,
+  Moon,
   Question,
   SignOut,
   SpeakerHigh,
   SpeakerSlash,
+  Sun,
   UsersThree,
 } from "@/components/icons";
+import { useTheme } from "@/components/theme-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +54,13 @@ export function ProfileMenu({
   };
 
   const soundsOn = mounted && !muted;
+
+  const { theme, setTheme } = useTheme();
+  const THEMES: { key: "light" | "dark" | "system"; Icon: typeof Sun; label: string }[] = [
+    { key: "light", Icon: Sun, label: "Light" },
+    { key: "dark", Icon: Moon, label: "Dark" },
+    { key: "system", Icon: Desktop, label: "System" },
+  ];
 
   return (
     <DropdownMenu>
@@ -124,6 +135,45 @@ export function ProfileMenu({
           <Bell size={14} className="text-muted-foreground" />
           <span>Notifications</span>
         </DropdownMenuItem>
+
+        <DropdownMenuSeparator className="bg-border/60" />
+
+        {/* Theme — three-way segmented control. Persists to localStorage,
+            applies the .dark class on <html> for token swapping. */}
+        <div className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px]">
+          <Sun size={14} className="text-muted-foreground" />
+          <span className="flex-1">Theme</span>
+          <div
+            role="radiogroup"
+            aria-label="Theme"
+            className="inline-flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5"
+          >
+            {THEMES.map((t) => {
+              const active = theme === t.key;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={t.label}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setTheme(t.key);
+                  }}
+                  className={cn(
+                    "focus-ring grid size-6 place-items-center rounded transition-colors duration-150 ease-[var(--ease-out)]",
+                    active
+                      ? "bg-primary/12 text-primary"
+                      : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+                  )}
+                >
+                  <t.Icon size={12} weight={active ? "fill" : "regular"} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <DropdownMenuSeparator className="bg-border/60" />
 

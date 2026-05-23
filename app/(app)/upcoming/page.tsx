@@ -3,27 +3,55 @@ import { CalendarDots } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState, Kbd } from "@/components/empty-state";
 import { RightRail } from "@/components/right-rail";
+import { UpcomingCalendar } from "@/components/upcoming-calendar";
+import { UpcomingViewToggle } from "@/components/upcoming-view-toggle";
 import {
   getCurrentProfile,
   getMembersWithPulse,
   getMyStats,
   getRecentActivity,
   getUpcomingBuckets,
+  getUpcomingTasksInRange,
 } from "@/lib/queries";
 
 export const metadata = { title: "Upcoming · Loop" };
 
-export default async function UpcomingPage() {
-  const [{ tomorrow, thisWeek, nextWeek }, profile, members, activity, stats] =
-    await Promise.all([
-      getUpcomingBuckets(),
-      getCurrentProfile(),
-      getMembersWithPulse(),
-      getRecentActivity(),
-      getMyStats(),
-    ]);
+interface PageProps {
+  searchParams: Promise<{ view?: string }>;
+}
+
+export default async function UpcomingPage({ searchParams }: PageProps) {
+  const { view } = await searchParams;
+  const mode: "list" | "calendar" = view === "calendar" ? "calendar" : "list";
+
+  // Calendar wants a 6-week window starting from this Monday; list view
+  // keeps its existing tomorrow / this-week / next-week buckets.
+  const now = new Date();
+  const rangeStart = new Date(now);
+  rangeStart.setHours(0, 0, 0, 0);
+  const rangeEnd = new Date(now);
+  rangeEnd.setDate(rangeEnd.getDate() + 60);
+  rangeEnd.setHours(23, 59, 59, 999);
+
+  const [
+    { tomorrow, thisWeek, nextWeek },
+    rangeTasks,
+    profile,
+    members,
+    activity,
+    stats,
+  ] = await Promise.all([
+    getUpcomingBuckets(),
+    mode === "calendar"
+      ? getUpcomingTasksInRange(rangeStart, rangeEnd)
+      : Promise.resolve([]),
+    getCurrentProfile(),
+    getMembersWithPulse(),
+    getRecentActivity(),
+    getMyStats(),
+  ]);
   const total = tomorrow.length + thisWeek.length + nextWeek.length;
 
   const tomorrowDate = new Date();
@@ -35,12 +63,15 @@ export default async function UpcomingPage() {
         icon={<CalendarDots size={16} />}
         title="Upcoming"
         subtitle="Next two weeks"
+        right={<UpcomingViewToggle current={mode} />}
       />
 
       <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="min-w-0">
-            {total === 0 ? (
+            {mode === "calendar" ? (
+              <UpcomingCalendar tasks={rangeTasks} />
+            ) : total === 0 ? (
               <EmptyState
                 icon={<CalendarDots size={22} />}
                 title="Nothing on the horizon"
@@ -51,9 +82,12 @@ export default async function UpcomingPage() {
                   href: "/team",
                 }}
                 tips={[
-                  "Tasks due tomorrow → next 2 weeks show up grouped here.",
+                  "Tasks due tomorrow through the next two weeks show up grouped here.",
                   "Drag a date on a task to move it between buckets.",
-                  "Use the calendar picker to bulk-schedule recurring work.",
+                  <>
+                    Press <Kbd>C</Kbd> on this page to switch to the
+                    calendar view.
+                  </>,
                 ]}
               />
             ) : (

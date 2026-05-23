@@ -47,21 +47,24 @@ const PRIORITY_OPTIONS: {
     label: "Urgent",
     flagClass: "text-rose-500",
     activeClass:
-      "border-rose-500/60 bg-rose-50 text-rose-700 ring-1 ring-rose-500/30",
+      "border-rose-500/60 bg-rose-50 text-rose-700 ring-1 ring-rose-500/30 " +
+      "dark:bg-rose-500/15 dark:text-rose-200 dark:border-rose-400/40 dark:ring-rose-400/30",
   },
   {
     p: 2,
     label: "High",
     flagClass: "text-amber-500",
     activeClass:
-      "border-amber-500/60 bg-amber-50 text-amber-700 ring-1 ring-amber-500/30",
+      "border-amber-500/60 bg-amber-50 text-amber-700 ring-1 ring-amber-500/30 " +
+      "dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-400/40 dark:ring-amber-400/30",
   },
   {
     p: 3,
     label: "Medium",
     flagClass: "text-emerald-500",
     activeClass:
-      "border-emerald-500/60 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/30",
+      "border-emerald-500/60 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/30 " +
+      "dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-400/40 dark:ring-emerald-400/30",
   },
   {
     p: 4,

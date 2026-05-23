@@ -223,7 +223,7 @@ function MemberRow({ member }: { member: TeamMember }) {
           className={cn(
             "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[11.5px] font-medium transition-colors disabled:opacity-50",
             optRole === "admin"
-              ? "border-violet-200/70 bg-violet-50 text-violet-700"
+              ? "border-violet-200/70 bg-violet-50 text-violet-700 dark:border-violet-400/30 dark:bg-violet-500/15 dark:text-violet-200"
               : "border-border bg-card text-muted-foreground hover:text-foreground"
           )}
         >
@@ -251,7 +251,7 @@ function MemberRow({ member }: { member: TeamMember }) {
         onClick={remove}
         disabled={pending}
         aria-label={`Remove ${member.name}`}
-        className="text-muted-foreground hover:bg-rose-50 hover:text-rose-600"
+        className="text-muted-foreground hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
       >
         {pending ? (
           <CircleNotch size={13} className="animate-spin" />

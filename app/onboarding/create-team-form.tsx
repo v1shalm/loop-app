@@ -23,6 +23,7 @@ export function CreateTeamForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [color, setColor] = useState(COLOR_OPTIONS[0].value);
+  const [seedSamples, setSeedSamples] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -32,7 +33,7 @@ export function CreateTeamForm() {
     if (!trimmed || pending) return;
     setError(null);
     startTransition(async () => {
-      const res = await createTeam({ name: trimmed, color });
+      const res = await createTeam({ name: trimmed, color, seedSamples });
       if (res.error) {
         setError(res.error);
         return;
@@ -112,11 +113,31 @@ export function CreateTeamForm() {
         </div>
       </fieldset>
 
+      <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-background/40 p-3 transition-colors hover:bg-accent/30">
+        <input
+          type="checkbox"
+          checked={seedSamples}
+          onChange={(e) => setSeedSamples(e.target.checked)}
+          disabled={pending}
+          className="mt-0.5 size-3.5 cursor-pointer accent-primary"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-[12.5px] font-medium text-foreground">
+            Start with sample content
+          </p>
+          <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">
+            Adds one starter project and five short walk-through tasks so
+            the surfaces aren&apos;t blank. Delete them when your real
+            work is in.
+          </p>
+        </div>
+      </label>
+
       {error && (
         <p
           id="create-team-error"
           role="alert"
-          className="mt-4 rounded-md border border-rose-200/70 bg-rose-50 px-3 py-2 text-[12px] text-rose-700"
+          className="mt-4 rounded-md border border-rose-200/70 bg-rose-50 px-3 py-2 text-[12px] text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200"
         >
           {error}
         </p>

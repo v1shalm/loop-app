@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-import { Toaster } from "sileo";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider, ThemeInitScript } from "@/components/theme-provider";
+import { ThemedToaster } from "@/components/themed-toaster";
 import "sileo/styles.css";
 import "./globals.css";
 
@@ -23,15 +24,21 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${sans.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <ThemeInitScript />
+      </head>
       <body
         suppressHydrationWarning
         className="min-h-full bg-background text-foreground"
       >
-        <TooltipProvider>
-          {children}
-          <Toaster position="bottom-center" theme="light" />
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            {children}
+            <ThemedToaster />
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

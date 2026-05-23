@@ -31,13 +31,13 @@ export default async function TeamPage() {
 
       <div className="mx-auto w-full max-w-[960px] px-8 pb-24 pt-8">
         {role === "admin" && (
-          <div className="mb-5 flex items-center justify-between rounded-xl border border-violet-200/60 bg-violet-50/50 px-4 py-3">
-            <p className="text-[12.5px] text-violet-700">
+          <div className="mb-5 flex items-center justify-between rounded-xl border border-violet-200/60 bg-violet-50/50 px-4 py-3 dark:border-violet-400/25 dark:bg-violet-500/10">
+            <p className="text-[12.5px] text-violet-700 dark:text-violet-300">
               You&apos;re an admin. Add or remove members, change roles.
             </p>
             <Link
               href="/team/manage"
-              className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-violet-300/70 bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-violet-700 transition-colors hover:bg-violet-100"
+              className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-violet-300/70 bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-400/40 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/25"
             >
               <Gear size={13} />
               Manage team

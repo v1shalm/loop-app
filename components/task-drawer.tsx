@@ -353,13 +353,13 @@ function DrawerInner({
   // Chip tone helpers — surface urgency through tinted chips, not hairlines.
   const dueChipTone =
     overdue || (due && isToday(due))
-      ? "border-rose-200/70 bg-rose-50 text-rose-700"
+      ? "border-rose-200/70 bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200 dark:border-rose-400/30"
       : "border-border bg-card text-foreground";
 
   const priorityChipTone: Record<Priority, string> = {
-    1: "border-rose-200/70 bg-rose-50 text-rose-700",
-    2: "border-amber-200/70 bg-amber-50 text-amber-700",
-    3: "border-emerald-200/70 bg-emerald-50 text-emerald-700",
+    1: "border-rose-200/70 bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200 dark:border-rose-400/30",
+    2: "border-amber-200/70 bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-400/30",
+    3: "border-emerald-200/70 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-400/30",
     4: "border-border bg-card text-foreground",
   };
 
@@ -647,7 +647,8 @@ function DrawerFooter({
         onClick={onToggle}
         disabled={pending}
         className={cn(
-          !done && "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
+          !done &&
+            "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-200"
         )}
       >
         <CheckCircle
@@ -662,7 +663,7 @@ function DrawerFooter({
         size="sm"
         onClick={onDelete}
         disabled={pending}
-        className="text-rose-600 hover:bg-rose-50 hover:text-rose-600"
+        className="text-rose-600 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
       >
         <Trash size={15} />
         Delete task

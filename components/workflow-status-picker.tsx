@@ -53,50 +53,66 @@ export const WORKFLOW_STATUS_META: Record<WorkflowStatus, StatusMeta> = {
   draft: {
     label: "Draft",
     icon: <PencilSimple size={12} weight="fill" />,
-    pill: "bg-indigo-100/70 text-indigo-700 border-indigo-200/70",
-    iconColor: "text-indigo-600",
+    pill:
+      "bg-indigo-100/70 text-indigo-700 border-indigo-200/70 " +
+      "dark:bg-indigo-500/15 dark:text-indigo-200 dark:border-indigo-400/25",
+    iconColor: "text-indigo-600 dark:text-indigo-300",
   },
   in_progress: {
     label: "In Progress",
     icon: <CircleNotch size={12} weight="bold" className="animate-spin" />,
-    pill: "bg-sky-100/70 text-sky-700 border-sky-200/70",
-    iconColor: "text-sky-600",
+    pill:
+      "bg-sky-100/70 text-sky-700 border-sky-200/70 " +
+      "dark:bg-sky-500/15 dark:text-sky-200 dark:border-sky-400/25",
+    iconColor: "text-sky-600 dark:text-sky-300",
   },
   waiting_approval: {
     label: "Waiting for approval",
     icon: <Eye size={12} weight="fill" />,
-    pill: "bg-violet-100/70 text-violet-700 border-violet-200/70",
-    iconColor: "text-violet-600",
+    pill:
+      "bg-violet-100/70 text-violet-700 border-violet-200/70 " +
+      "dark:bg-violet-500/15 dark:text-violet-200 dark:border-violet-400/25",
+    iconColor: "text-violet-600 dark:text-violet-300",
   },
   changes_requested: {
     label: "Changes requested",
     icon: <FlagBanner size={12} weight="fill" />,
-    pill: "bg-orange-100/70 text-orange-700 border-orange-200/70",
-    iconColor: "text-orange-600",
+    pill:
+      "bg-orange-100/70 text-orange-700 border-orange-200/70 " +
+      "dark:bg-orange-500/15 dark:text-orange-200 dark:border-orange-400/25",
+    iconColor: "text-orange-600 dark:text-orange-300",
   },
   approved: {
     label: "Approved",
     icon: <Check size={12} weight="bold" />,
-    pill: "bg-emerald-100/70 text-emerald-700 border-emerald-200/70",
-    iconColor: "text-emerald-600",
+    pill:
+      "bg-emerald-100/70 text-emerald-700 border-emerald-200/70 " +
+      "dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-400/25",
+    iconColor: "text-emerald-600 dark:text-emerald-300",
   },
   live: {
     label: "Live",
     icon: <Play size={12} weight="fill" />,
-    pill: "bg-lime-100/70 text-lime-800 border-lime-200/70",
-    iconColor: "text-lime-700",
+    pill:
+      "bg-lime-100/70 text-lime-800 border-lime-200/70 " +
+      "dark:bg-lime-500/15 dark:text-lime-200 dark:border-lime-400/25",
+    iconColor: "text-lime-700 dark:text-lime-300",
   },
   archived: {
     label: "Archived",
     icon: <Archive size={12} weight="fill" />,
-    pill: "bg-yellow-100/70 text-yellow-800 border-yellow-200/70",
-    iconColor: "text-yellow-700",
+    pill:
+      "bg-yellow-100/70 text-yellow-800 border-yellow-200/70 " +
+      "dark:bg-yellow-500/15 dark:text-yellow-200 dark:border-yellow-400/25",
+    iconColor: "text-yellow-700 dark:text-yellow-300",
   },
   do_not_use: {
     label: "Do not use",
     icon: <Warning size={12} weight="fill" />,
-    pill: "bg-rose-100/70 text-rose-700 border-rose-200/70",
-    iconColor: "text-rose-600",
+    pill:
+      "bg-rose-100/70 text-rose-700 border-rose-200/70 " +
+      "dark:bg-rose-500/15 dark:text-rose-200 dark:border-rose-400/25",
+    iconColor: "text-rose-600 dark:text-rose-300",
   },
 };
 

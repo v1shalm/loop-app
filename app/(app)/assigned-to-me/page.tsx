@@ -239,17 +239,17 @@ function CompletedRow({
     <Link
       href={`/assigned-to-me?task=${id}`}
       scroll={false}
-      className="focus-ring group flex items-center gap-3 rounded-xl border border-border/60 bg-emerald-50/40 px-4 py-3 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
+      className="focus-ring group flex items-center gap-3 rounded-xl border border-border/60 bg-emerald-50/40 px-4 py-3 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm dark:bg-emerald-500/8 dark:border-emerald-400/20"
       title="Open to reopen this task"
     >
-      <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] bg-emerald-600 text-emerald-50">
+      <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] bg-emerald-600 text-emerald-50 dark:bg-emerald-500/80">
         <CheckCircle size={13} weight="fill" />
       </span>
       <p className="min-w-0 flex-1 truncate text-[13.5px] text-muted-foreground line-through decoration-muted-foreground/40 group-hover:text-foreground/70">
         {title}
       </p>
       {at && (
-        <span className="shrink-0 text-[11.5px] tabular-nums text-emerald-700/80">
+        <span className="shrink-0 text-[11.5px] tabular-nums text-emerald-700/80 dark:text-emerald-300/80">
           {format(new Date(at), "h:mm a")}
         </span>
       )}
