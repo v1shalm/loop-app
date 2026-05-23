@@ -119,7 +119,7 @@ function BoardColumn({ column }: { column: ProjectBoardColumn }) {
           Nothing open here.
         </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-1">
           {tasks.map((task) => (
             <li key={task.id}>
               <TaskBoardCard task={task} projectId={project.id} />
