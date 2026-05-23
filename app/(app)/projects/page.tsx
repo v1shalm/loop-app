@@ -77,7 +77,7 @@ function BoardColumn({ column }: { column: ProjectBoardColumn }) {
   const meta = status ? WORKFLOW_STATUS_META[status] : null;
 
   return (
-    <section className="flex w-[300px] shrink-0 flex-col gap-2.5 rounded-2xl border border-border/60 bg-foreground/[0.045] p-2.5 shadow-soft-xs">
+    <section className="flex w-[300px] shrink-0 flex-col gap-2.5 rounded-2xl border border-border/60 bg-foreground/[0.045] pt-2.5 px-0.5 pb-0.5 shadow-soft-xs">
       {/* Column header */}
       <header className="flex items-center gap-2 px-2 pt-1.5">
         {meta ? (
@@ -155,7 +155,7 @@ function TaskBoardCard({
     <Link
       href={`/projects/${projectId}?task=${task.id}`}
       scroll={false}
-      className="focus-ring group flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card pt-3.5 px-0.5 pb-0.5 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
+      className="focus-ring group flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-3.5 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
     >
       <h4 className="text-[13.5px] font-semibold leading-snug tracking-tight text-foreground">
         {task.title}
