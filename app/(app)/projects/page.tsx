@@ -77,7 +77,7 @@ function BoardColumn({ column }: { column: ProjectBoardColumn }) {
   const meta = status ? WORKFLOW_STATUS_META[status] : null;
 
   return (
-    <section className="flex w-[300px] shrink-0 flex-col gap-2.5 rounded-2xl bg-muted/40 p-2.5">
+    <section className="flex w-[300px] shrink-0 flex-col gap-2.5 rounded-2xl border border-border/60 bg-foreground/[0.045] p-2.5 shadow-soft-xs">
       {/* Column header */}
       <header className="flex items-center gap-2 px-2 pt-1.5">
         {meta ? (
@@ -115,7 +115,7 @@ function BoardColumn({ column }: { column: ProjectBoardColumn }) {
 
       {/* Cards */}
       {tasks.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/60 bg-background/40 p-4 text-center text-[12px] text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-border/70 bg-card/60 p-4 text-center text-[12px] text-muted-foreground">
           Nothing open here.
         </div>
       ) : (
