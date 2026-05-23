@@ -30,6 +30,14 @@ export default async function AppLayout({
       getSidebarCounts(),
     ]);
 
+  // A signed-in user without a team has no scope. Bounce them through
+  // /onboarding to create one (and pick up the admin role on the team
+  // they create). Demo accounts already have a team from the seed and
+  // skip this entirely.
+  if (!team) {
+    redirect("/onboarding");
+  }
+
   return (
     <AppShell
       user={profile}

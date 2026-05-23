@@ -207,6 +207,75 @@ function revalidateTaskRoutes(_projectId?: string | null) {
 
 // ── Team management (admin-only via RLS) ─────────────────────────────────
 
+/**
+ * Onboarding step for first-time users: create a brand-new team and add
+ * the caller as its admin. Models the "first one in is the owner"
+ * convention that Linear, Notion, Slack, and Asana all share. The user
+ * never picks their own role; the role flows from how they arrived
+ * (creator → admin, invitee → whatever the inviter chose).
+ *
+ * Returns the new team's id so the caller can route into the app
+ * immediately without a refetch.
+ */
+export async function createTeam(input: {
+  name: string;
+  color?: string | null;
+}): Promise<{ ok?: true; teamId?: string; error?: string }> {
+  const name = input.name?.trim();
+  if (!name) return { error: "Team name is required." };
+  if (name.length > 60) return { error: "Team name is too long." };
+
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+
+  const workspace = await getDefaultWorkspace();
+  if (!workspace) return { error: "Workspace missing." };
+
+  // Block users who are already on a team (one team per user enforced
+  // at the DB by team_members_one_team_per_user, but a friendlier
+  // message here saves a database round-trip).
+  const existing = await getMyTeam();
+  if (existing) {
+    return {
+      error: "You're already on a team. Ask an admin to switch you over.",
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const teamIns = await (supabase as any)
+    .from("teams")
+    .insert({
+      workspace_id: workspace.id,
+      name,
+      color: input.color ?? "#8B5CF6",
+    })
+    .select("id")
+    .single();
+
+  if (teamIns.error) return { error: teamIns.error.message };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const memberIns = await (supabase as any).from("team_members").insert({
+    team_id: teamIns.data.id,
+    user_id: profile.id,
+    role: "admin",
+  });
+
+  if (memberIns.error) {
+    // Best-effort rollback: drop the empty team we just created so the
+    // workspace doesn't accumulate ghost rows on the failure path.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("teams").delete().eq("id", teamIns.data.id);
+    return { error: memberIns.error.message };
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true, teamId: teamIns.data.id };
+}
+
 export async function addTeamMember(
   email: string,
   role: "admin" | "member"

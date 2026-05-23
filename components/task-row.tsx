@@ -267,7 +267,16 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
                     )}
                   >
                     <CalendarBlank size={12} className={dateIconTone} />
-                    <span className="tabular-nums">{dateText}</span>
+                    {/* Server and client may compute "Today" vs "Tomorrow"
+                        differently when the user's clock crosses midnight
+                        local but the server is still on UTC. Suppress the
+                        hydration warning; the client-rendered value wins. */}
+                    <span
+                      className="tabular-nums"
+                      suppressHydrationWarning
+                    >
+                      {dateText}
+                    </span>
                   </PopoverTrigger>
                   <PopoverContent className="gap-0 p-0" align="start">
                     <DatePicker value={due} onChange={setDue} />

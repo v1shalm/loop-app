@@ -320,6 +320,23 @@ function UXDecisions() {
         </p>
       </Prose>
       <div className="mt-6 flex flex-col gap-5">
+        <Decision title="First one in is the admin. Nobody picks their own role.">
+          <p>
+            When a new user signs in and has no team yet, they land on
+            /onboarding and create a team. Creating the team makes them
+            its admin. There is no &quot;pick your role&quot; dropdown
+            anywhere in the product, because letting a self-signed-in
+            user grant themselves admin is a security smell.
+          </p>
+          <p>
+            This is the convention Linear, Notion, Slack, and Asana all
+            share: workspace creator = admin by default; every other
+            member arrives via an invite that specifies the role. The
+            existing /team/manage page (admin-gated) lets admins
+            promote or demote teammates after the fact.
+          </p>
+        </Decision>
+
         <Decision title="Inbox reply-first, not accept-first">
           <p>
             The default action on an inbox card is{" "}
