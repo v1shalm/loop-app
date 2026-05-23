@@ -53,6 +53,10 @@ import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
 import { ProjectDot } from "@/components/project-dot";
 import { Button } from "@/components/ui/button";
+import {
+  WorkflowStatusPicker,
+  type WorkflowStatus,
+} from "@/components/workflow-status-picker";
 
 // Inlined to avoid pulling lib/queries.ts (which imports server-only code)
 // into the client bundle. Keep in sync with TASK_RELATIONS_SELECT.
@@ -265,6 +269,9 @@ function DrawerInner({
           }
         : null;
     }
+    if (changes.workflowStatus !== undefined) {
+      optimistic.workflow_status = changes.workflowStatus;
+    }
     setTask({ ...task, ...optimistic });
     startTransition(async () => {
       const res = await updateTask(task.id, changes);
@@ -396,6 +403,10 @@ function DrawerInner({
 
           {/* Tinted context chips */}
           <div className="mt-4 flex flex-wrap items-center gap-1.5">
+            <WorkflowStatusPicker
+              value={(task.workflow_status as WorkflowStatus | null) ?? null}
+              onChange={(next) => patch({ workflowStatus: next })}
+            />
             <Popover>
               <PopoverTrigger
                 className={cn(

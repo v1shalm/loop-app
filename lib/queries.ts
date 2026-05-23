@@ -12,7 +12,20 @@ export type Profile = Tables["profiles"]["Row"] & {
   role?: string | null;
   avatar_url?: string | null;
 };
-export type Task = Tables["tasks"]["Row"] & { triaged_at?: string | null };
+export type WorkflowStatus =
+  | "draft"
+  | "in_progress"
+  | "waiting_approval"
+  | "changes_requested"
+  | "approved"
+  | "live"
+  | "archived"
+  | "do_not_use";
+
+export type Task = Tables["tasks"]["Row"] & {
+  triaged_at?: string | null;
+  workflow_status?: WorkflowStatus | null;
+};
 export type Project = Tables["projects"]["Row"];
 export type Workspace = Tables["workspaces"]["Row"];
 
