@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, ThemeInitScript } from "@/components/theme-provider";
@@ -15,6 +15,14 @@ const sans = Geist({
 export const metadata: Metadata = {
   title: "Loop. Share work across your team.",
   description: "A simple, joyful place to assign and finish work together.",
+};
+
+// `viewport-fit=cover` lets `env(safe-area-inset-*)` resolve to real values
+// inside the iOS notch / home-indicator region. Desktop browsers ignore it.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

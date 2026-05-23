@@ -8,6 +8,9 @@ import { TeamProvider } from "@/components/team-provider";
 import { QuickAddProvider } from "@/components/quick-add-context";
 import { BulkSelectionProvider } from "@/components/bulk-selection";
 import { BulkActionBar } from "@/components/bulk-action-bar";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { MobileFab } from "@/components/mobile-fab";
+import { MobileMenuSheet } from "@/components/mobile-menu-sheet";
 
 // Heavy client modules — only ship their code once the user actually triggers
 // them. Each carries motion + popovers + date-picker code that would
@@ -49,6 +52,7 @@ export function AppShell({
   const [quickOpen, setQuickOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -89,19 +93,48 @@ export function AppShell({
         <QuickAddProvider open={() => setQuickOpen(true)}>
          <BulkSelectionProvider>
           <div className="flex h-dvh w-full overflow-hidden bg-background">
-            <Sidebar
+            {/* Desktop sidebar — `contents` keeps it as a direct flex child
+                so the desktop layout is byte-for-byte unchanged. On mobile
+                the whole branch collapses out of the tree. */}
+            <div className="contents max-md:hidden">
+              <Sidebar
+                user={user}
+                workspace={workspace}
+                team={team}
+                teamRole={teamRole}
+                projects={projects}
+                members={members}
+                counts={counts}
+                onOpenQuickAdd={() => setQuickOpen(true)}
+                onOpenSearch={() => setSearchOpen(true)}
+                onOpenHelp={() => setHelpOpen(true)}
+              />
+            </div>
+            <main className="flex-1 overflow-y-auto max-md:pb-[calc(env(safe-area-inset-bottom,0px)+64px)]">
+              {children}
+            </main>
+
+            {/* Mobile shell — every piece is itself `md:hidden`, so on
+                desktop the DOM still renders these elements but they have
+                `display: none`. No desktop layout impact. */}
+            <MobileBottomNav
+              myWorkBadge={counts.today || undefined}
+              inboxBadge={counts.inbox || undefined}
+              menuOpen={mobileMenuOpen}
+              onOpenMenu={() => setMobileMenuOpen(true)}
+            />
+            <MobileFab onClick={() => setQuickOpen(true)} />
+            <MobileMenuSheet
+              open={mobileMenuOpen}
+              onOpenChange={setMobileMenuOpen}
               user={user}
               workspace={workspace}
               team={team}
-              teamRole={teamRole}
               projects={projects}
-              members={members}
               counts={counts}
-              onOpenQuickAdd={() => setQuickOpen(true)}
               onOpenSearch={() => setSearchOpen(true)}
               onOpenHelp={() => setHelpOpen(true)}
             />
-            <main className="flex-1 overflow-y-auto">{children}</main>
             <QuickAddDialog
               open={quickOpen}
               onOpenChange={setQuickOpen}
