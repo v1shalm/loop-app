@@ -60,7 +60,7 @@ export default async function ProjectsBoardPage() {
         </div>
       ) : (
         <div className="flex-1 overflow-x-auto">
-          <div className="flex min-w-max items-start gap-4 px-0.5 pb-0.5 pt-4">
+          <div className="flex min-w-max items-start gap-4 px-6 pb-10 pt-6">
             {columns.map((col) => (
               <BoardColumn key={col.project.id} column={col} />
             ))}
@@ -155,7 +155,7 @@ function TaskBoardCard({
     <Link
       href={`/projects/${projectId}?task=${task.id}`}
       scroll={false}
-      className="focus-ring group flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-3.5 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
+      className="focus-ring group flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card pt-3.5 px-0.5 pb-0.5 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
     >
       <h4 className="text-[13.5px] font-semibold leading-snug tracking-tight text-foreground">
         {task.title}
