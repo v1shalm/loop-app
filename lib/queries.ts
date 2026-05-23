@@ -93,65 +93,63 @@ export const getProjects = cache(async (): Promise<Project[]> => {
   return (data ?? []) as Project[];
 });
 
-export interface ProjectOverview {
+export interface ProjectBoardColumn {
   project: Project;
   open_count: number;
   done_count: number;
-  recent_titles: string[];
+  tasks: TaskWithRelations[];
 }
 
 /**
- * Used by the /projects index. Counts open/done per project and picks the
- * three most recent open task titles so the card has scannable content.
+ * Used by the /projects board view. Returns every project paired with its
+ * open tasks (capped per column so a runaway list doesn't drag the board)
+ * and the done count so the column header can show progress.
  */
-export const getProjectsOverview = cache(async (): Promise<ProjectOverview[]> => {
-  const supabase = await getSupabaseServer();
-  if (!supabase) return [];
+export const getProjectsBoard = cache(
+  async (perColumn = 8): Promise<ProjectBoardColumn[]> => {
+    const supabase = await getSupabaseServer();
+    if (!supabase) return [];
 
-  const projects = await getProjects();
-  if (projects.length === 0) return [];
+    const projects = await getProjects();
+    if (projects.length === 0) return [];
 
-  const ids = projects.map((p) => p.id);
+    const ids = projects.map((p) => p.id);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase
-    .from("tasks")
-    .select("id, title, status, project_id, created_at")
-    .in("project_id", ids)
-    .order("created_at", { ascending: false }) as any);
-
-  type Row = {
-    id: string;
-    title: string;
-    status: string;
-    project_id: string;
-    created_at: string;
-  };
-  const rows = (data ?? []) as Row[];
-
-  const byProject = new Map<
-    string,
-    { open: Row[]; doneCount: number }
-  >();
-  for (const r of rows) {
-    if (!r.project_id) continue;
-    const bucket =
-      byProject.get(r.project_id) ?? { open: [], doneCount: 0 };
-    if (r.status === "done") bucket.doneCount += 1;
-    else bucket.open.push(r);
-    byProject.set(r.project_id, bucket);
-  }
-
-  return projects.map((p) => {
-    const b = byProject.get(p.id) ?? { open: [], doneCount: 0 };
-    return {
-      project: p,
-      open_count: b.open.length,
-      done_count: b.doneCount,
-      recent_titles: b.open.slice(0, 3).map((t) => t.title),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = (await (supabase
+      .from("tasks")
+      .select(TASK_RELATIONS_SELECT)
+      .in("project_id", ids)
+      .order("priority", { ascending: true })
+      .order("created_at", { ascending: false }) as any)) as {
+      data: TaskWithRelations[] | null;
     };
-  });
-});
+    const rows = (data ?? []) as TaskWithRelations[];
+
+    const byProject = new Map<
+      string,
+      { open: TaskWithRelations[]; doneCount: number }
+    >();
+    for (const r of rows) {
+      if (!r.project_id) continue;
+      const bucket =
+        byProject.get(r.project_id) ?? { open: [], doneCount: 0 };
+      if (r.status === "done") bucket.doneCount += 1;
+      else bucket.open.push(r);
+      byProject.set(r.project_id, bucket);
+    }
+
+    return projects.map((p) => {
+      const b = byProject.get(p.id) ?? { open: [], doneCount: 0 };
+      return {
+        project: p,
+        open_count: b.open.length,
+        done_count: b.doneCount,
+        tasks: b.open.slice(0, perColumn),
+      };
+    });
+  }
+);
 
 export const getWorkspaceMembers = cache(async (): Promise<Profile[]> => {
   const supabase = await getSupabaseServer();
