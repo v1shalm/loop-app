@@ -79,73 +79,75 @@ export function Sidebar({
         collapsed ? "w-[64px]" : "w-[248px]"
       )}
     >
-      {/* ── Top: workspace + search + notifications + collapse ─── */}
-      <div
-        className={cn(
-          "flex h-14 items-center gap-1 border-b border-sidebar-border/60",
-          collapsed ? "justify-center px-2" : "px-3"
-        )}
-      >
-        {collapsed ? (
+      {/* ── Top: workspace label + utility icons, then team identity ─── */}
+      {collapsed ? (
+        <div className="flex h-14 items-center justify-center border-b border-sidebar-border/60 px-2">
           <Tooltip>
             <TooltipTrigger
               onClick={toggle}
               aria-label="Expand sidebar"
-              className="focus-ring grid size-9 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+              className="focus-ring grid size-9 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
             >
               <SidebarSimple size={16} />
             </TooltipTrigger>
             <TooltipContent side="right">Expand sidebar</TooltipContent>
           </Tooltip>
-        ) : (
-          <>
-            <div className="min-w-0 flex-1 px-1.5">
-              <p className="truncate text-[14.5px] font-semibold leading-tight tracking-tight text-foreground">
-                {workspaceName}
+        </div>
+      ) : (
+        <div className="border-b border-sidebar-border/60 px-3 pt-3 pb-3">
+          {/* Row 1 — workspace label, action icons aligned right */}
+          <div className="flex h-7 items-center">
+            <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
+              {workspaceName}
+            </p>
+            <div className="flex items-center gap-0.5">
+              <Tooltip>
+                <TooltipTrigger
+                  onClick={onOpenSearch}
+                  aria-label="Search (⌘K)"
+                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
+                >
+                  <MagnifyingGlass size={15} />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Search</TooltipContent>
+              </Tooltip>
+              <NotificationsPopover
+                unreadCount={counts.inbox}
+                currentUserId={user.id}
+              />
+              <Tooltip>
+                <TooltipTrigger
+                  onClick={toggle}
+                  aria-label="Collapse sidebar"
+                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
+                >
+                  <SidebarSimple size={15} />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Collapse sidebar</TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Row 2 — primary team identity */}
+          {team && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <span
+                aria-hidden
+                className="inline-block size-2 shrink-0 rounded-full"
+                style={{ backgroundColor: team.color ?? "#94a3b8" }}
+              />
+              <p className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-foreground">
+                {team.name}
               </p>
-              {team && (
-                <p className="mt-0.5 inline-flex items-center gap-1 text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
-                  <span
-                    aria-hidden
-                    className="inline-block size-1.5 rounded-full"
-                    style={{ backgroundColor: team.color ?? "#94a3b8" }}
-                  />
-                  {team.name}
-                  {isAdmin && (
-                    <span className="rounded bg-violet-100/70 px-1 text-[9.5px] font-semibold normal-case tracking-normal text-violet-700">
-                      Admin
-                    </span>
-                  )}
-                </p>
+              {isAdmin && (
+                <span className="shrink-0 rounded-md border border-violet-200/70 bg-violet-50 px-1.5 py-0.5 text-[10.5px] font-semibold text-violet-700">
+                  Admin
+                </span>
               )}
             </div>
-            <Tooltip>
-              <TooltipTrigger
-                onClick={onOpenSearch}
-                aria-label="Search (⌘K)"
-                className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
-              >
-                <MagnifyingGlass size={16} />
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Search</TooltipContent>
-            </Tooltip>
-            <NotificationsPopover
-              unreadCount={counts.inbox}
-              currentUserId={user.id}
-            />
-            <Tooltip>
-              <TooltipTrigger
-                onClick={toggle}
-                aria-label="Collapse sidebar"
-                className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
-              >
-                <SidebarSimple size={16} />
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Collapse sidebar</TooltipContent>
-            </Tooltip>
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* ── Primary CTA: Add Task ──────────────────────────────── */}
       <div
