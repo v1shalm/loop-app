@@ -60,7 +60,7 @@ export default async function ProjectsBoardPage() {
         </div>
       ) : (
         <div className="flex-1 overflow-x-auto">
-          <div className="flex min-w-max items-start gap-4 px-2 pb-2 pt-4">
+          <div className="flex min-w-max items-start gap-4 px-1 pb-1 pt-4">
             {columns.map((col) => (
               <BoardColumn key={col.project.id} column={col} />
             ))}
