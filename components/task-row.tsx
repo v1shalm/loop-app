@@ -80,6 +80,17 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
   const commentCount = task.comments?.[0]?.count ?? 0;
   const priority = optPriority;
 
+  const undoComplete = () => {
+    setDone(false);
+    startTransition(async () => {
+      const res = await setTaskStatus(task.id, "todo");
+      if (res.error) {
+        sileo.error({ title: res.error });
+        setDone(true);
+      }
+    });
+  };
+
   const toggle = () => {
     setDone(true);
     playSound("completed", priority);
@@ -88,7 +99,14 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
       if (res.error) {
         sileo.error({ title: res.error });
         setDone(false);
+        return;
       }
+      sileo.success({
+        title: "Marked complete",
+        description: task.title,
+        button: { title: "Undo", onClick: undoComplete },
+        duration: 6000,
+      });
     });
   };
 

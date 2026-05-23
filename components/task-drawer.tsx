@@ -272,19 +272,34 @@ function DrawerInner({
     });
   };
 
+  const setStatus = (target: "todo" | "done") => {
+    if (!task) return;
+    setTask({
+      ...task,
+      status: target,
+      completed_at: target === "done" ? new Date().toISOString() : null,
+    });
+    startTransition(async () => {
+      const res = await setTaskStatus(task.id, target);
+      if (res.error) sileo.error({ title: res.error });
+    });
+  };
+
   const toggleDone = () => {
     if (!task) return;
     const next = task.status === "done" ? "todo" : "done";
-    if (next === "done") playSound("completed", task.priority as Priority);
-    setTask({
-      ...task,
-      status: next,
-      completed_at: next === "done" ? new Date().toISOString() : null,
-    });
-    startTransition(async () => {
-      const res = await setTaskStatus(task.id, next);
-      if (res.error) sileo.error({ title: res.error });
-    });
+    if (next === "done") {
+      playSound("completed", task.priority as Priority);
+      setStatus("done");
+      sileo.success({
+        title: "Marked complete",
+        description: task.title,
+        button: { title: "Undo", onClick: () => setStatus("todo") },
+        duration: 6000,
+      });
+    } else {
+      setStatus("todo");
+    }
   };
 
   const remove = () => {

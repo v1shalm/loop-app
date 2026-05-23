@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { format } from "date-fns";
 import { Crosshair, CheckCircle } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
@@ -155,6 +156,7 @@ export default async function AssignedToMePage() {
                     completedToday.map((t) => (
                       <CompletedRow
                         key={t.id}
+                        id={t.id}
                         title={t.title}
                         at={t.completed_at}
                       />
@@ -222,25 +224,32 @@ function Section({
 }
 
 function CompletedRow({
+  id,
   title,
   at,
 }: {
+  id: string;
   title: string;
   at: string | null;
 }) {
   return (
-    <article className="flex items-center gap-3 rounded-xl border border-border/60 bg-emerald-50/40 px-4 py-3 shadow-soft-xs">
+    <Link
+      href={`/assigned-to-me?task=${id}`}
+      scroll={false}
+      className="focus-ring group flex items-center gap-3 rounded-xl border border-border/60 bg-emerald-50/40 px-4 py-3 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
+      title="Open to reopen this task"
+    >
       <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] bg-emerald-600 text-emerald-50">
         <CheckCircle size={13} weight="fill" />
       </span>
-      <p className="min-w-0 flex-1 truncate text-[13.5px] text-muted-foreground line-through decoration-muted-foreground/40">
+      <p className="min-w-0 flex-1 truncate text-[13.5px] text-muted-foreground line-through decoration-muted-foreground/40 group-hover:text-foreground/70">
         {title}
       </p>
       {at && (
-        <span className="text-[11.5px] tabular-nums text-emerald-700/80">
+        <span className="shrink-0 text-[11.5px] tabular-nums text-emerald-700/80">
           {format(new Date(at), "h:mm a")}
         </span>
       )}
-    </article>
+    </Link>
   );
 }
