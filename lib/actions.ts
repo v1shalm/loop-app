@@ -456,7 +456,7 @@ export async function addComment(
     .from("task_comments")
     .insert({ task_id: taskId, author_id: profile.id, body: text })
     .select(
-      "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
+      "id, task_id, author_id, body, created_at, author:profiles!task_comments_author_id_fkey(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
     )
     .single() as any);
 

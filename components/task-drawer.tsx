@@ -188,7 +188,7 @@ function DrawerInner({
     const commentsP = (supabase
       .from("task_comments")
       .select(
-        "id, task_id, author_id, body, created_at, author:profiles(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
+        "id, task_id, author_id, body, created_at, author:profiles!task_comments_author_id_fkey(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
       )
       .eq("task_id", taskId)
       .order("created_at", { ascending: true }) as any);
