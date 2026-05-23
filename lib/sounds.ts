@@ -25,7 +25,11 @@ export type SoundName =
   | "added"
   | "assignedToMe"
   | "completed"
+  | "uncomplete"
   | "streak"
+  | "reaction"
+  | "dropped"
+  | "pin"
   | "error";
 
 type CompletedArgs = [priority?: 1 | 2 | 3 | 4];

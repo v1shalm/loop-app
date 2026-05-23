@@ -1,8 +1,9 @@
 import { format } from "date-fns";
-import { CheckCircle, TrendUp, Tray, Crosshair } from "@/components/icons";
+import { CheckCircle, Crosshair, Tray } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { ProfileIdentityForm } from "@/components/profile-identity-form";
 import { ProfileStatusRow } from "@/components/profile-status-row";
+import { MetricStrip } from "@/components/metric-strip";
 import {
   getCurrentProfile,
   getMyStats,
@@ -52,29 +53,25 @@ export default async function ProfilePage() {
           />
         </section>
 
-        {/* Today's stats */}
+        {/* Inline metric strip — replaces the 3-tile grid. */}
         <section className="mb-8">
-          <h3 className="mb-2 text-[15px] font-semibold tracking-tight text-foreground">
+          <h3 className="mb-2.5 text-[15px] font-semibold tracking-tight text-foreground">
             Today
           </h3>
-          <div className="grid grid-cols-3 gap-3">
-            <StatTile
-              icon={<CheckCircle size={18} weight="fill" />}
-              tone="emerald"
-              label="Completed today"
-              value={stats.completed_today}
-            />
-            <StatTile
-              icon={<Crosshair size={18} />}
-              label="Open assigned to me"
-              value={stats.open_assigned}
-            />
-            <StatTile
-              icon={<TrendUp size={18} />}
-              label="I created"
-              value={stats.open_authored}
-            />
-          </div>
+          <MetricStrip
+            metrics={[
+              {
+                label: "Done today",
+                value: stats.completed_today,
+                tone: "emerald",
+              },
+              {
+                label: "Assigned to me",
+                value: stats.open_assigned,
+              },
+              { label: "I created", value: stats.open_authored },
+            ]}
+          />
         </section>
 
         {/* Status */}
@@ -140,32 +137,3 @@ export default async function ProfilePage() {
   );
 }
 
-function StatTile({
-  icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  tone?: "emerald";
-}) {
-  return (
-    <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-soft-xs">
-      <div
-        className={`mb-2 grid size-8 place-items-center rounded-lg ${
-          tone === "emerald"
-            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
-            : "bg-muted text-muted-foreground"
-        }`}
-      >
-        {icon}
-      </div>
-      <div className="text-[24px] font-semibold leading-none tabular-nums text-foreground">
-        {value}
-      </div>
-      <p className="mt-1 text-[12px] text-muted-foreground">{label}</p>
-    </div>
-  );
-}

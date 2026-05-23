@@ -16,14 +16,10 @@ export type Profile = Tables["profiles"]["Row"] & {
   pinned_project_ids?: string[] | null;
 };
 export type WorkflowStatus =
-  | "draft"
-  | "in_progress"
-  | "waiting_approval"
-  | "changes_requested"
-  | "approved"
-  | "live"
-  | "archived"
-  | "do_not_use";
+  | "active"
+  | "on_hold"
+  | "completed"
+  | "archived";
 
 export type Task = Tables["tasks"]["Row"] & {
   triaged_at?: string | null;

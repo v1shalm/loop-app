@@ -20,7 +20,9 @@ import { cn } from "@/lib/utils";
  * Wraps a textarea. When the user types "@" at a word boundary, an
  * autocomplete popover opens directly under the caret with a filtered
  * list of mentionable people. Arrow keys navigate; Enter or Tab inserts
- * the mention; Escape closes; clicking outside closes.
+ * the mention; Escape closes; clicking outside closes. Empty filters
+ * keep the popover open with a "no people found" hint so the trigger
+ * never looks broken — matches Figma.
  *
  * Storage format: `@[<display name>](<user-id>)`. The user's id is the
  * canonical reference; the display name is kept so renames don't break
@@ -90,6 +92,28 @@ export function extractMentionIds(input: string): string[] {
   return [...new Set(out)];
 }
 
+/** Figma-style filtering: case-insensitive substring on full name, plus
+ *  prefix-match on initials so typing "AM" surfaces "Alex Martinez". */
+function rankMembers(members: Mentionable[], query: string): Mentionable[] {
+  const q = query.trim().toLowerCase();
+  if (q === "") return members.slice(0, 8);
+  const scored = members
+    .map((m) => {
+      const name = m.name.toLowerCase();
+      const initials = m.initials.toLowerCase();
+      let score = -1;
+      if (name.startsWith(q)) score = 3;
+      else if (name.includes(` ${q}`)) score = 2;
+      else if (name.includes(q)) score = 1;
+      else if (initials.startsWith(q)) score = 2;
+      return { m, score };
+    })
+    .filter((x) => x.score >= 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8);
+  return scored.map((x) => x.m);
+}
+
 export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
   function MentionInput(
     {
@@ -130,11 +154,7 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
 
     const filtered = useMemo(() => {
       if (!openAt) return [];
-      const q = query.trim().toLowerCase();
-      const matches = members.filter((m) =>
-        q === "" ? true : m.name.toLowerCase().includes(q)
-      );
-      return matches.slice(0, 6);
+      return rankMembers(members, query);
     }, [openAt, query, members]);
 
     // Reset active row when the filtered list changes (Figma behaviour:
@@ -143,9 +163,6 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
       setActiveIdx(0);
     }, [query, openAt]);
 
-    // Resize textarea to content + recompute mirror position on every
-    // edit. Mirror inherits the textarea's styling so its layout matches
-    // the actual caret position.
     const resize = useCallback(() => {
       const ta = textareaRef.current;
       if (!ta) return;
@@ -164,12 +181,10 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
       input: string,
       caret: number
     ): { start: number; query: string } | null => {
-      // Walk backwards until we hit @, whitespace, or start of string.
       let i = caret - 1;
       while (i >= 0) {
         const ch = input[i];
         if (ch === "@") {
-          // Word boundary check: char before @ must be space/newline/start
           const prev = i > 0 ? input[i - 1] : "";
           if (i === 0 || /\s/.test(prev)) {
             return { start: i, query: input.slice(i + 1, caret) };
@@ -177,21 +192,21 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
           return null;
         }
         if (/\s/.test(ch)) return null;
-        // Cap how far we search so typing essays doesn't get expensive.
         if (caret - i > 30) return null;
         i--;
       }
       return null;
     };
 
-    /** Measure pixel position of the caret using a hidden mirror div. */
+    /** Measure pixel position of the caret using a hidden mirror div.
+     *  Returns coordinates relative to the wrapper, which is the popover's
+     *  positioning parent. */
     const measureCaret = (caretIndex: number): { top: number; left: number } => {
       const ta = textareaRef.current;
       const mirror = mirrorRef.current;
-      if (!ta || !mirror) return { top: 0, left: 0 };
+      const wrapper = wrapperRef.current;
+      if (!ta || !mirror || !wrapper) return { top: 0, left: 0 };
 
-      // Copy the relevant style properties so the mirror's text wraps
-      // identically to the textarea's text.
       const cs = window.getComputedStyle(ta);
       const props: (keyof CSSStyleDeclaration)[] = [
         "fontFamily",
@@ -203,39 +218,42 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
         "border",
         "boxSizing",
         "width",
-        "whiteSpace",
-        "wordWrap",
         "tabSize",
       ];
       for (const p of props) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (mirror.style as any)[p] = (cs as any)[p];
       }
+      // Force same wrapping behavior as the textarea so character flow
+      // matches.
       mirror.style.position = "absolute";
-      mirror.style.top = "0";
-      mirror.style.left = "0";
+      mirror.style.top = `${ta.offsetTop}px`;
+      mirror.style.left = `${ta.offsetLeft}px`;
       mirror.style.visibility = "hidden";
       mirror.style.overflow = "hidden";
       mirror.style.whiteSpace = "pre-wrap";
+      mirror.style.wordWrap = "break-word";
+      mirror.style.pointerEvents = "none";
 
       const before = ta.value.slice(0, caretIndex);
       const after = ta.value.slice(caretIndex);
-      // Use a span at the caret position so we can measure its rect.
       mirror.innerHTML = "";
-      const beforeNode = document.createTextNode(before);
+      mirror.appendChild(document.createTextNode(before));
       const marker = document.createElement("span");
       marker.textContent = "​"; // zero-width space
-      const afterNode = document.createTextNode(after);
-      mirror.appendChild(beforeNode);
       mirror.appendChild(marker);
-      mirror.appendChild(afterNode);
+      mirror.appendChild(document.createTextNode(after));
 
       const markerRect = marker.getBoundingClientRect();
-      const taRect = ta.getBoundingClientRect();
+      const wrapperRect = wrapper.getBoundingClientRect();
+      // Resolve lineHeight when it's "normal" (no numeric value) by
+      // falling back to 1.4 × font-size — close enough to drop the
+      // popover under the caret line.
+      const lineHeight =
+        parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4 || 20;
       return {
-        top: markerRect.top - taRect.top + ta.offsetTop - ta.scrollTop +
-          (parseInt(cs.lineHeight, 10) || 18),
-        left: markerRect.left - taRect.left + ta.offsetLeft - ta.scrollLeft,
+        top: markerRect.top - wrapperRect.top - ta.scrollTop + lineHeight,
+        left: markerRect.left - wrapperRect.left - ta.scrollLeft,
       };
     };
 
@@ -263,13 +281,11 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
       if (!detected) return;
       const before = value.slice(0, detected.start);
       const after = value.slice(caret);
-      // Trailing space so the next keystroke starts a fresh word.
       const token = `@[${member.name}](${member.id}) `;
       const next = `${before}${token}${after}`;
       setValue(next);
       setOpenAt(null);
       setQuery("");
-      // Move caret to right after the inserted token.
       const newCaret = before.length + token.length;
       requestAnimationFrame(() => {
         ta.focus();
@@ -277,30 +293,60 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
       });
     };
 
+    /** Figma-style atomic delete: if the caret sits right after a complete
+     *  mention token, backspace removes the whole token in one keypress
+     *  instead of nibbling characters off the end. */
+    const handleBackspaceAtomicDelete = (
+      e: React.KeyboardEvent<HTMLTextAreaElement>
+    ): boolean => {
+      const ta = textareaRef.current;
+      if (!ta) return false;
+      if (ta.selectionStart !== ta.selectionEnd) return false;
+      const caret = ta.selectionStart ?? 0;
+      if (caret === 0) return false;
+      // Look back for a `@[name](id)` token whose end is at the caret
+      // (or one space before — we insert a trailing space on accept).
+      const slice = value.slice(Math.max(0, caret - 200), caret);
+      const re = /@\[[^\]]+\]\([^)]+\)\s?$/;
+      const m = slice.match(re);
+      if (!m) return false;
+      e.preventDefault();
+      const tokenStart = caret - m[0].length;
+      const next = value.slice(0, tokenStart) + value.slice(caret);
+      setValue(next);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(tokenStart, tokenStart);
+      });
+      return true;
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (openAt && filtered.length > 0) {
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setActiveIdx((i) => (i + 1) % filtered.length);
-          return;
-        }
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setActiveIdx((i) => (i - 1 + filtered.length) % filtered.length);
-          return;
-        }
-        if (e.key === "Enter" || e.key === "Tab") {
-          e.preventDefault();
-          insertMention(filtered[activeIdx]);
-          return;
-        }
+      if (openAt) {
         if (e.key === "Escape") {
           e.preventDefault();
           setOpenAt(null);
           return;
         }
+        if (filtered.length > 0) {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveIdx((i) => (i + 1) % filtered.length);
+            return;
+          }
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIdx((i) => (i - 1 + filtered.length) % filtered.length);
+            return;
+          }
+          if (e.key === "Enter" || e.key === "Tab") {
+            e.preventDefault();
+            insertMention(filtered[activeIdx]);
+            return;
+          }
+        }
       }
-      // Cmd/Ctrl+Enter submits if a handler is set
+      if (e.key === "Backspace" && handleBackspaceAtomicDelete(e)) return;
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && onSubmit) {
         e.preventDefault();
         onSubmit();
@@ -321,7 +367,6 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
       [value]
     );
 
-    // Close the suggestion popover on any click outside the wrapper.
     useEffect(() => {
       if (!openAt) return;
       const onDoc = (e: MouseEvent) => {
@@ -356,15 +401,12 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
 
         {/* Caret-mirror. Hidden but kept in the DOM so layout queries
             are always valid. */}
-        <div
-          ref={mirrorRef}
-          aria-hidden
-          className="pointer-events-none"
-        />
+        <div ref={mirrorRef} aria-hidden className="pointer-events-none" />
 
-        {/* Suggestion popover */}
+        {/* Suggestion popover — stays open while @… is being typed even
+            if nothing matches. */}
         <AnimatePresence>
-          {openAt && filtered.length > 0 && (
+          {openAt && (
             <motion.div
               key="mention-pop"
               initial={{ opacity: 0, y: -4, scale: 0.97 }}
@@ -373,52 +415,62 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
               transition={{ type: "spring", duration: 0.22, bounce: 0.12 }}
               role="listbox"
               aria-label="Mention suggestions"
-              className="absolute z-50 min-w-[220px] max-w-[280px] overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-soft-md ring-1 ring-foreground/5"
+              className="absolute z-50 min-w-[240px] max-w-[300px] overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-soft-md ring-1 ring-foreground/5"
               style={{
                 top: openAt.top + 4,
-                left: openAt.left,
+                left: Math.max(0, openAt.left),
               }}
             >
-              {filtered.map((m, i) => {
-                const active = i === activeIdx;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    role="option"
-                    aria-selected={active}
-                    onMouseEnter={() => setActiveIdx(i)}
-                    onMouseDown={(e) => {
-                      // mousedown so the textarea doesn't blur first
-                      e.preventDefault();
-                      insertMention(m);
-                    }}
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors duration-150 ease-[var(--ease-out)]",
-                      active
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground hover:bg-accent/40"
-                    )}
-                  >
-                    <Avatar
-                      src={m.avatar_url}
-                      initials={m.initials}
-                      color={m.avatar_color}
-                      size={22}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-medium">
-                        {m.name}
-                      </span>
-                      {m.role && (
-                        <span className="block truncate text-[11px] text-muted-foreground">
-                          {m.role}
-                        </span>
+              <p className="px-2 pb-1 pt-1.5 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                {query.trim() === ""
+                  ? "Mention someone"
+                  : `Matches for “${query}”`}
+              </p>
+              {filtered.length === 0 ? (
+                <div className="px-2 py-2.5 text-[12.5px] text-muted-foreground">
+                  No people found
+                </div>
+              ) : (
+                filtered.map((m, i) => {
+                  const active = i === activeIdx;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      onMouseEnter={() => setActiveIdx(i)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        insertMention(m);
+                      }}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors duration-150 ease-[var(--ease-out)]",
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-foreground hover:bg-accent/40"
                       )}
-                    </span>
-                  </button>
-                );
-              })}
+                    >
+                      <Avatar
+                        src={m.avatar_url}
+                        initials={m.initials}
+                        color={m.avatar_color}
+                        size={22}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-medium">
+                          {m.name}
+                        </span>
+                        {m.role && (
+                          <span className="block truncate text-[11px] text-muted-foreground">
+                            {m.role}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -455,7 +507,9 @@ export function MentionRenderer({
   );
 }
 
-type Part = { type: "text"; value: string } | { type: "mention"; name: string; id: string };
+type Part =
+  | { type: "text"; value: string }
+  | { type: "mention"; name: string; id: string };
 
 function splitMentions(input: string): Part[] {
   const re = /@\[([^\]]+)\]\(([^)]+)\)/g;

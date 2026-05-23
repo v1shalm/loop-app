@@ -35,8 +35,13 @@ import { Avatar } from "@/components/avatar";
  */
 export function AddTaskInline({
   defaultProjectId,
+  flat,
 }: {
   defaultProjectId?: string | null;
+  /** When true, render as a hairline-topped row that lives inside an
+   *  outer bordered container (project page list). Rest state is
+   *  bare; hover lifts to bg-card with purple text. */
+  flat?: boolean;
 }) {
   const { projects, members, currentUserId } = useTeamContext();
   const { open: openModal } = useQuickAdd();
@@ -126,19 +131,24 @@ export function AddTaskInline({
       projectId: parsed.projectId ?? defaultProjectId ?? null,
       assigneeId: parsed.assigneeId ?? currentUserId,
     };
+
+    // Optimistically clear input and play added chime instantly!
+    const originalText = text;
+    setText("");
+    playSound("added");
+    inputRef.current?.focus();
+
     startTransition(async () => {
       const res = await createTask(payload);
       if (res.error) {
         playSound("error");
         sileo.error({ title: res.error });
-        return;
+        setText(originalText); // Restore input text on error so draft isn't lost
+        // Keep focus so the user can easily re-edit/try again
+        inputRef.current?.focus();
       }
-      playSound("added");
-      setText("");
-      // Keep the row open so the user can chain adds.
-      inputRef.current?.focus();
     });
-  }, [parsed, defaultProjectId, currentUserId]);
+  }, [parsed, defaultProjectId, currentUserId, text]);
 
   // Collapse on Esc, on outside click when empty.
   useEffect(() => {
@@ -166,12 +176,34 @@ export function AddTaskInline({
     return (
       <button
         onClick={() => setActive(true)}
-        className="focus-ring group flex w-full items-center gap-3 rounded-xl border border-dashed border-border bg-card/40 px-4 py-3 text-left text-[13.5px] font-medium text-muted-foreground transition-[background-color,color,border-color] duration-150 ease-[var(--ease-out)] hover:border-border hover:bg-card hover:text-foreground"
+        className={cn(
+          "focus-ring group/add flex w-full items-center gap-2.5 text-left text-[13.5px] text-muted-foreground transition-[background-color,color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.997]",
+          flat
+            ? "border-t border-border/60 px-4 py-3 hover:bg-accent/30 hover:text-primary"
+            : "rounded-xl border border-transparent px-4 py-2.5 hover:border-border/60 hover:bg-card hover:text-foreground"
+        )}
       >
-        <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-dashed border-muted-foreground/50 text-muted-foreground transition-colors group-hover:border-muted-foreground/70">
-          <Plus size={11} weight="bold" />
+        <span
+          className={cn(
+            "grid size-5 shrink-0 place-items-center rounded-md transition-[color,background-color] duration-150 ease-[var(--ease-out)]",
+            flat
+              ? "text-muted-foreground/70 group-hover/add:text-primary"
+              : "text-muted-foreground/70 group-hover/add:bg-primary/10 group-hover/add:text-primary"
+          )}
+        >
+          <Plus size={13} weight="bold" />
         </span>
-        <span>Add task</span>
+        <span className={cn(!flat && "font-medium")}>Add task</span>
+        <span
+          className={cn(
+            "ml-auto text-[11px] tabular-nums opacity-0 transition-opacity duration-150 ease-[var(--ease-out)] group-hover/add:opacity-100",
+            flat
+              ? "text-muted-foreground/50 group-hover/add:text-primary/70"
+              : "text-muted-foreground/50"
+          )}
+        >
+          Q
+        </span>
       </button>
     );
   }
@@ -203,29 +235,32 @@ export function AddTaskInline({
             }
           }}
           onKeyDown={(e) => {
-            if (mentionQuery !== null && mentionMatches.length > 0) {
-              if (e.key === "ArrowDown") {
-                e.preventDefault();
-                setMentionIdx((i) => (i + 1) % mentionMatches.length);
-                return;
-              }
-              if (e.key === "ArrowUp") {
-                e.preventDefault();
-                setMentionIdx(
-                  (i) =>
-                    (i - 1 + mentionMatches.length) % mentionMatches.length
-                );
-                return;
-              }
-              if (e.key === "Enter" || e.key === "Tab") {
-                e.preventDefault();
-                insertMention(mentionMatches[mentionIdx].name);
-                return;
-              }
+            if (mentionQuery !== null) {
+              // Escape always closes the picker, even with zero matches.
               if (e.key === "Escape") {
                 e.preventDefault();
                 setMentionQuery(null);
                 return;
+              }
+              if (mentionMatches.length > 0) {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setMentionIdx((i) => (i + 1) % mentionMatches.length);
+                  return;
+                }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setMentionIdx(
+                    (i) =>
+                      (i - 1 + mentionMatches.length) % mentionMatches.length
+                  );
+                  return;
+                }
+                if (e.key === "Enter" || e.key === "Tab") {
+                  e.preventDefault();
+                  insertMention(mentionMatches[mentionIdx].name);
+                  return;
+                }
               }
             }
             if (e.key === "Enter") {
@@ -258,9 +293,11 @@ export function AddTaskInline({
 
       {/* @mention picker — same shape as the comment composer's, but
           inserts a plain "@firstname " token so the natural-language
-          parser handles the resolution. */}
+          parser handles the resolution. Stays open while @… is being
+          typed even when nothing matches — Figma-style — so the user
+          knows the trigger is live and can correct course. */}
       <AnimatePresence>
-        {mentionQuery !== null && mentionMatches.length > 0 && (
+        {mentionQuery !== null && (
           <motion.div
             key="mention-pop-inline"
             initial={{ opacity: 0, y: -4, scale: 0.97 }}
@@ -269,40 +306,51 @@ export function AddTaskInline({
             transition={{ type: "spring", duration: 0.22, bounce: 0.12 }}
             role="listbox"
             aria-label="Assignee suggestions"
-            className="absolute left-12 z-50 mt-1 min-w-[220px] max-w-[280px] overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-soft-md ring-1 ring-foreground/5"
+            className="absolute left-12 top-full z-50 mt-1.5 min-w-[240px] max-w-[300px] overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-soft-md ring-1 ring-foreground/5"
           >
-            {mentionMatches.map((m, i) => {
-              const active = i === mentionIdx;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onMouseEnter={() => setMentionIdx(i)}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    insertMention(m.name);
-                  }}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors duration-150 ease-[var(--ease-out)]",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-foreground hover:bg-accent/40"
-                  )}
-                >
-                  <Avatar
-                    src={m.avatar_url}
-                    initials={m.initials}
-                    color={m.avatar_color}
-                    size={22}
-                  />
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-                    {m.name}
-                  </span>
-                </button>
-              );
-            })}
+            <p className="px-2 pb-1 pt-1.5 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+              {mentionQuery.trim() === ""
+                ? "Mention someone"
+                : `Matches for “${mentionQuery}”`}
+            </p>
+            {mentionMatches.length === 0 ? (
+              <div className="px-2 py-2.5 text-[12.5px] text-muted-foreground">
+                No people found
+              </div>
+            ) : (
+              mentionMatches.map((m, i) => {
+                const active = i === mentionIdx;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onMouseEnter={() => setMentionIdx(i)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      insertMention(m.name);
+                    }}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors duration-150 ease-[var(--ease-out)]",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground hover:bg-accent/40"
+                    )}
+                  >
+                    <Avatar
+                      src={m.avatar_url}
+                      initials={m.initials}
+                      color={m.avatar_color}
+                      size={22}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+                      {m.name}
+                    </span>
+                  </button>
+                );
+              })
+            )}
           </motion.div>
         )}
       </AnimatePresence>

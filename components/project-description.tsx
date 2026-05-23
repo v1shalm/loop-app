@@ -47,10 +47,22 @@ export function ProjectDescription({
         onBlur={save}
         placeholder="Add a short description so this project tells its own story on the index..."
         minRows={2}
-        className="w-full resize-none rounded-lg border border-border/60 bg-card p-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors focus:border-ring/40 placeholder:text-muted-foreground/50"
+        // Disable native spellcheck + Grammarly so the description
+        // reads as a plain paragraph at rest. Words like "Supabase"
+        // and "URLs" otherwise pick up red squiggles that look like
+        // real errors.
+        spellCheck={false}
+        autoCorrect="off"
+        autoCapitalize="off"
+        data-gramm="false"
+        data-gramm_editor="false"
+        data-enable-grammarly="false"
+        // Flat editor — no card, no border, no inner bg. Looks like a
+        // plain paragraph at rest; a subtle focus ring marks editability.
+        className="w-full resize-none bg-transparent p-0 text-[14px] leading-relaxed text-muted-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:text-foreground"
       />
       {pending && (
-        <span className="pointer-events-none absolute right-3 top-3 text-[10.5px] text-muted-foreground/70">
+        <span className="pointer-events-none absolute right-0 top-0 text-[10.5px] text-muted-foreground/70">
           Saving...
         </span>
       )}

@@ -39,6 +39,8 @@ export default function RootLayout({
             <ThemedToaster />
           </TooltipProvider>
         </ThemeProvider>
+        {/* Placeholder for @vercel/analytics */}
+        {/* <Analytics /> */}
       </body>
     </html>
   );

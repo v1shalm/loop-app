@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toggleCommentReaction } from "@/lib/actions";
+import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 
 // One row in the picker. Eight is enough for variety, few enough to fit
@@ -94,6 +95,8 @@ export function CommentReactions({
       : [...reactions, { emoji, user_id: currentUserId }];
     const previous = reactions;
     setReactions(next);
+    // Bright pop on add, soft tuck on remove — same patch, different feel.
+    playSound(has ? "uncomplete" : "reaction");
     const res = await toggleCommentReaction(commentId, emoji);
     if (res.error) {
       setReactions(previous);

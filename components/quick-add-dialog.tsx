@@ -104,29 +104,41 @@ export function QuickAddDialog({
 
   const submit = () => {
     if (!title.trim()) return;
+
+    // Capture current form parameters before optimistically clearing them
+    const savedTitle = title;
+    const savedDescription = description;
+    const savedPriority = priority;
+    const savedDue = due;
+    const savedProjectId = projectId;
+    const savedAssigneeId = assigneeId;
+
+    // Play added sound instantly and close the dialog
+    playSound("added");
+    onOpenChange(false);
+
+    // Display the success toast instantly
+    const target = members.find((m) => m.id === savedAssigneeId);
+    sileo.success({
+      title:
+        savedAssigneeId !== currentUserId && target
+          ? `Assigned to ${target.name}`
+          : "Task added",
+    });
+
     startTransition(async () => {
       const res = await createTask({
-        title,
-        description: description || undefined,
-        priority,
-        dueAt: due ? due.toISOString() : null,
-        projectId,
-        assigneeId,
+        title: savedTitle,
+        description: savedDescription || undefined,
+        priority: savedPriority,
+        dueAt: savedDue ? savedDue.toISOString() : null,
+        projectId: savedProjectId,
+        assigneeId: savedAssigneeId,
       });
       if (res.error) {
         playSound("error");
         sileo.error({ title: res.error });
-        return;
       }
-      playSound("added");
-      const target = members.find((m) => m.id === assigneeId);
-      sileo.success({
-        title:
-          assigneeId !== currentUserId && target
-            ? `Assigned to ${target.name}`
-            : "Task added",
-      });
-      onOpenChange(false);
     });
   };
 

@@ -15,15 +15,80 @@ function getPatch(): AudioPatch | null {
   return patch;
 }
 
+/**
+ * Sound vocabulary, mapped onto the four underlying patches in the
+ * crisp pack (send / notification / success / error). We layer plays
+ * with setTimeout + tweak detune/volume to give each named event its
+ * own character — without needing to ship more audio assets.
+ *
+ *   added       send, +80 cents — quick, snappy
+ *   assignedToMe notification ×2, second a fourth up — gentle two-tone ping
+ *   completed   success with priority-driven detune + sparkle overtone
+ *   uncomplete  send, low + half volume — soft "tuck back" reverse
+ *   streak      success arpeggio (root / third / fifth) at +volume
+ *   reaction    send, very high + half volume — bright pop
+ *   dropped     send, low + low volume — quiet "settle" thud
+ *   pin         send, sparkly high + low volume — crisp click
+ *   error       error
+ */
 export function play(name: SoundName, ...args: unknown[]): void {
   const p = getPatch();
   if (!p) return;
-  if (name === "added") p.play("send");
-  else if (name === "assignedToMe") p.play("notification");
-  else if (name === "completed") {
-    const priority = (args[0] as 1 | 2 | 3 | 4 | undefined) ?? 4;
-    const detune = (4 - priority) * 67;
-    p.play("success", { detune });
-  } else if (name === "streak") p.play("success", { detune: 200, volume: 1.15 });
-  else if (name === "error") p.play("error");
+
+  switch (name) {
+    case "added":
+      p.play("send", { detune: 80 });
+      return;
+
+    case "assignedToMe":
+      // Two-note "you have a thing" — first plain, second a fourth up.
+      p.play("notification");
+      setTimeout(() => p.play("notification", { detune: 500, volume: 0.85 }), 110);
+      return;
+
+    case "completed": {
+      const priority = (args[0] as 1 | 2 | 3 | 4 | undefined) ?? 4;
+      const baseDetune = (4 - priority) * 80;
+      p.play("success", { detune: baseDetune });
+      // Sparkle overtone — quieter, an octave + a bit, slightly delayed.
+      setTimeout(
+        () => p.play("success", { detune: baseDetune + 700, volume: 0.45 }),
+        60
+      );
+      return;
+    }
+
+    case "uncomplete":
+      // Soft "put it back" — same patch as added but darker + quieter.
+      p.play("send", { detune: -180, volume: 0.55 });
+      return;
+
+    case "streak": {
+      // Three-note arpeggio for milestones (e.g. ring fills to 100%).
+      // Root → major third → fifth, escalating volume.
+      p.play("success", { detune: 0, volume: 0.9 });
+      setTimeout(() => p.play("success", { detune: 400, volume: 1.0 }), 90);
+      setTimeout(() => p.play("success", { detune: 700, volume: 1.15 }), 180);
+      return;
+    }
+
+    case "reaction":
+      // Bright pop — high detune, half volume, no layering.
+      p.play("send", { detune: 350, volume: 0.6 });
+      return;
+
+    case "dropped":
+      // Soft thud on drag release — low detune, quiet.
+      p.play("send", { detune: -240, volume: 0.4 });
+      return;
+
+    case "pin":
+      // Crisp short click — very high, very quiet.
+      p.play("send", { detune: 500, volume: 0.55 });
+      return;
+
+    case "error":
+      p.play("error");
+      return;
+  }
 }

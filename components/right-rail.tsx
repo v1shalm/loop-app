@@ -1,8 +1,12 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { RelativeTime } from "@/components/relative-time";
 import { CheckCircle, UserPlus } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { statusLabel } from "@/components/status-picker";
+import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 import type { ActivityItem, MemberPulse, ProfileStatus } from "@/lib/queries";
 
@@ -119,36 +123,71 @@ function ProgressRing({ ratio }: { ratio: number }) {
   const c = 2 * Math.PI * r;
   const dash = c * Math.min(1, Math.max(0, ratio));
 
+  // Celebration glow — pulses once when ratio crosses to 1.0. Skipped
+  // for users who prefer reduced motion. Skipped on initial mount so
+  // landing on a page that's already at 100% doesn't trigger a fake
+  // celebration.
+  const [celebrate, setCelebrate] = useState(false);
+  const lastRatio = useRef<number | null>(null);
+  useEffect(() => {
+    const prev = lastRatio.current;
+    lastRatio.current = ratio;
+    if (prev === null) return;
+    if (prev < 1 && ratio >= 1) {
+      // Audio fires regardless of reduced motion — sound is its own
+      // channel and isn't gated by motion preferences. Mute toggle in
+      // the profile menu already handles "no sound" cases.
+      playSound("streak");
+      const reduce =
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      if (reduce) return;
+      setCelebrate(true);
+      const t = setTimeout(() => setCelebrate(false), 900);
+      return () => clearTimeout(t);
+    }
+  }, [ratio]);
+
   return (
-    <svg
-      width={size}
-      height={size}
-      className="-rotate-90 shrink-0"
-      aria-hidden
+    <span
+      className={cn(
+        "relative inline-grid place-items-center transition-[filter] duration-300 ease-[var(--ease-out)]",
+        celebrate && "drop-shadow-[0_0_8px_var(--color-primary)]"
+      )}
     >
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke="var(--color-border)"
-        strokeWidth={stroke}
-        fill="none"
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke="var(--color-primary)"
-        strokeWidth={stroke}
-        fill="none"
-        strokeLinecap="round"
-        strokeDasharray={`${dash} ${c - dash}`}
-        style={{
-          transition:
-            "stroke-dasharray 280ms cubic-bezier(0.23, 1, 0.32, 1)",
-        }}
-      />
-    </svg>
+      <svg
+        width={size}
+        height={size}
+        className={cn(
+          "-rotate-90 shrink-0 transition-transform duration-500 ease-[var(--ease-out)]",
+          celebrate && "scale-[1.08]"
+        )}
+        aria-hidden
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="var(--color-border)"
+          strokeWidth={stroke}
+          fill="none"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="var(--color-primary)"
+          strokeWidth={stroke}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${c - dash}`}
+          style={{
+            transition:
+              "stroke-dasharray 280ms cubic-bezier(0.23, 1, 0.32, 1)",
+          }}
+        />
+      </svg>
+    </span>
   );
 }
 

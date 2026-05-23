@@ -37,17 +37,26 @@ import { useBulkSelection } from "@/components/bulk-selection";
 type Priority = 1 | 2 | 3 | 4;
 
 const PRIORITY_LABELS: Record<Priority, string> = {
+  1: "High",
+  2: "Medium",
+  3: "Low",
+  4: "None",
+};
+
+// Long label used in the popover menu so the meaning stays explicit
+// even when the inline pill is just one word.
+const PRIORITY_LABELS_LONG: Record<Priority, string> = {
   1: "High priority",
   2: "Medium priority",
   3: "Low priority",
   4: "No priority",
 };
 
-const PRIORITY_TEXT: Record<Priority, string> = {
-  1: "text-rose-600",
-  2: "text-amber-600",
-  3: "text-emerald-600",
-  4: "text-muted-foreground",
+const PRIORITY_DOT: Record<Priority, string> = {
+  1: "bg-rose-500",
+  2: "bg-amber-500",
+  3: "bg-emerald-500",
+  4: "bg-muted-foreground/40",
 };
 
 const PRIORITY_FLAG: Record<Priority, string> = {
@@ -57,7 +66,17 @@ const PRIORITY_FLAG: Record<Priority, string> = {
   4: "text-muted-foreground/50",
 };
 
-export function TaskRow({ task }: { task: TaskWithRelations }) {
+export function TaskRow({
+  task,
+  flat,
+}: {
+  task: TaskWithRelations;
+  /** When true, drops the card chrome (border, shadow, rounded-xl) so
+   *  the row sits flat inside an outer bordered container with its own
+   *  divider language. Used on the project page where rows are wrapped
+   *  in a single table-like card. */
+  flat?: boolean;
+}) {
   const [done, setDone] = useState(task.status === "done");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -86,6 +105,7 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
 
   const undoComplete = () => {
     setDone(false);
+    playSound("uncomplete");
     startTransition(async () => {
       const res = await setTaskStatus(task.id, "todo");
       if (res.error) {
@@ -177,12 +197,14 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
   };
 
   const dateText = formatTaskDate(due, overdue);
-  const dateTone = overdue
-    ? "text-rose-600"
-    : due && isToday(due)
-    ? "text-rose-600"
+  // Today and overdue read with the same urgency cue (red, medium weight).
+  // Everything else stays in the muted tertiary tone — Linear's pattern.
+  const dateIsToday = !!(due && isToday(due));
+  const dateUrgent = overdue || dateIsToday;
+  const dateTone = dateUrgent
+    ? "text-rose-500 font-medium"
     : "text-muted-foreground";
-  const dateIconTone = overdue || (due && isToday(due))
+  const dateIconTone = dateUrgent
     ? "text-rose-500"
     : "text-muted-foreground/70";
 
@@ -195,7 +217,12 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
           transition={{ duration: 0.18, ease: [0.32, 0.72, 0.32, 1] }}
-          className="group rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
+          className={cn(
+            "group transition-shadow duration-150 ease-[var(--ease-out)]",
+            flat
+              ? "bg-transparent px-4 py-3"
+              : "rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs hover:shadow-soft-sm"
+          )}
         >
           <div className="flex items-start gap-3">
             {/* Checkbox — toggles completion by default, toggles bulk
@@ -248,20 +275,19 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
                 </span>
               </button>
 
-              <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px]">
-                {/* Priority — full label, clickable popover */}
+              <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px]">
+                {/* Priority — 5px colored dot + tertiary text label */}
                 <Popover>
                   <PopoverTrigger
                     aria-label="Priority"
-                    className={cn(
-                      "focus-ring -mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium transition-colors hover:bg-accent/40",
-                      PRIORITY_TEXT[priority]
-                    )}
+                    className="focus-ring -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-muted-foreground transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground"
                   >
-                    <Flag
-                      size={12}
-                      weight={priority < 4 ? "fill" : "regular"}
-                      className={PRIORITY_FLAG[priority]}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "inline-block size-[5px] shrink-0 rounded-full",
+                        PRIORITY_DOT[priority]
+                      )}
                     />
                     {PRIORITY_LABELS[priority]}
                   </PopoverTrigger>
@@ -277,7 +303,7 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
                           weight={p === 4 ? "regular" : "fill"}
                           className={PRIORITY_FLAG[p]}
                         />
-                        <span>{PRIORITY_LABELS[p]}</span>
+                        <span>{PRIORITY_LABELS_LONG[p]}</span>
                       </PopoverItem>
                     ))}
                   </PopoverContent>
@@ -285,16 +311,17 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
 
                 <Dot />
 
-                {/* Date — clickable popover */}
+                {/* Date — clickable popover. Red + medium weight when
+                    overdue or today; otherwise tertiary. */}
                 <Popover>
                   <PopoverTrigger
                     aria-label="Due date"
                     className={cn(
-                      "focus-ring -mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-accent/40",
+                      "focus-ring -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40",
                       dateTone
                     )}
                   >
-                    <CalendarBlank size={12} className={dateIconTone} />
+                    <CalendarBlank size={11} className={dateIconTone} />
                     {/* Server and client may compute "Today" vs "Tomorrow"
                         differently when the user's clock crosses midnight
                         local but the server is still on UTC. Suppress the
@@ -389,11 +416,11 @@ export function TaskRow({ task }: { task: TaskWithRelations }) {
                 </button>
               )}
 
-              {/* More menu */}
+              {/* More menu — hides until the row is hovered or focused. */}
               <Popover>
                 <PopoverTrigger
                   aria-label="More actions"
-                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground opacity-0 transition-[opacity,background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 data-[popup-open]:opacity-100"
                 >
                   <DotsThree size={16} weight="bold" />
                 </PopoverTrigger>

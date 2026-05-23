@@ -17,10 +17,12 @@ export function ProjectStatusPicker({
   projectId,
   initialStatus,
   align,
+  variant,
 }: {
   projectId: string;
   initialStatus: WorkflowStatus | null;
   align?: "start" | "end";
+  variant?: "default" | "quiet";
 }) {
   const [value, setValue] = useState<WorkflowStatus | null>(initialStatus);
   const [, startTransition] = useTransition();
@@ -42,6 +44,7 @@ export function ProjectStatusPicker({
       value={value}
       onChange={onChange}
       align={align}
+      variant={variant}
     />
   );
 }

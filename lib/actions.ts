@@ -154,10 +154,18 @@ export async function searchAll(query: string): Promise<SearchResults> {
 }
 
 export async function createProject(
-  name: string,
-  emoji?: string | null
+  input: { name: string; color?: string | null; emoji?: string | null } | string,
+  emojiCompat?: string | null
 ): Promise<{ ok?: true; projectId?: string; error?: string }> {
-  const trimmed = name?.trim();
+  // Back-compat: legacy callers passed `(name, emoji?)`. New callers pass
+  // an input object so the action can grow (color now, description later)
+  // without churning every call site again.
+  const args =
+    typeof input === "string"
+      ? { name: input, emoji: emojiCompat ?? null, color: null }
+      : input;
+
+  const trimmed = args.name?.trim();
   if (!trimmed) return { error: "Project name required." };
   if (trimmed.length > 60) return { error: "Project name too long." };
 
@@ -181,7 +189,8 @@ export async function createProject(
       workspace_id: workspace.id,
       team_id: team.id,
       name: trimmed,
-      emoji: emoji?.trim() || null,
+      color: args.color?.trim() || null,
+      emoji: args.emoji?.trim() || null,
     } as any)
     .select("id")
     .single();
@@ -306,7 +315,7 @@ export async function createTeam(input: {
         emoji: "✨",
         color: input.color ?? "#8B5CF6",
         created_by: profile.id,
-        workflow_status: "in_progress",
+        workflow_status: "active",
         description:
           "Sample project so the board has a column on first paint. " +
           "Delete it when your real work is in.",

@@ -6,13 +6,9 @@ import {
   Check,
   CheckCircle,
   CircleNotch,
-  Eye,
-  FlagBanner,
-  PencilSimple,
-  Play,
+  Pause,
   Prohibit,
   Tag,
-  Warning,
 } from "@/components/icons";
 import {
   Popover,
@@ -22,140 +18,99 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * Workflow status — separate from completion (todo/done). Optional label
- * that tracks the design / dev review loop a task is in.
+ * Project lifecycle status. Four states that mean something at the
+ * project level (the container of tasks), as opposed to the content
+ * workflow vocabulary an individual deliverable would move through.
  *
- * Picker matches the Figma reference: a "Set status" trigger pill that
- * opens a popover with "No status" at the top followed by 8 tinted
- * status pills. Selecting a status updates the chip in place.
+ *   active     — work is happening; the default for any live project
+ *   on_hold    — paused intentionally; usually waiting on something
+ *   completed  — done shipping, kept around for reference
+ *   archived   — out of the way; hidden from the active board
+ *
+ * Picker mirrors the same chip-as-trigger shape we use elsewhere so a
+ * set status renders identically to the option that produced it.
  */
 
-export type WorkflowStatus =
-  | "draft"
-  | "in_progress"
-  | "waiting_approval"
-  | "changes_requested"
-  | "approved"
-  | "live"
-  | "archived"
-  | "do_not_use";
+export type WorkflowStatus = "active" | "on_hold" | "completed" | "archived";
 
 interface StatusMeta {
   label: string;
   icon: React.ReactNode;
-  /** Tinted bg + matching text used both on the picker pill and the chip. */
+  /** Tinted bg + matching text used both on the trigger pill and the option. */
   pill: string;
-  /** Icon color paired with the pill — separated so the icon stays vivid. */
+  /** Icon color paired with the pill — kept separate so the icon stays vivid. */
   iconColor: string;
 }
 
 export const WORKFLOW_STATUS_META: Record<WorkflowStatus, StatusMeta> = {
-  draft: {
-    label: "Draft",
-    icon: <PencilSimple size={12} weight="fill" />,
-    pill:
-      "bg-indigo-100/70 text-indigo-700 border-indigo-200/70 " +
-      "dark:bg-indigo-500/15 dark:text-indigo-200 dark:border-indigo-400/25",
-    iconColor: "text-indigo-600 dark:text-indigo-300",
-  },
-  in_progress: {
-    label: "In Progress",
+  active: {
+    label: "Active",
     icon: <CircleNotch size={12} weight="bold" className="animate-spin" />,
     pill:
       "bg-sky-100/70 text-sky-700 border-sky-200/70 " +
       "dark:bg-sky-500/15 dark:text-sky-200 dark:border-sky-400/25",
     iconColor: "text-sky-600 dark:text-sky-300",
   },
-  waiting_approval: {
-    label: "Waiting for approval",
-    icon: <Eye size={12} weight="fill" />,
+  on_hold: {
+    label: "On hold",
+    icon: <Pause size={12} weight="fill" />,
     pill:
-      "bg-violet-100/70 text-violet-700 border-violet-200/70 " +
-      "dark:bg-violet-500/15 dark:text-violet-200 dark:border-violet-400/25",
-    iconColor: "text-violet-600 dark:text-violet-300",
+      "bg-amber-100/70 text-amber-700 border-amber-200/70 " +
+      "dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-400/25",
+    iconColor: "text-amber-600 dark:text-amber-300",
   },
-  changes_requested: {
-    label: "Changes requested",
-    icon: <FlagBanner size={12} weight="fill" />,
-    pill:
-      "bg-orange-100/70 text-orange-700 border-orange-200/70 " +
-      "dark:bg-orange-500/15 dark:text-orange-200 dark:border-orange-400/25",
-    iconColor: "text-orange-600 dark:text-orange-300",
-  },
-  approved: {
-    label: "Approved",
-    icon: <Check size={12} weight="bold" />,
+  completed: {
+    label: "Completed",
+    icon: <CheckCircle size={12} weight="fill" />,
     pill:
       "bg-emerald-100/70 text-emerald-700 border-emerald-200/70 " +
       "dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-400/25",
     iconColor: "text-emerald-600 dark:text-emerald-300",
   },
-  live: {
-    label: "Live",
-    icon: <Play size={12} weight="fill" />,
-    pill:
-      "bg-lime-100/70 text-lime-800 border-lime-200/70 " +
-      "dark:bg-lime-500/15 dark:text-lime-200 dark:border-lime-400/25",
-    iconColor: "text-lime-700 dark:text-lime-300",
-  },
   archived: {
     label: "Archived",
     icon: <Archive size={12} weight="fill" />,
     pill:
-      "bg-yellow-100/70 text-yellow-800 border-yellow-200/70 " +
-      "dark:bg-yellow-500/15 dark:text-yellow-200 dark:border-yellow-400/25",
-    iconColor: "text-yellow-700 dark:text-yellow-300",
-  },
-  do_not_use: {
-    label: "Do not use",
-    icon: <Warning size={12} weight="fill" />,
-    pill:
-      "bg-rose-100/70 text-rose-700 border-rose-200/70 " +
-      "dark:bg-rose-500/15 dark:text-rose-200 dark:border-rose-400/25",
-    iconColor: "text-rose-600 dark:text-rose-300",
+      "bg-zinc-200/70 text-zinc-700 border-zinc-300/70 " +
+      "dark:bg-zinc-500/15 dark:text-zinc-200 dark:border-zinc-400/25",
+    iconColor: "text-zinc-600 dark:text-zinc-300",
   },
 };
 
-const ORDER: WorkflowStatus[] = [
-  "draft",
-  "in_progress",
-  "waiting_approval",
-  "changes_requested",
-  "approved",
-  "live",
-  "archived",
-  "do_not_use",
-];
+const ORDER: WorkflowStatus[] = ["active", "on_hold", "completed", "archived"];
 
 export function workflowStatusLabel(status: WorkflowStatus | null): string {
   if (!status) return "Set status";
   return WORKFLOW_STATUS_META[status].label;
 }
 
-/**
- * Trigger + popover. Renders as a chip when status is set, as a "Set
- * status" outline pill when it isn't.
- */
 export function WorkflowStatusPicker({
   value,
   onChange,
   align = "start",
+  variant = "default",
 }: {
   value: WorkflowStatus | null;
   onChange: (next: WorkflowStatus | null) => void;
   align?: "start" | "end";
+  /** "quiet" = border-only chip, used in dense headers where a filled
+   *  pill would compete with surrounding controls. */
+  variant?: "default" | "quiet";
 }) {
   const meta = value ? WORKFLOW_STATUS_META[value] : null;
+  const quiet = variant === "quiet";
 
   return (
     <Popover>
       <PopoverTrigger
-        aria-label="Set workflow status"
+        aria-label="Set project status"
         className={cn(
           STATUS_CHIP_BASE,
-          "transition-colors hover:brightness-[0.97]",
-          meta
-            ? meta.pill
+          "transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
+          quiet
+            ? "border-border bg-transparent text-foreground hover:bg-accent/30"
+            : meta
+            ? cn(meta.pill, "hover:brightness-[0.97]")
             : "border-border bg-card text-muted-foreground hover:text-foreground"
         )}
       >
@@ -172,7 +127,6 @@ export function WorkflowStatusPicker({
         className="w-fit min-w-[180px] gap-1 p-1.5"
         sideOffset={6}
       >
-        {/* No status — plain row, no pill */}
         <button
           onClick={() => onChange(null)}
           className={cn(
@@ -189,9 +143,6 @@ export function WorkflowStatusPicker({
           )}
         </button>
 
-        {/* Status pills — same dimensions as the trigger chip; selected
-            gets a stronger ring instead of a trailing checkmark so the
-            chip stays the unit of meaning */}
         <div className="mt-1 flex flex-col gap-1">
           {ORDER.map((status) => {
             const m = WORKFLOW_STATUS_META[status];
@@ -220,14 +171,9 @@ export function WorkflowStatusPicker({
   );
 }
 
-// Shared chip dimensions — used by both the trigger pill and every option
-// inside the popover so the trigger looks like one of its own options.
 const STATUS_CHIP_BASE =
   "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium";
 
-/**
- * Read-only chip — used in task rows and other display surfaces.
- */
 export function WorkflowStatusChip({
   status,
   size = "sm",
@@ -250,9 +196,4 @@ export function WorkflowStatusChip({
   );
 }
 
-// Small completion-state guard used elsewhere — also re-export the type
-// so consumers don't pull from queries.
 export type { WorkflowStatus as TaskWorkflowStatus };
-// Keep CheckCircle live in the import graph for parity in downstream
-// consumers that may want the success icon next to a status mention.
-export const _CheckCircle = CheckCircle;

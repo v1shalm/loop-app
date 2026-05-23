@@ -15,6 +15,7 @@
 
 export {
   Archive,
+  ArrowsClockwise,
   ArrowUp,
   Bell,
   CalendarBlank,
@@ -39,9 +40,12 @@ export {
   Folder,
   Gear,
   Hash,
+  Kanban,
+  List,
   MagnifyingGlass,
   Moon,
   PaperPlaneTilt,
+  Pause,
   PencilSimple,
   Play,
   Plus,

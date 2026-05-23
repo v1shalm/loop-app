@@ -136,7 +136,7 @@ begin
     (workspace_id, team_id, name, emoji, color, created_by, workflow_status, description)
   values
     (v_workspace, v_design_team, 'Brand refresh', '🎨', '#8B5CF6', v_alex,
-     'in_progress',
+     'active',
      'Refreshing the visual identity for the v2 site relaunch. Logomark, '
      'palette, and a tighter type ramp.')
   returning id into v_p_brand;
@@ -145,7 +145,7 @@ begin
     (workspace_id, team_id, name, emoji, color, created_by, workflow_status, description)
   values
     (v_workspace, v_design_team, 'Onboarding revamp', '🚀', '#06B6D4', v_alex,
-     'in_progress',
+     'active',
      'Replace the placeholder onboarding with illustrated empty states + a '
      'three-step welcome flow. Goal is to cut first-task time in half.')
   returning id into v_p_onboarding;
@@ -154,7 +154,7 @@ begin
     (workspace_id, team_id, name, emoji, color, created_by, workflow_status, description)
   values
     (v_workspace, v_design_team, 'Dashboard polish', '📊', '#F59E0B', v_alex,
-     'waiting_approval',
+     'on_hold',
      'Spacing, density, and chart legibility pass on the analytics '
      'dashboard. Tracking towards the Q3 leadership review.')
   returning id into v_p_dashboard;
@@ -164,7 +164,7 @@ begin
     (workspace_id, team_id, name, emoji, color, created_by, workflow_status, description)
   values
     (v_workspace, v_eng_team, 'Realtime hardening', '⚡', '#10B981', v_ravi,
-     'in_progress',
+     'active',
      'Stop the realtime channel from going stale on tab refocus and reduce '
      'cross-tab chatter when a user has the app open in two windows.')
   returning id into v_p_realtime;
@@ -173,7 +173,7 @@ begin
     (workspace_id, team_id, name, emoji, color, created_by, workflow_status, description)
   values
     (v_workspace, v_eng_team, 'Storage & uploads', '🗂️', '#EC4899', v_ravi,
-     'draft',
+     'on_hold',
      'Move avatar storage from external URLs to a Supabase Storage bucket so '
      'users can upload a custom avatar.')
   returning id into v_p_storage;
@@ -182,7 +182,7 @@ begin
     (workspace_id, team_id, name, emoji, color, created_by, workflow_status, description)
   values
     (v_workspace, v_eng_team, 'Platform debt', '🛠️', '#64748B', v_ravi,
-     'in_progress',
+     'active',
      'Boring-but-necessary cleanup: CI, types, legacy migrations, and the '
      'cron jobs nobody loves but everyone needs.')
   returning id into v_p_platform;

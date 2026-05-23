@@ -6,8 +6,20 @@ import { cn } from "@/lib/utils";
 /**
  * Round user avatar that renders a Google/uploaded picture when available
  * and falls back to colored initials. Falls back automatically if the image
- * fails to load (404, CORS, signed-out CDN).
+ * fails to load (404, CORS, signed-out CDN), AND when the URL is a known
+ * Google "default-user" placeholder — those URLs return a grey silhouette
+ * which clashes with our colored-initial brand.
  */
+function isGoogleDefaultAvatar(url: string): boolean {
+  // Matches lh3.googleusercontent.com/a/default-user… and similar
+  // placeholder patterns Google returns when a user hasn't uploaded a
+  // profile picture.
+  return (
+    url.includes("default-user") ||
+    /googleusercontent\.com\/a\/=s\d+-c/.test(url)
+  );
+}
+
 export function Avatar({
   src,
   initials,
@@ -24,7 +36,8 @@ export function Avatar({
   fontSize?: number;
 }) {
   const [errored, setErrored] = useState(false);
-  const showImage = !!src && !errored;
+  const showImage =
+    !!src && !errored && !isGoogleDefaultAvatar(src);
 
   return (
     <span
