@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bell,
   CalendarDots,
   CaretDown,
   Crosshair,
@@ -23,6 +22,7 @@ import type { MemberPulse, Profile, Project, Workspace } from "@/lib/queries";
 import { ProfileMenu } from "@/components/profile-menu";
 import { Avatar } from "@/components/avatar";
 import { TeamPulse } from "@/components/team-pulse";
+import { NotificationsPopover } from "@/components/notifications-popover";
 import { ProjectDot } from "@/components/project-dot";
 import { AddProjectPopover } from "@/components/add-project-popover";
 import {
@@ -101,33 +101,10 @@ export function Sidebar({
               </TooltipTrigger>
               <TooltipContent side="bottom">Search</TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Link
-                    href="/notifications"
-                    aria-label="Notifications"
-                    className="focus-ring relative grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-                  >
-                    <Bell size={16} />
-                    {counts.inbox > 0 && (
-                      <span
-                        aria-hidden
-                        className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-rose-500 ring-2 ring-sidebar"
-                      />
-                    )}
-                  </Link>
-                }
-              />
-              <TooltipContent side="bottom">
-                Notifications
-                {counts.inbox > 0 && (
-                  <span className="ml-1.5 text-muted-foreground">
-                    · {counts.inbox} unread
-                  </span>
-                )}
-              </TooltipContent>
-            </Tooltip>
+            <NotificationsPopover
+              unreadCount={counts.inbox}
+              currentUserId={user.id}
+            />
             <Tooltip>
               <TooltipTrigger
                 onClick={toggle}

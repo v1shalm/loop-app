@@ -419,19 +419,25 @@ export async function triageTask(
  * date forward by a week so it surfaces again then.
  */
 export async function snoozeTask(
-  id: string
+  id: string,
+  until?: string
 ): Promise<{ ok?: true; error?: string }> {
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  const week = new Date();
-  week.setDate(week.getDate() + 7);
+  let wakeAt: Date;
+  if (until) {
+    wakeAt = new Date(until);
+  } else {
+    wakeAt = new Date();
+    wakeAt.setDate(wakeAt.getDate() + 7);
+  }
 
   const { error } = await supabase
     .from("tasks")
     .update({
       triaged_at: new Date().toISOString(),
-      due_at: week.toISOString(),
+      due_at: wakeAt.toISOString(),
     })
     .eq("id", id);
 
