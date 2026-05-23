@@ -247,6 +247,24 @@ export const getTeamMembersWithRole = cache(
 
 // ── Task lists ────────────────────────────────────────────────────────────────
 
+/**
+ * One-time check for whether migration 0015 has been applied. Cached
+ * per-request via React's cache(). When the column is missing we just
+ * skip the sort_order order-by — pages still render with created-at
+ * order, drag-reorder writes silently no-op until the migration lands.
+ *
+ * This guards against the "sidebar shows counts but page is empty" trap:
+ * before this check, any task query that referenced sort_order errored
+ * out with PostgREST code 42703 and fetchTasks returned an empty array
+ * for the whole page.
+ */
+export const hasTaskSortOrder = cache(async (): Promise<boolean> => {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return false;
+  const { error } = await supabase.from("tasks").select("sort_order").limit(1);
+  return !error;
+});
+
 async function fetchTasks(
   build: (
     q: ReturnType<
@@ -262,7 +280,15 @@ async function fetchTasks(
     data: TaskWithRelations[] | null;
     error: unknown;
   }>)) as { data: TaskWithRelations[] | null; error: unknown };
-  if (error) return [];
+  if (error) {
+    // Surface the cause in dev — silent empty lists made the
+    // missing-migration case look like "no tasks exist".
+    if (process.env.NODE_ENV !== "production") {
+      // eslint-disable-next-line no-console
+      console.error("[fetchTasks] query failed:", error);
+    }
+    return [];
+  }
   return data ?? [];
 }
 
@@ -336,16 +362,26 @@ export async function getAssignedToMe(): Promise<AssignedSections> {
   const startIso = startOfToday.toISOString();
   const endIso = endOfToday.toISOString();
 
+  // Manual drag order (sort_order DESC) wins so users can curate their
+  // own list. Priority becomes a visual signal via the flag color
+  // instead of forcing list order. due_at falls back to keep stably
+  // ordered between buckets when sort_order ties.
+  const useSortOrder = await hasTaskSortOrder();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = await fetchTasks((q: any) =>
-    q
+  const rows = await fetchTasks((q: any) => {
+    let chain = q
       .eq("assignee_id", profile.id)
       .or(
         `status.neq.done,and(status.eq.done,completed_at.gte.${startIso})`
-      )
-      .order("priority", { ascending: true })
-      .order("due_at", { ascending: true, nullsFirst: false })
-  );
+      );
+    if (useSortOrder) {
+      chain = chain.order("sort_order", {
+        ascending: false,
+        nullsFirst: false,
+      });
+    }
+    return chain.order("due_at", { ascending: true, nullsFirst: false });
+  });
 
   const sections: AssignedSections = {
     overdue: [],
@@ -410,15 +446,22 @@ export async function getUpcomingBuckets(): Promise<UpcomingBuckets> {
   nextWeekEnd.setDate(nextWeekEnd.getDate() + 6);
   nextWeekEnd.setHours(23, 59, 59, 999);
 
+  const useSortOrder = await hasTaskSortOrder();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = await fetchTasks((q: any) =>
-    q
+  const rows = await fetchTasks((q: any) => {
+    let chain = q
       .eq("assignee_id", profile.id)
       .neq("status", "done")
       .gte("due_at", tomorrowStart.toISOString())
-      .lte("due_at", nextWeekEnd.toISOString())
-      .order("due_at", { ascending: true })
-  );
+      .lte("due_at", nextWeekEnd.toISOString());
+    if (useSortOrder) {
+      chain = chain.order("sort_order", {
+        ascending: false,
+        nullsFirst: false,
+      });
+    }
+    return chain.order("due_at", { ascending: true });
+  });
 
   const tomorrowIso = tomorrowEnd.toISOString();
   const thisWeekIso = thisWeekEnd.toISOString();
@@ -463,27 +506,45 @@ export async function getInboxAssignments(): Promise<TaskWithRelations[]> {
   const profile = await getCurrentProfile();
   if (!profile) return [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return fetchTasks((q: any) =>
-    q
+  const useSortOrder = await hasTaskSortOrder();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return fetchTasks((q: any) => {
+    let chain = q
       .eq("assignee_id", profile.id)
       .neq("author_id", profile.id)
       .is("triaged_at", null)
-      .neq("status", "done")
-      .order("created_at", { ascending: false })
-  );
+      .neq("status", "done");
+    if (useSortOrder) {
+      chain = chain.order("sort_order", {
+        ascending: false,
+        nullsFirst: false,
+      });
+    }
+    return chain.order("created_at", { ascending: false });
+  });
 }
 
 export async function getProjectTasks(
   projectId: string
 ): Promise<TaskWithRelations[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return fetchTasks((q: any) =>
-    q
-      .eq("project_id", projectId)
-      .neq("status", "done")
-      .order("priority", { ascending: true })
-      .order("due_at", { ascending: true, nullsFirst: false })
-  );
+  // Manual drag order wins over auto-priority on project pages — Linear/
+  // Todoist do the same. Tasks that haven't been reordered fall back to
+  // their created_at-derived sort_order (set by migration 0015), so the
+  // ordering stays stable for untouched tasks. When the migration hasn't
+  // been applied yet we skip the sort_order order so the query doesn't
+  // 400 — page still renders, drag just won't persist until then.
+  const useSortOrder = await hasTaskSortOrder();
+  return fetchTasks((q: any) => {
+    let chain = q.eq("project_id", projectId).neq("status", "done");
+    if (useSortOrder) {
+      chain = chain.order("sort_order", {
+        ascending: false,
+        nullsFirst: false,
+      });
+    }
+    return chain.order("created_at", { ascending: false });
+  });
 }
 
 export async function getProject(id: string): Promise<Project | null> {
@@ -504,12 +565,19 @@ export async function getProject(id: string): Promise<Project | null> {
 export interface SidebarCounts {
   today: number;
   inbox: number;
+  /** Tasks I completed today — used by the profile menu progress card. */
+  completedToday: number;
   projectCounts: Record<string, number>;
 }
 
 export const getSidebarCounts = cache(async (): Promise<SidebarCounts> => {
   const supabase = await getSupabaseServer();
-  const empty: SidebarCounts = { today: 0, inbox: 0, projectCounts: {} };
+  const empty: SidebarCounts = {
+    today: 0,
+    inbox: 0,
+    completedToday: 0,
+    projectCounts: {},
+  };
   if (!supabase) return empty;
 
   const profile = await getCurrentProfile();
@@ -555,7 +623,23 @@ export const getSidebarCounts = cache(async (): Promise<SidebarCounts> => {
     }
   }
 
-  return { today, inbox, projectCounts };
+  // Completed-today is cheap to add here: one extra round-trip with a
+  // head-only count. We keep it separate from the open-task scan above
+  // because that query filters to status != done.
+  const { count: completedToday } = await supabase
+    .from("tasks")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "done")
+    .eq("assignee_id", profile.id)
+    .gte("completed_at", startIso)
+    .lte("completed_at", endIso);
+
+  return {
+    today,
+    inbox,
+    completedToday: completedToday ?? 0,
+    projectCounts,
+  };
 });
 
 // ── Team ─────────────────────────────────────────────────────────────────────

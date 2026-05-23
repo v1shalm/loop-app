@@ -162,9 +162,9 @@ export function NotificationsPopover({
               key={t}
               onClick={() => setTab(t)}
               className={cn(
-                "focus-ring -mb-px border-b-2 px-2.5 py-2 text-[12.5px] transition-colors",
+                "focus-ring -mb-px border-b-2 px-2.5 py-2 text-[12.5px] transition-[color,border-color] duration-150 ease-[var(--ease-out)]",
                 tab === t
-                  ? "border-foreground text-foreground"
+                  ? "border-foreground font-medium text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
@@ -221,7 +221,7 @@ function NotificationRow({
     <Link
       href={href}
       onClick={onClose}
-      className="focus-ring flex items-start gap-2.5 px-4 py-2.5 transition-colors hover:bg-accent/40"
+      className="focus-ring flex items-start gap-2.5 px-4 py-2.5 transition-[background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40"
     >
       <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-muted">
         {item.kind === "i-completed" ? (

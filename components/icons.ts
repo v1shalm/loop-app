@@ -30,6 +30,7 @@ export {
   Clock,
   Crosshair,
   Desktop,
+  DotsSixVertical,
   DotsThree,
   Eye,
   EyeSlash,

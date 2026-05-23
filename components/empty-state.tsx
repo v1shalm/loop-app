@@ -139,7 +139,7 @@ export function Kbd({ children }: { children: React.ReactNode }) {
 
 function SecondaryButton({ action }: { action: EmptyStateAction }) {
   const className =
-    "focus-ring inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-accent/40";
+    "focus-ring inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-[13px] font-medium text-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.97]";
 
   const inner = (
     <>

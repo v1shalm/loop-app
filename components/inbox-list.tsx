@@ -1,8 +1,25 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { format } from "date-fns";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { RelativeTime } from "@/components/relative-time";
 import { sileo } from "sileo";
 import {
@@ -11,12 +28,14 @@ import {
   Check,
   ChatCircle,
   Clock,
+  DotsSixVertical,
   Flag,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import {
   addComment,
   deleteSavedView,
+  reorderTasks,
   saveView,
   snoozeTask,
   triageTask,
@@ -191,24 +210,117 @@ export function InboxList({
           Nothing matches this filter.
         </p>
       ) : (
+        <SortableInbox tasks={visible} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Wraps the filtered inbox list in a dnd-kit context so users can drag
+ * cards into a new order. Uses the same reorderTasks action as the rest
+ * of the app, so a drag in the inbox sticks across views.
+ *
+ * We keep AnimatePresence on the sortable items so accept/snooze still
+ * fades them out — the wrapper div carries dnd-kit's transform, while
+ * the motion.div inside carries opacity/y on enter/exit. Both animate
+ * different properties so they don't fight.
+ */
+function SortableInbox({ tasks }: { tasks: TaskWithRelations[] }) {
+  const [ordered, setOrdered] = useState(tasks);
+  useEffect(() => setOrdered(tasks), [tasks]);
+  const [, startTransition] = useTransition();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const oldIndex = ordered.findIndex((t) => t.id === active.id);
+    const newIndex = ordered.findIndex((t) => t.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const next = arrayMove(ordered, oldIndex, newIndex);
+    const previous = ordered;
+    setOrdered(next);
+
+    startTransition(async () => {
+      const res = await reorderTasks(next.map((t) => t.id));
+      if (res.error) {
+        setOrdered(previous);
+        sileo.error({ title: res.error });
+      }
+    });
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={onDragEnd}
+    >
+      <SortableContext
+        items={ordered.map((t) => t.id)}
+        strategy={verticalListSortingStrategy}
+      >
         <ul className="flex flex-col gap-2">
           <AnimatePresence initial={false}>
-            {visible.map((t) => (
-              <motion.li
-                key={t.id}
-                layout
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                transition={{ duration: 0.18, ease: [0.32, 0.72, 0.32, 1] }}
-              >
-                <InboxItem task={t} />
-              </motion.li>
+            {ordered.map((t) => (
+              <SortableInboxItem key={t.id} task={t} />
             ))}
           </AnimatePresence>
         </ul>
-      )}
-    </div>
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+function SortableInboxItem({ task }: { task: TaskWithRelations }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  // Grip column lives outside the card so the card's content surface
+  // stays clean — matches Todoist's pattern.
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn("relative", isDragging && "z-10")}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+        transition={{ duration: 0.18, ease: [0.32, 0.72, 0.32, 1] }}
+        className="group/draggable flex items-start gap-1"
+      >
+        <button
+          type="button"
+          aria-label="Drag to reorder"
+          onClick={(e) => e.stopPropagation()}
+          {...attributes}
+          {...listeners}
+          className={cn(
+            "focus-ring mt-5 grid size-5 shrink-0 cursor-grab place-items-center rounded text-muted-foreground/45 transition-[opacity,color,background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:cursor-grabbing",
+            "opacity-0 group-hover/draggable:opacity-100 focus-visible:opacity-100",
+            isDragging && "cursor-grabbing opacity-100"
+          )}
+        >
+          <DotsSixVertical size={14} weight="bold" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <InboxItem task={task} />
+        </div>
+      </motion.div>
+    </li>
   );
 }
 

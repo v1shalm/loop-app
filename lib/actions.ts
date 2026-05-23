@@ -6,6 +6,7 @@ import {
   getCurrentProfile,
   getDefaultWorkspace,
   getMyTeam,
+  hasTaskSortOrder,
 } from "@/lib/queries";
 import type { ProfileStatus } from "@/lib/queries";
 
@@ -274,7 +275,20 @@ export async function createTeam(input: {
     // workspace doesn't accumulate ghost rows on the failure path.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("teams").delete().eq("id", teamIns.data.id);
-    return { error: memberIns.error.message };
+    // Translate the RLS bootstrap error into something a user can act on.
+    // If they hit this it almost certainly means migration 0016 hasn't
+    // been applied to their Supabase yet.
+    const msg = memberIns.error.message ?? "";
+    if (
+      msg.includes("row-level security") &&
+      msg.includes("team_members")
+    ) {
+      return {
+        error:
+          "Apply migration 0016_team_members_first_admin_bootstrap.sql in your Supabase SQL editor, then try again.",
+      };
+    }
+    return { error: msg || "Could not add you to the new team." };
   }
 
   // Optional starter content. Five short, generic tasks that work for
@@ -484,8 +498,12 @@ export async function createTask(
   const assigneeId = input.assigneeId ?? profile.id;
   const triagedAt = assigneeId === profile.id ? new Date().toISOString() : null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await supabase.from("tasks").insert({
+  // sort_order = current epoch ms means new tasks land at the top of
+  // any list ordered by sort_order DESC (migration 0015). When the
+  // migration hasn't been applied yet, we drop the column from the
+  // payload so insert doesn't 400.
+  const useSortOrder = await hasTaskSortOrder();
+  const insertPayload: Record<string, unknown> = {
     workspace_id: workspace.id,
     team_id: team.id,
     project_id: input.projectId ?? null,
@@ -496,7 +514,10 @@ export async function createTask(
     assignee_id: assigneeId,
     author_id: profile.id,
     triaged_at: triagedAt,
-  } as any);
+  };
+  if (useSortOrder) insertPayload.sort_order = Date.now();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await supabase.from("tasks").insert(insertPayload as any);
 
   if (error) return { error: error.message };
 
@@ -881,6 +902,50 @@ export async function deleteTask(
   if (!supabase) return { error: "Supabase not configured." };
   const { error } = await supabase.from("tasks").delete().eq("id", id);
   if (error) return { error: error.message };
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+/**
+ * Persist a new drag-and-drop order for the given task IDs.
+ *
+ * We write descending sort_order values so the first ID lands at the top
+ * of the list. Spacing is 1,000 so we never have to renumber siblings
+ * when someone inserts a new task between two reordered rows — the new
+ * row just claims an ms-precision timestamp and slots above the
+ * appropriate sort_order.
+ */
+export async function reorderTasks(
+  orderedIds: string[]
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  if (orderedIds.length === 0) return { ok: true };
+  // No-op (with a clear error) until migration 0015 ships the column.
+  const useSortOrder = await hasTaskSortOrder();
+  if (!useSortOrder) {
+    return {
+      error:
+        "Reordering needs migration 0015_task_sort_order.sql — apply it in the Supabase SQL editor first.",
+    };
+  }
+
+  // Top of list = highest sort_order, anchored above the current Date.now()
+  // so reordered tasks always sit above passively-created ones.
+  const top = Date.now() + orderedIds.length * 1000;
+  // sort_order column was added in migration 0015 — generated DB types
+  // don't include it yet, so we widen the update payload locally.
+  const updates = orderedIds.map((id, i) =>
+    supabase
+      .from("tasks")
+      .update({ sort_order: top - i * 1000 } as never)
+      .eq("id", id)
+  );
+
+  const results = await Promise.all(updates);
+  const firstError = results.find((r) => r.error);
+  if (firstError?.error) return { error: firstError.error.message };
+
   revalidateTaskRoutes();
   return { ok: true };
 }

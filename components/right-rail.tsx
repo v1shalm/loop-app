@@ -83,7 +83,7 @@ function TodaySection({
 
   const hint =
     total === 0
-      ? "Nothing on your plate yet."
+      ? "Nothing queued today."
       : completed === 0
       ? "Pick one and get started."
       : ratio === 1
@@ -130,7 +130,7 @@ function ProgressRing({ ratio }: { ratio: number }) {
         cx={size / 2}
         cy={size / 2}
         r={r}
-        stroke="oklch(0.92 0.005 250)"
+        stroke="var(--color-border)"
         strokeWidth={stroke}
         fill="none"
       />
@@ -138,11 +138,15 @@ function ProgressRing({ ratio }: { ratio: number }) {
         cx={size / 2}
         cy={size / 2}
         r={r}
-        stroke="var(--primary)"
+        stroke="var(--color-primary)"
         strokeWidth={stroke}
         fill="none"
         strokeLinecap="round"
         strokeDasharray={`${dash} ${c - dash}`}
+        style={{
+          transition:
+            "stroke-dasharray 280ms cubic-bezier(0.23, 1, 0.32, 1)",
+        }}
       />
     </svg>
   );

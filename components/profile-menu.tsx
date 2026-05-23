@@ -31,9 +31,15 @@ import { cn } from "@/lib/utils";
 export function ProfileMenu({
   user,
   onOpenHelp,
+  showPresence,
+  progressToday,
 }: {
   user: Profile;
   onOpenHelp?: () => void;
+  showPresence?: boolean;
+  /** Optional today's progress for the menu header — when set, replaces
+   *  the plain name+role card with a Todoist-style "X / Y today" ring. */
+  progressToday?: { done: number; total: number };
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -68,12 +74,20 @@ export function ProfileMenu({
         className="group/profile focus-ring flex w-full items-center gap-2.5 rounded-lg border border-border/60 bg-card px-2.5 py-2 text-left shadow-soft-xs transition-colors hover:bg-accent/40 data-[popup-open]:bg-accent/40"
         aria-label="Open account menu"
       >
-        <Avatar
-          src={user.avatar_url}
-          initials={user.initials}
-          color={user.avatar_color}
-          size={36}
-        />
+        <span className="relative shrink-0">
+          <Avatar
+            src={user.avatar_url}
+            initials={user.initials}
+            color={user.avatar_color}
+            size={36}
+          />
+          {showPresence && (
+            <span
+              aria-hidden
+              className="absolute right-0 bottom-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-card"
+            />
+          )}
+        </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-semibold text-foreground">
             {user.name}
@@ -94,19 +108,28 @@ export function ProfileMenu({
         sideOffset={8}
         className="w-[240px] rounded-lg border border-border/60 bg-popover p-1 shadow-soft-sm ring-0"
       >
-        <div className="flex items-center gap-2 px-2 pb-1.5 pt-1.5">
-          <Avatar
-            src={user.avatar_url}
-            initials={user.initials}
-            color={user.avatar_color}
-            size={28}
-          />
+        <div className="flex items-center gap-2.5 px-2 pb-2 pt-1.5">
+          {progressToday ? (
+            <ProgressRing
+              done={progressToday.done}
+              total={progressToday.total}
+            />
+          ) : (
+            <Avatar
+              src={user.avatar_url}
+              initials={user.initials}
+              color={user.avatar_color}
+              size={28}
+            />
+          )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-[12.5px] font-semibold text-foreground">
               {user.name}
             </p>
             <p className="truncate text-[11px] text-muted-foreground">
-              {user.role ?? "Team member"}
+              {progressToday
+                ? `${progressToday.done}/${progressToday.total} tasks today`
+                : user.role ?? "Team member"}
             </p>
           </div>
         </div>
@@ -228,7 +251,62 @@ export function ProfileMenu({
           <SignOut size={14} />
           <span>{pending ? "Logging out…" : "Log out"}</span>
         </DropdownMenuItem>
+
+        <div className="mt-1 flex items-center justify-between px-2 pt-1.5 pb-0.5 text-[10.5px] text-muted-foreground/70">
+          <span className="tabular-nums">v1.0</span>
+          <Link
+            href="/process"
+            className="focus-ring rounded px-1 py-0.5 transition-colors hover:bg-accent/40 hover:text-foreground"
+          >
+            What&rsquo;s new
+          </Link>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/**
+ * Small SVG ring with the completed-today fraction.
+ *
+ * Sized to the same 28px footprint as the avatar so the menu header
+ * doesn't reflow when the prop is/isn't passed. We use stroke
+ * pathLength=100 so the dasharray reads like a percentage and the
+ * math stays obvious.
+ */
+function ProgressRing({ done, total }: { done: number; total: number }) {
+  const pct = total > 0 ? Math.min(1, done / total) : 0;
+  const safe = Math.round(pct * 100);
+  return (
+    <div className="relative grid size-7 shrink-0 place-items-center">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden>
+        <circle
+          cx="14"
+          cy="14"
+          r="11"
+          fill="none"
+          stroke="var(--color-border)"
+          strokeWidth="2.5"
+        />
+        <circle
+          cx="14"
+          cy="14"
+          r="11"
+          fill="none"
+          stroke="var(--color-primary)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          pathLength={100}
+          strokeDasharray={`${safe} 100`}
+          transform="rotate(-90 14 14)"
+          style={{
+            transition: "stroke-dasharray 240ms cubic-bezier(0.23,1,0.32,1)",
+          }}
+        />
+      </svg>
+      <span className="absolute text-[9.5px] font-semibold tabular-nums text-foreground">
+        {done}
+      </span>
+    </div>
   );
 }

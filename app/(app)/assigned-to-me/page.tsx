@@ -2,8 +2,8 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { Crosshair, CheckCircle } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
-import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
+import { SortableTaskList } from "@/components/sortable-task-list";
 import { CompletedSection } from "@/components/completed-section";
 import { EmptyState, Kbd } from "@/components/empty-state";
 import { BulkSelectToggle } from "@/components/bulk-select-toggle";
@@ -23,8 +23,8 @@ function greeting() {
   if (h < 5) return "Working late";
   if (h < 12) return "Good morning";
   if (h < 17) return "Good afternoon";
-  if (h < 21) return "Good evening";
-  return "Burning the midnight oil";
+  if (h < 22) return "Good evening";
+  return "Working late";
 }
 
 export default async function AssignedToMePage() {
@@ -80,8 +80,8 @@ export default async function AssignedToMePage() {
   const greetingHint =
     activeCount === 0
       ? completedToday.length > 0
-        ? `${completedToday.length} done today. Take a breath.`
-        : "All clear. Take a breath."
+        ? `${completedToday.length} done today. Nothing else queued.`
+        : "Nothing queued for today."
       : `${activeCount} ${activeCount === 1 ? "task" : "tasks"} on you today.`;
 
   return (
@@ -114,7 +114,7 @@ export default async function AssignedToMePage() {
               <EmptyState
                 icon={<Crosshair size={22} />}
                 title="Nothing's on you right now"
-                hint="Add one for yourself, or invite a teammate to share the load."
+                hint="Add one for yourself, or hand work off to a teammate."
                 actionLabel="Assign your first task"
                 secondary={{
                   label: "Invite a teammate",
@@ -140,9 +140,7 @@ export default async function AssignedToMePage() {
                     tone={s.tone}
                     addFooter={i === lastIdx}
                   >
-                    {s.tasks.map((t) => (
-                      <TaskRow key={t.id} task={t} />
-                    ))}
+                    <SortableTaskList tasks={s.tasks} />
                   </Section>
                 ))}
 

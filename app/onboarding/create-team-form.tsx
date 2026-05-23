@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { sileo } from "sileo";
-import { CircleNotch } from "@/components/icons";
+import { Check, CircleNotch } from "@/components/icons";
 import { createTeam } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +67,7 @@ export function CreateTeamForm() {
           aria-invalid={!!error}
           aria-describedby={error ? "create-team-error" : undefined}
           disabled={pending}
-          className="focus-ring mt-1.5 h-10 w-full rounded-md border border-border bg-background px-3 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/50 disabled:opacity-60"
+          className="focus-ring mt-1.5 h-10 w-full rounded-md border border-border bg-background px-3 text-[14px] text-foreground outline-none transition-[border-color,background-color] duration-150 ease-[var(--ease-out)] placeholder:text-muted-foreground/60 hover:border-border focus:border-ring/50 disabled:opacity-60"
         />
       </label>
 
@@ -92,10 +92,10 @@ export function CreateTeamForm() {
                 onClick={() => setColor(c.value)}
                 disabled={pending}
                 className={cn(
-                  "focus-ring relative grid size-8 place-items-center rounded-full transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.92]",
+                  "focus-ring relative grid size-8 place-items-center rounded-full transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.92] disabled:opacity-60",
                   active
                     ? "ring-2 ring-offset-2 ring-offset-card"
-                    : "hover:scale-[1.06]"
+                    : "hover:scale-[1.08]"
                 )}
                 style={{
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -104,16 +104,28 @@ export function CreateTeamForm() {
               >
                 <span
                   aria-hidden
-                  className="block size-5 rounded-full shadow-soft-xs"
+                  className={cn(
+                    "grid size-5 place-items-center rounded-full text-white shadow-soft-xs transition-transform duration-200 ease-[var(--ease-out)]",
+                    active && "scale-[1.04]"
+                  )}
                   style={{ backgroundColor: c.value }}
-                />
+                >
+                  {active && <Check size={11} weight="bold" />}
+                </span>
               </button>
             );
           })}
         </div>
       </fieldset>
 
-      <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-md border border-border bg-background/40 p-3 transition-colors hover:bg-accent/30">
+      <label
+        className={cn(
+          "group mt-5 flex cursor-pointer items-start gap-2.5 rounded-md border bg-background/40 p-3 transition-[background-color,border-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/30",
+          seedSamples
+            ? "border-primary/30 bg-primary/4"
+            : "border-border/60"
+        )}
+      >
         <input
           type="checkbox"
           checked={seedSamples}
@@ -126,9 +138,8 @@ export function CreateTeamForm() {
             Start with sample content
           </p>
           <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">
-            Adds one starter project and five short walk-through tasks so
-            the surfaces aren&apos;t blank. Delete them when your real
-            work is in.
+            One starter project and five walkthrough tasks so nothing&apos;s
+            blank. Delete them when your real work is in.
           </p>
         </div>
       </label>
@@ -150,7 +161,13 @@ export function CreateTeamForm() {
         <button
           type="submit"
           disabled={pending || !name.trim()}
-          className="focus-ring surface-brand surface-brand-hover inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13.5px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-60 disabled:active:scale-100"
+          aria-disabled={pending || !name.trim()}
+          className={cn(
+            "focus-ring inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13.5px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)]",
+            pending || !name.trim()
+              ? "cursor-not-allowed bg-muted text-muted-foreground shadow-none"
+              : "surface-brand surface-brand-hover text-primary-foreground shadow-[var(--shadow-cta)] active:scale-[0.97]"
+          )}
         >
           {pending && <CircleNotch size={13} className="animate-spin" />}
           {pending ? "Creating…" : "Create team"}

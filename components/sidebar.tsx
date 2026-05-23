@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { sileo } from "sileo";
+import { motion } from "motion/react";
 import {
   CalendarDots,
   CaretDown,
@@ -25,20 +26,20 @@ import type {
   MemberPulse,
   Profile,
   Project,
+  SidebarCounts,
   Team,
   Workspace,
 } from "@/lib/queries";
 import { ProfileMenu } from "@/components/profile-menu";
 import { Avatar } from "@/components/avatar";
-import { TeamPulse } from "@/components/team-pulse";
 import { NotificationsPopover } from "@/components/notifications-popover";
 import { ProjectDot } from "@/components/project-dot";
 import { AddProjectPopover } from "@/components/add-project-popover";
 import {
   SidebarEmptyCard,
   ProjectsEmptyGraphic,
-  TeamPulseEmptyGraphic,
 } from "@/components/sidebar-empty-card";
+import { WorkspacePill } from "@/components/workspace-pill";
 import { useSidebar } from "@/components/sidebar-context";
 
 export interface SidebarProps {
@@ -48,23 +49,37 @@ export interface SidebarProps {
   teamRole: "admin" | "member" | null;
   projects: Project[];
   members: MemberPulse[];
-  counts: {
-    inbox: number;
-    today: number;
-    projectCounts: Record<string, number>;
-  };
+  counts: SidebarCounts;
   onOpenQuickAdd?: () => void;
   onOpenSearch?: () => void;
   onOpenHelp?: () => void;
 }
 
+/**
+ * Editorial layout — workspace pill + persistent search bar up top,
+ * full-width brand CTA, flat primary nav, then sections. Phosphor icons
+ * (regular weight at rest, fill on active).
+ *
+ * The polish layer (Emil-style) shows up in feel rather than footprint:
+ *
+ *  • Every interactive surface presses with scale 0.94–0.985. Buttons
+ *    feel responsive without ever bouncing.
+ *  • Easing is --ease-out everywhere (cubic-bezier(0.23, 1, 0.32, 1))
+ *    so motion starts fast and settles, never the reverse.
+ *  • Active nav row carries a sliding pill via Framer's layoutId —
+ *    the indicator translates between rows on route change instead
+ *    of cross-fading. Spring duration 0.32, bounce 0.18.
+ *  • Group-hover wakes secondary detail: project dots scale 1.1,
+ *    pin stars fade in, counts brighten.
+ *  • Chevrons rotate over 180ms; tooltips inherit base-ui's
+ *    origin-aware transform-origin; counts use tabular-nums.
+ */
 export function Sidebar({
   user,
   workspace,
   team,
   teamRole,
   projects,
-  members,
   counts,
   onOpenQuickAdd,
   onOpenSearch,
@@ -75,6 +90,33 @@ export function Sidebar({
   const workspaceName = workspace?.name ?? "Loop";
   const isAdmin = teamRole === "admin";
 
+  const navItems = [
+    {
+      href: "/assigned-to-me",
+      icon: Crosshair,
+      label: "My work",
+      badge: counts.today || undefined,
+      active:
+        pathname === "/assigned-to-me" ||
+        pathname === "/my-tasks" ||
+        pathname === "/today",
+    },
+    {
+      href: "/inbox",
+      icon: Tray,
+      label: "Inbox",
+      badge: counts.inbox || undefined,
+      active: pathname === "/inbox",
+    },
+    {
+      href: "/upcoming",
+      icon: CalendarDots,
+      label: "Upcoming",
+      badge: undefined as string | number | undefined,
+      active: pathname === "/upcoming",
+    },
+  ];
+
   return (
     <aside
       className={cn(
@@ -82,9 +124,9 @@ export function Sidebar({
         collapsed ? "w-[64px]" : "w-[248px]"
       )}
     >
-      {/* ── Top: workspace label + utility icons, then team identity ─── */}
+      {/* ── Header: workspace pill + utility icons + search bar ─ */}
       {collapsed ? (
-        <div className="flex h-14 items-center justify-center border-b border-sidebar-border/60 px-2">
+        <div className="flex h-12 items-center justify-center px-2">
           <Tooltip>
             <TooltipTrigger
               onClick={toggle}
@@ -97,35 +139,16 @@ export function Sidebar({
           </Tooltip>
         </div>
       ) : (
-        <div className="border-b border-sidebar-border/60 px-3 pt-3 pb-3">
-          {/* Row 1 — workspace label, action icons aligned right */}
-          <div className="flex h-7 items-center">
-            <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
-              {workspaceName}
-            </p>
-            <div className="flex items-center gap-0.5">
-              <Tooltip>
-                <TooltipTrigger
-                  onClick={onOpenSearch}
-                  aria-label="Search (⌘K)"
-                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
-                >
-                  <MagnifyingGlass size={15} />
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <span className="inline-flex items-center gap-1.5">
-                    Search
-                    <span className="inline-flex items-center gap-0.5">
-                      <kbd className="rounded bg-background/15 px-1 py-px text-[10px] font-semibold leading-none text-background/85">
-                        Cmd
-                      </kbd>
-                      <kbd className="rounded bg-background/15 px-1 py-px text-[10px] font-semibold leading-none text-background/85">
-                        K
-                      </kbd>
-                    </span>
-                  </span>
-                </TooltipContent>
-              </Tooltip>
+        <div className="px-3 pt-3">
+          <div className="flex items-center gap-1">
+            {team && (
+              <WorkspacePill
+                team={team}
+                workspaceName={workspaceName}
+                isAdmin={isAdmin}
+              />
+            )}
+            <div className="ml-auto flex items-center gap-0.5">
               <NotificationsPopover
                 unreadCount={counts.inbox}
                 currentUserId={user.id}
@@ -134,107 +157,56 @@ export function Sidebar({
                 <TooltipTrigger
                   onClick={toggle}
                   aria-label="Collapse sidebar"
-                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
+                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.92]"
                 >
-                  <SidebarSimple size={15} />
+                  <SidebarSimple size={14} />
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Collapse sidebar</TooltipContent>
               </Tooltip>
             </div>
           </div>
 
-          {/* Row 2 — primary team identity */}
-          {team && (
-            <div className="mt-1.5 flex items-center gap-2">
-              <span
-                aria-hidden
-                className="inline-block size-2 shrink-0 rounded-full"
-                style={{ backgroundColor: team.color ?? "#94a3b8" }}
-              />
-              <p className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-foreground">
-                {team.name}
-              </p>
-              {isAdmin && (
-                <span className="shrink-0 rounded-md border border-violet-200/70 bg-violet-50 px-1.5 py-0.5 text-[10.5px] font-semibold text-violet-700 dark:border-violet-400/30 dark:bg-violet-500/15 dark:text-violet-200">
-                  Admin
-                </span>
-              )}
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className="focus-ring mt-2.5 flex w-full items-center gap-2 rounded-md border border-border/70 bg-card/60 px-2.5 py-1.5 text-left text-[12.5px] text-muted-foreground transition-[border-color,background-color,transform] duration-150 ease-[var(--ease-out)] hover:border-border hover:bg-card active:scale-[0.992]"
+            aria-label="Search (⌘K)"
+          >
+            <MagnifyingGlass size={13} className="text-muted-foreground/70" />
+            <span className="flex-1 truncate">Search or jump to…</span>
+            <span className="ml-auto inline-flex items-center gap-0.5">
+              <kbd className="rounded bg-accent/60 px-1 py-px text-[10px] font-medium leading-none text-muted-foreground">
+                ⌘
+              </kbd>
+              <kbd className="rounded bg-accent/60 px-1 py-px text-[10px] font-medium leading-none text-muted-foreground">
+                K
+              </kbd>
+            </span>
+          </button>
         </div>
       )}
 
-      {/* ── Primary CTA: Add Task ──────────────────────────────── */}
-      <div
-        className={cn(
-          "pt-2 pb-1",
-          collapsed ? "flex justify-center px-2" : "px-3"
-        )}
-      >
-        {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger
-              onClick={onOpenQuickAdd}
-              aria-label="Add task (Q)"
-              className="focus-ring surface-brand surface-brand-hover grid size-9 place-items-center rounded-md text-white shadow-soft-xs transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.96]"
-            >
-              <Plus size={16} weight="bold" />
-            </TooltipTrigger>
-            <TooltipContent side="right">Add task</TooltipContent>
-          </Tooltip>
-        ) : (
-          <button
-            onClick={onOpenQuickAdd}
-            className="focus-ring surface-brand surface-brand-hover flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-[13.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
-          >
-            <Plus size={15} weight="bold" />
-            Add task
-            <kbd className="ml-auto rounded bg-white/15 px-1.5 py-px text-[11px] font-semibold tracking-wide text-white/90">
-              Q
-            </kbd>
-          </button>
-        )}
-      </div>
-
-      {/* ── Flat primary nav (no section header) ──────────────── */}
+      {/* ── Flat primary nav with sliding active pill ──────────── */}
       <nav
         className={cn(
-          "pt-1",
+          "relative pt-3",
           collapsed ? "flex flex-col items-center gap-0.5 px-2" : "px-2"
         )}
       >
-        <NavItem
-          href="/assigned-to-me"
-          icon={Crosshair}
-          label="My work"
-          badge={counts.today || undefined}
-          active={
-            pathname === "/assigned-to-me" ||
-            pathname === "/my-tasks" ||
-            pathname === "/today"
-          }
-          collapsed={collapsed}
-        />
-        <NavItem
-          href="/inbox"
-          icon={Tray}
-          label="Inbox"
-          badge={counts.inbox || undefined}
-          active={pathname === "/inbox"}
-          collapsed={collapsed}
-        />
-        <NavItem
-          href="/upcoming"
-          icon={CalendarDots}
-          label="Upcoming"
-          active={pathname === "/upcoming"}
-          collapsed={collapsed}
-        />
+        {navItems.map((it) => (
+          <NavItem
+            key={it.href}
+            href={it.href}
+            icon={it.icon}
+            label={it.label}
+            badge={it.badge}
+            active={it.active}
+            collapsed={collapsed}
+          />
+        ))}
       </nav>
 
       <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
-        {/* Pinned section — only shown when the user has pinned anything.
-            Order in the array is the pin order. */}
         {(() => {
           const pinIds = user.pinned_project_ids ?? [];
           if (pinIds.length === 0) return null;
@@ -246,7 +218,7 @@ export function Sidebar({
           return (
             <Section title="Pinned" collapsed={collapsed}>
               {pinned.map((p) => (
-                <ProjectNavItem
+                <ProjectRow
                   key={p.id}
                   project={p}
                   pinned
@@ -267,8 +239,7 @@ export function Sidebar({
               <div className="flex items-center gap-0.5">
                 <Link
                   href="/projects"
-                  className="focus-ring rounded px-1.5 py-0.5 text-[10.5px] font-medium text-muted-foreground/80 transition-colors hover:bg-sidebar-accent/40 hover:text-foreground"
-                  title="View all projects"
+                  className="focus-ring rounded px-1.5 py-0.5 text-[10.5px] font-medium text-muted-foreground/80 transition-colors duration-150 ease-[var(--ease-out)] hover:bg-sidebar-accent/40 hover:text-foreground"
                 >
                   All
                 </Link>
@@ -287,7 +258,7 @@ export function Sidebar({
             const pinIds = new Set(user.pinned_project_ids ?? []);
             const unpinned = projects.filter((p) => !pinIds.has(p.id));
             return unpinned.map((p) => (
-              <ProjectNavItem
+              <ProjectRow
                 key={p.id}
                 project={p}
                 badge={counts.projectCounts[p.id] || undefined}
@@ -297,23 +268,44 @@ export function Sidebar({
             ));
           })()}
         </Section>
+      </div>
 
-        {/* Team Pulse lives in the right rail now (richer data, more
-            space). When the sidebar is collapsed we still surface
-            teammates here as small avatars so the user can jump to
-            people from any page. */}
-        {collapsed && (
-          <Section title="Team Pulse" collapsed={collapsed}>
-            <TeamPulse
-              members={members}
-              currentUserId={user.id}
-              collapsed={collapsed}
-            />
-          </Section>
+      {/* ── Add task dock — anchored above the profile ───────── */}
+      <div
+        className={cn(
+          collapsed ? "flex justify-center px-2 pb-2" : "px-3 pb-3"
+        )}
+      >
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger
+              onClick={onOpenQuickAdd}
+              aria-label="Add task"
+              className="focus-ring surface-brand surface-brand-hover grid size-9 place-items-center rounded-md text-white shadow-soft-xs transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.94]"
+            >
+              <Plus size={16} weight="bold" />
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <span className="inline-flex items-center gap-1.5">
+                Add task <Kbd>Q</Kbd>
+              </span>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <button
+            onClick={onOpenQuickAdd}
+            className="focus-ring surface-brand surface-brand-hover group/cta flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-[13.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
+          >
+            <Plus size={15} weight="bold" />
+            Add task
+            <kbd className="ml-auto rounded bg-white/15 px-1.5 py-px text-[11px] font-semibold tracking-wide text-white/90 transition-colors duration-150 ease-[var(--ease-out)] group-hover/cta:bg-white/20">
+              Q
+            </kbd>
+          </button>
         )}
       </div>
 
-      {/* ── Bottom: profile only (sounds + help live in the menu) ── */}
+      {/* ── Profile dock ──────────────────────────────────────── */}
       <div
         className={cn(
           "border-t border-sidebar-border",
@@ -327,7 +319,7 @@ export function Sidebar({
                 <Link
                   href="/profile"
                   aria-label={user.name}
-                  className="focus-ring grid size-9 place-items-center rounded-md hover:bg-accent/50"
+                  className="focus-ring grid size-9 place-items-center rounded-md transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 active:scale-[0.94]"
                 >
                   <Avatar
                     src={user.avatar_url}
@@ -341,13 +333,30 @@ export function Sidebar({
             <TooltipContent side="right">{user.name}</TooltipContent>
           </Tooltip>
         ) : (
-          <ProfileMenu user={user} onOpenHelp={onOpenHelp} />
+          <ProfileMenu
+            user={user}
+            onOpenHelp={onOpenHelp}
+            progressToday={{
+              done: counts.completedToday,
+              total: counts.completedToday + counts.today,
+            }}
+          />
         )}
       </div>
     </aside>
   );
 }
 
+/* ── Compact key cap (tooltip helper) ─────────────────────────── */
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="rounded bg-background/15 px-1 py-px text-[10px] font-semibold leading-none text-background/85">
+      {children}
+    </kbd>
+  );
+}
+
+/* ── Section: smooth chevron + inline actions ─────────────────── */
 function Section({
   title,
   children,
@@ -365,9 +374,7 @@ function Section({
 
   if (collapsed) {
     return (
-      <div className="flex flex-col items-center gap-0.5 px-2">
-        {children}
-      </div>
+      <div className="flex flex-col items-center gap-0.5 px-2">{children}</div>
     );
   }
 
@@ -376,13 +383,13 @@ function Section({
       <div className="flex h-7 items-center gap-1 pr-1">
         <button
           onClick={() => setOpen((v) => !v)}
-          className="focus-ring group flex h-7 flex-1 items-center gap-1 rounded px-2 text-[11.5px] font-semibold tracking-tight text-muted-foreground/80 hover:text-foreground"
+          className="focus-ring flex h-7 flex-1 items-center gap-1 rounded px-2 text-[11.5px] font-semibold tracking-tight text-muted-foreground/80 transition-colors duration-150 ease-[var(--ease-out)] hover:text-foreground"
         >
           <CaretDown
             size={11}
             weight="bold"
             className={cn(
-              "transition-transform duration-150 ease-[var(--ease-out)]",
+              "transition-transform duration-200 ease-[var(--ease-out)]",
               !open && "-rotate-90"
             )}
           />
@@ -395,13 +402,13 @@ function Section({
   );
 }
 
+/* ── Nav item with sliding active pill (Framer layoutId) ──────── */
 function NavItem({
   href,
   icon: Icon,
   label,
   badge,
   active,
-  muted,
   collapsed,
 }: {
   href: string;
@@ -409,7 +416,6 @@ function NavItem({
   label: string;
   badge?: string | number;
   active?: boolean;
-  muted?: boolean;
   collapsed: boolean;
 }) {
   const link = (
@@ -417,32 +423,47 @@ function NavItem({
       href={href}
       prefetch
       className={cn(
-        "focus-ring group flex items-center text-[13.5px] transition-colors duration-150 ease-[var(--ease-out)]",
+        "focus-ring group/row relative flex items-center text-[13.5px] transition-[color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.985]",
         collapsed
           ? "size-9 justify-center rounded-md"
           : "h-8 gap-2.5 rounded-lg px-2.5",
         active
-          ? "bg-primary/8 font-medium text-primary"
-          : muted
-          ? "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
-          : "text-sidebar-foreground/90 hover:bg-accent/40 hover:text-foreground"
+          ? "font-medium text-primary"
+          : "text-sidebar-foreground/90 hover:text-foreground"
       )}
     >
+      {active && (
+        <motion.span
+          layoutId={collapsed ? "nav-active-collapsed" : "nav-active"}
+          aria-hidden
+          className="absolute inset-0 rounded-md bg-primary/8"
+          transition={{ type: "spring", duration: 0.32, bounce: 0.18 }}
+        />
+      )}
+      {!active && (
+        <span
+          aria-hidden
+          className="absolute inset-0 rounded-md bg-accent/0 transition-colors duration-150 ease-[var(--ease-out)] group-hover/row:bg-accent/40"
+        />
+      )}
       <Icon
         size={16}
+        weight={active ? "fill" : "regular"}
         className={cn(
-          "shrink-0",
+          "relative z-[1] shrink-0 transition-colors duration-150 ease-[var(--ease-out)]",
           active ? "text-primary" : "text-muted-foreground/90"
         )}
       />
-      {!collapsed && <span className="truncate flex-1">{label}</span>}
+      {!collapsed && (
+        <span className="relative z-[1] flex-1 truncate">{label}</span>
+      )}
       {!collapsed && badge !== undefined && (
         <span
           className={cn(
-            "ml-auto rounded-md px-1.5 text-[11px] tabular-nums",
+            "relative z-[1] ml-auto rounded-md px-1.5 text-[11px] tabular-nums transition-colors duration-150 ease-[var(--ease-out)]",
             active
               ? "bg-primary/15 text-primary"
-              : "text-muted-foreground"
+              : "text-muted-foreground group-hover/row:text-foreground/80"
           )}
         >
           {badge}
@@ -464,11 +485,11 @@ function NavItem({
       </Tooltip>
     );
   }
-
   return link;
 }
 
-function ProjectNavItem({
+/* ── Project row: dot scales on hover, star reveals smoothly ──── */
+function ProjectRow({
   project,
   badge,
   active,
@@ -487,13 +508,15 @@ function ProjectNavItem({
         href={`/projects/${project.id}`}
         prefetch
         className={cn(
-          "focus-ring group flex size-9 items-center justify-center rounded-md text-[13.5px] transition-colors duration-150 ease-[var(--ease-out)]",
+          "focus-ring group/proj-col grid size-9 items-center justify-center rounded-md text-[13.5px] transition-[background-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.94]",
           active
-            ? "bg-primary/8 font-medium text-primary"
-            : "text-sidebar-foreground/90 hover:bg-accent/40 hover:text-foreground"
+            ? "bg-primary/8"
+            : "text-sidebar-foreground/90 hover:bg-accent/40"
         )}
       >
-        <ProjectDot project={project} size={9} />
+        <span className="transition-transform duration-200 ease-[var(--ease-out)] group-hover/proj-col:scale-110">
+          <ProjectDot project={project} size={9} />
+        </span>
       </Link>
     );
     return (
@@ -509,9 +532,6 @@ function ProjectNavItem({
     );
   }
 
-  // Expanded: outer row owns hover state. Star button reveals on hover,
-  // stays visible when pinned. Link covers the row but stops at the
-  // star slot so the star can take its own click.
   return (
     <div
       className={cn(
@@ -525,20 +545,19 @@ function ProjectNavItem({
       <Link
         href={`/projects/${project.id}`}
         prefetch
-        className="focus-ring flex min-w-0 flex-1 items-center gap-2.5 rounded-md outline-none"
+        className="focus-ring flex min-w-0 flex-1 items-center gap-2.5 rounded outline-none transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
       >
-        <ProjectDot project={project} size={9} />
+        <span className="transition-transform duration-200 ease-[var(--ease-out)] group-hover/proj:scale-110">
+          <ProjectDot project={project} size={9} />
+        </span>
         <span className="truncate">{project.name}</span>
       </Link>
       <PinToggle projectId={project.id} pinned={!!pinned} />
       {badge !== undefined && (
         <span
           className={cn(
-            "rounded-md px-1.5 text-[11px] tabular-nums",
+            "rounded-md px-1.5 text-[11px] tabular-nums transition-colors duration-150 ease-[var(--ease-out)]",
             active ? "bg-primary/15 text-primary" : "text-muted-foreground",
-            // Hide badge while the star is being shown on hover to keep
-            // the row width stable. The star is always visible when
-            // pinned so the swap only happens for unpinned hover.
             !pinned && "group-hover/proj:hidden"
           )}
         >
@@ -558,8 +577,6 @@ function PinToggle({
 }) {
   const [pending, startTransition] = useTransition();
   const [optimistic, setOptimistic] = useState(pinned);
-  // Keep in sync if the server-rendered prop changes (e.g. after a route
-  // refresh adds a new pin).
   useEffect(() => setOptimistic(pinned), [pinned]);
 
   const toggle = (e: React.MouseEvent) => {
@@ -583,7 +600,7 @@ function PinToggle({
       aria-label={optimistic ? "Unpin project" : "Pin project"}
       aria-pressed={optimistic}
       className={cn(
-        "focus-ring grid size-5 shrink-0 place-items-center rounded transition-[opacity,color,background-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.9]",
+        "focus-ring grid size-5 shrink-0 place-items-center rounded transition-[opacity,color,background-color,transform] duration-200 ease-[var(--ease-out)] active:scale-[0.88]",
         optimistic
           ? "text-amber-500 hover:text-amber-600"
           : "text-muted-foreground/60 opacity-0 hover:bg-accent/60 hover:text-foreground group-hover/proj:opacity-100 focus-visible:opacity-100"

@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { Hash, CheckCircle, UsersThree } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
-import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
+import { SortableTaskList } from "@/components/sortable-task-list";
 import { EmptyState } from "@/components/empty-state";
 import { ProjectStatusPicker } from "@/components/project-status-picker";
 import { ProjectDescription } from "@/components/project-description";
@@ -113,13 +113,11 @@ export default async function ProjectPage({ params }: PageProps) {
             <EmptyState
               icon={<Hash size={22} />}
               title="This project is empty"
-              hint="Add the first task and pick this project from the picker."
+              hint="Add the first task and tag it to this project."
             />
           ) : (
             <TaskTable defaultProjectId={project.id}>
-              {openTasks.map((t) => (
-                <TaskRow key={t.id} task={t} />
-              ))}
+              <SortableTaskList tasks={openTasks} />
             </TaskTable>
           )}
         </section>

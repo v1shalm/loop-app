@@ -45,7 +45,7 @@ export default async function InboxPage() {
               <EmptyState
                 icon={<Tray size={22} />}
                 title="All caught up"
-                hint="New assignments from teammates land here. While the inbox is empty, here's where you can go next."
+                hint="New assignments from teammates land here. Nothing to triage right now."
                 actionLabel="Assign your first task"
                 secondary={{
                   label: "Invite a teammate",

@@ -1,8 +1,8 @@
 import { format } from "date-fns";
 import { CalendarDots } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
-import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
+import { SortableTaskList } from "@/components/sortable-task-list";
 import { EmptyState, Kbd } from "@/components/empty-state";
 import { RightRail } from "@/components/right-rail";
 import { UpcomingCalendar } from "@/components/upcoming-calendar";
@@ -80,7 +80,7 @@ export default async function UpcomingPage({ searchParams }: PageProps) {
             ) : total === 0 ? (
               <EmptyState
                 icon={<CalendarDots size={22} />}
-                title="Nothing on the horizon"
+                title="Nothing scheduled"
                 hint="Schedule something for later this week or pass work to a teammate."
                 actionLabel="Add a task"
                 secondary={{
@@ -156,9 +156,7 @@ function Bucket({
         </p>
       ) : (
         <TaskTable showAdd={false}>
-          {tasks.map((t) => (
-            <TaskRow key={t.id} task={t} />
-          ))}
+          <SortableTaskList tasks={tasks} />
         </TaskTable>
       )}
     </section>

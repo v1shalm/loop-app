@@ -27,25 +27,24 @@ export default async function OnboardingPage() {
 
   return (
     <main className="grid min-h-dvh place-items-center bg-background px-6 py-12">
-      <div className="w-full max-w-[460px]">
+      <div className="w-full max-w-[460px] animate-in fade-in slide-in-from-bottom-1 duration-500 ease-[var(--ease-out)]">
         <p className="text-center text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
           Welcome to Loop
         </p>
-        <h1 className="mt-3 text-center text-[28px] font-semibold leading-tight tracking-[-0.01em] text-foreground">
+        <h1 className="mt-3 text-balance text-center text-[28px] font-semibold leading-tight tracking-[-0.01em] text-foreground">
           Hi {firstName}. Let&apos;s start with your team.
         </h1>
-        <p className="mx-auto mt-2.5 max-w-[400px] text-center text-[14px] leading-relaxed text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-[400px] text-balance text-center text-[14px] leading-relaxed text-muted-foreground">
           Loop scopes work to a team. Create one now and you&apos;ll be
-          its admin. You can invite teammates later from the team page.
+          its admin. Invite teammates later from the team page.
         </p>
 
         <div className="mt-7">
           <CreateTeamForm />
         </div>
 
-        <p className="mx-auto mt-6 max-w-[360px] text-center text-[12px] leading-relaxed text-muted-foreground/80">
-          Already have a team in Loop? Ask one of its admins to add you
-          and refresh this page.
+        <p className="mx-auto mt-6 max-w-[340px] text-balance text-center text-[12px] leading-relaxed text-muted-foreground/80">
+          Already have a team? Ask an admin to add you, then refresh.
         </p>
       </div>
     </main>

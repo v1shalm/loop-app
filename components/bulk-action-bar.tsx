@@ -110,7 +110,7 @@ export function BulkActionBar({ members }: { members: Profile[] }) {
               type="button"
               onClick={clear}
               aria-label="Clear selection"
-              className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+              className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.92]"
             >
               <X size={13} weight="bold" />
             </button>
@@ -140,7 +140,7 @@ function BarButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium transition-colors duration-150 ease-[var(--ease-out)] disabled:opacity-60",
+        "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.96] disabled:opacity-60",
         destructive
           ? "text-rose-600 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-500/15"
           : "text-foreground hover:bg-accent/40"
@@ -166,7 +166,7 @@ function AssignDropdown({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         disabled={disabled}
-        className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40 disabled:opacity-60"
+        className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.96] disabled:opacity-60"
       >
         <UserPlus size={13} />
         Reassign
@@ -183,7 +183,7 @@ function AssignDropdown({
               onPick(m.id);
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-accent/40"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.985]"
           >
             <Avatar
               src={m.avatar_url}
@@ -218,7 +218,7 @@ function ScheduleDropdown({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         disabled={disabled}
-        className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40 disabled:opacity-60"
+        className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.96] disabled:opacity-60"
       >
         <CalendarBlank size={13} />
         Reschedule
@@ -232,7 +232,7 @@ function ScheduleDropdown({
               onPick(q.offset);
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-accent/40"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.985]"
           >
             <span>{q.label}</span>
           </button>
