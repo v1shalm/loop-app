@@ -1091,11 +1091,13 @@ function Header({
   return (
     <div className="flex items-center gap-1 border-b border-border/60 px-3 py-3">
       {/* Mobile: Back arrow is the conventional dismissal pattern for
-          a bottom sheet. Hidden on desktop. */}
+          a bottom sheet. Hidden on desktop. touch-expand bumps the
+          32px visible button to a ~58px hit area on mobile (44pt+
+          tap target) without changing the visible size. */}
       <button
         onClick={onClose}
         aria-label="Back"
-        className="focus-ring grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.94] md:hidden"
+        className="focus-ring touch-expand grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.94] md:hidden"
       >
         <CaretLeft size={14} weight="bold" />
       </button>
@@ -1104,11 +1106,13 @@ function Header({
       )}
       {/* Desktop: ✕ is the conventional close affordance. Hidden on
           mobile where Back covers the same intent (and the bottom
-          sheet also dismisses on backdrop tap / drag-down). */}
+          sheet also dismisses on backdrop tap / drag-down).
+          touch-expand bumps the 32px button to a 52px desktop hit
+          area — better target for mouse imprecision near the edge. */}
       <button
         onClick={onClose}
         aria-label="Close"
-        className="focus-ring ml-auto grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.94] max-md:hidden"
+        className="focus-ring touch-expand ml-auto grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.94] max-md:hidden"
       >
         <X size={14} weight="bold" />
       </button>

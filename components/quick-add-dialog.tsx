@@ -201,7 +201,7 @@ export function QuickAddDialog({
           <button
             onClick={() => onOpenChange(false)}
             aria-label="Close"
-            className="focus-ring ml-auto grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground active:scale-[0.94]"
+            className="focus-ring touch-expand ml-auto grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground active:scale-[0.94]"
           >
             <X size={14} weight="bold" />
           </button>
