@@ -116,7 +116,18 @@ export function TaskDrawer({
   return createPortal(
     <AnimatePresence>
       {taskId && (
-        <div key="drawer-root" className="fixed inset-0 z-50">
+        // h-dvh instead of inset-0's implicit bottom:0 — on iOS Safari
+        // with the bottom toolbar visible, `fixed inset-0` anchors to
+        // the layout viewport (full screen, under the toolbar) while
+        // the visible viewport is shorter. The drawer's bottom CTA
+        // (Mark complete / Reopen task) then ends up half-hidden
+        // behind the toolbar. `h-dvh` makes the root respect the
+        // dynamic viewport, so the panel's bottom-0 sits just above
+        // the toolbar instead.
+        <div
+          key="drawer-root"
+          className="fixed inset-x-0 top-0 z-50 h-dvh"
+        >
           {/* Backdrop — dims fast, fades to clear faster on close */}
           <motion.div
             key="backdrop"
