@@ -12,8 +12,8 @@ import {
   Gear,
   MagnifyingGlass,
   Question,
+  PushPin,
   SignOut,
-  Star,
 } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { ProjectDot } from "@/components/project-dot";
@@ -263,7 +263,7 @@ function ProjectRow({
       <ProjectDot project={project} size={10} />
       <span className="flex-1 truncate">{project.name}</span>
       {pinned && (
-        <Star size={12} weight="fill" className="text-amber-500" />
+        <PushPin size={12} weight="fill" className="-rotate-45 text-foreground/70" />
       )}
       {badge !== undefined && badge > 0 && (
         <span className="rounded-md bg-accent/60 px-1.5 text-[11.5px] tabular-nums text-muted-foreground">

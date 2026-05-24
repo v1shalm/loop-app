@@ -11,8 +11,8 @@ import {
   Crosshair,
   MagnifyingGlass,
   Plus,
+  PushPin,
   SidebarSimple,
-  Star,
   Tray,
 } from "@/components/icons";
 import { togglePinnedProject } from "@/lib/actions";
@@ -621,11 +621,15 @@ function PinToggle({
       className={cn(
         "focus-ring grid size-5 shrink-0 place-items-center rounded transition-[opacity,color,background-color,transform] duration-200 ease-[var(--ease-out)] active:scale-[0.88]",
         optimistic
-          ? "text-amber-500 hover:text-amber-600"
+          ? "text-foreground hover:text-foreground"
           : "text-muted-foreground/60 opacity-0 hover:bg-accent/60 hover:text-foreground group-hover/proj:opacity-100 focus-visible:opacity-100"
       )}
     >
-      <Star size={12} weight={optimistic ? "fill" : "regular"} />
+      <PushPin
+        size={12}
+        weight={optimistic ? "fill" : "regular"}
+        className={optimistic ? "-rotate-45" : undefined}
+      />
     </button>
   );
 }

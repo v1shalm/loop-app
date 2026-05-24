@@ -30,16 +30,11 @@ export function WorkspacePill({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className={cn(
-          "focus-ring group/wp flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 transition-[background-color] duration-150 ease-[var(--ease-out)]",
+          "focus-ring group/wp flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 transition-[background-color] duration-150 ease-[var(--ease-out)]",
           open ? "bg-sidebar-accent/60" : "hover:bg-sidebar-accent/40"
         )}
         aria-label="Workspace menu"
       >
-        <span
-          aria-hidden
-          className="inline-block size-2 shrink-0 rounded-full"
-          style={{ backgroundColor: team.color ?? "#94a3b8" }}
-        />
         <span className="min-w-0 truncate text-[13.5px] font-semibold tracking-tight text-foreground">
           {team.name}
         </span>
