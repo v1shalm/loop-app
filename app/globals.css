@@ -323,3 +323,186 @@
       0 2px 4px -1px oklch(0 0 0 / 0.05);
   }
 }
+
+/* =========================================================
+   THEME V2 — borrowed from /resume-builder
+   ---------------------------------------------------------
+   Activated by adding `theme-v2` to <html>. Re-maps the
+   shadcn token names (--background, --primary, etc.) to
+   the resume-builder palette so the whole app picks up the
+   new look without touching components. Amber-on-blueish-
+   grey, layered gradients, puffy chip shadows, radial body.
+   ========================================================= */
+
+.theme-v2 {
+  color-scheme: light;
+
+  /* Core neutrals — cool blue-grey, hue ~250 */
+  --background: oklch(0.985 0.003 250);
+  --foreground: oklch(0.2 0.008 250);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.008 250);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.008 250);
+
+  /* Brand: amber (resume-builder's signature accent) */
+  --primary: oklch(0.855 0.165 85);
+  --primary-foreground: oklch(0.22 0.05 75);
+
+  --secondary: oklch(0.982 0.003 250);
+  --secondary-foreground: oklch(0.22 0.008 250);
+
+  --muted: oklch(0.97 0.004 250);
+  --muted-foreground: oklch(0.48 0.008 250);
+
+  --accent: oklch(0.93 0.04 85);
+  --accent-foreground: oklch(0.22 0.05 75);
+
+  --destructive: oklch(0.56 0.19 25);
+
+  --border: oklch(0.895 0.005 250);
+  --input: oklch(0.82 0.006 250);
+  --ring: oklch(0.855 0.165 85);
+
+  /* Sidebar — slightly deeper than bg so it reads as its own surface */
+  --sidebar: oklch(0.97 0.004 250);
+  --sidebar-foreground: oklch(0.22 0.008 250);
+  --sidebar-primary: oklch(0.855 0.165 85);
+  --sidebar-primary-foreground: oklch(0.22 0.05 75);
+  --sidebar-accent: oklch(0.925 0.005 250);
+  --sidebar-accent-foreground: oklch(0.2 0.008 250);
+  --sidebar-border: oklch(0.895 0.005 250);
+  --sidebar-ring: oklch(0.855 0.165 85);
+
+  /* Refresh derived gradient endpoints so .surface-brand renders the
+     amber gradient instead of caching the violet pair. */
+  --primary-light: color-mix(in oklch, var(--primary) 88%, white);
+  --primary-dark: color-mix(in oklch, var(--primary) 92%, black);
+
+  /* Resume-builder-style extras the layout uses below */
+  --v2-body-top: oklch(0.995 0.002 250);
+  --v2-body-bot: oklch(0.965 0.004 250);
+  --v2-scrollbar-thumb: oklch(0.8 0.006 250);
+  --v2-scrollbar-thumb-hover: oklch(0.7 0.008 250);
+  --v2-focus: oklch(0.855 0.165 85 / 0.7);
+  --v2-selection-bg: oklch(0.855 0.165 85 / 0.35);
+  --v2-card-top: oklch(1 0 0);
+  --v2-card-bot: oklch(0.975 0.004 250);
+}
+
+.theme-v2.dark {
+  color-scheme: dark;
+
+  --background: oklch(0.165 0.004 250);
+  --foreground: oklch(0.94 0.004 250);
+
+  --card: oklch(0.245 0.006 250);
+  --card-foreground: oklch(0.94 0.004 250);
+
+  --popover: oklch(0.245 0.006 250);
+  --popover-foreground: oklch(0.94 0.004 250);
+
+  /* Amber accent — same hue/lightness in both themes per RB spec */
+  --primary: oklch(0.855 0.165 85);
+  --primary-foreground: oklch(0.22 0.05 75);
+
+  --secondary: oklch(0.208 0.005 250);
+  --secondary-foreground: oklch(0.94 0.004 250);
+
+  --muted: oklch(0.208 0.005 250);
+  --muted-foreground: oklch(0.7 0.006 250);
+
+  --accent: oklch(0.285 0.007 250);
+  --accent-foreground: oklch(0.94 0.004 250);
+
+  --destructive: oklch(0.66 0.17 25);
+
+  --border: oklch(0.295 0.007 250);
+  --input: oklch(0.36 0.008 250);
+  --ring: oklch(0.855 0.165 85);
+
+  --sidebar: oklch(0.18 0.005 250);
+  --sidebar-foreground: oklch(0.94 0.004 250);
+  --sidebar-primary: oklch(0.855 0.165 85);
+  --sidebar-primary-foreground: oklch(0.22 0.05 75);
+  --sidebar-accent: oklch(0.255 0.007 250);
+  --sidebar-accent-foreground: oklch(0.94 0.004 250);
+  --sidebar-border: oklch(0.295 0.007 250);
+  --sidebar-ring: oklch(0.855 0.165 85);
+
+  --v2-body-top: oklch(0.2 0.006 250);
+  --v2-body-bot: oklch(0.165 0.004 250);
+  --v2-scrollbar-thumb: oklch(0.3 0.008 250);
+  --v2-scrollbar-thumb-hover: oklch(0.42 0.008 250);
+  --v2-focus: oklch(0.855 0.165 85 / 0.7);
+  --v2-selection-bg: oklch(0.855 0.165 85 / 0.4);
+  --v2-card-top: oklch(0.255 0.006 250);
+  --v2-card-bot: oklch(0.215 0.005 250);
+}
+
+/* V2 global treatments — body, scrollbar, focus, selection, inputs.
+   All scoped to `.theme-v2` so v1 stays untouched. */
+html.theme-v2 body {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    var(--v2-body-top) 0%,
+    var(--v2-body-bot) 60%
+  );
+  font-feature-settings: "ss01", "cv11";
+}
+
+html.theme-v2 ::selection {
+  background: var(--v2-selection-bg);
+  color: var(--primary-foreground);
+}
+
+html.theme-v2 :focus-visible {
+  outline: 2px solid var(--v2-focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+html.theme-v2 ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+html.theme-v2 ::-webkit-scrollbar-track {
+  background: transparent;
+}
+html.theme-v2 ::-webkit-scrollbar-thumb {
+  background: var(--v2-scrollbar-thumb);
+  border-radius: 12px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+html.theme-v2 ::-webkit-scrollbar-thumb:hover {
+  background: var(--v2-scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+html.theme-v2 textarea,
+html.theme-v2 input {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Handpicked components — give cards the resume-builder layered surface.
+   Tailwind's `bg-card` resolves to `background: var(--color-card)` (a
+   flat fill). On v2 we upgrade it to the gradient + puffy shadow stack
+   that gives RB its tactile feel. Scoped to `.theme-v2` only. */
+html.theme-v2 .bg-card {
+  background: linear-gradient(
+    180deg,
+    var(--v2-card-top) 0%,
+    var(--v2-card-bot) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.55),
+    0 1px 0 0 oklch(0 0 0 / 0.08);
+}
+html.theme-v2.dark .bg-card {
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.045),
+    0 1px 0 0 oklch(0 0 0 / 0.35);
+}

@@ -2,6 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, ThemeInitScript } from "@/components/theme-provider";
+import {
+  UiVersionProvider,
+  UiVersionInitScript,
+} from "@/components/ui-version-provider";
+import { V2Toggle } from "@/components/v2-toggle";
 import { ThemedToaster } from "@/components/themed-toaster";
 import "sileo/styles.css";
 import "./globals.css";
@@ -36,16 +41,20 @@ export default function RootLayout({
     >
       <head>
         <ThemeInitScript />
+        <UiVersionInitScript />
       </head>
       <body
         suppressHydrationWarning
         className="min-h-full bg-background text-foreground"
       >
         <ThemeProvider>
-          <TooltipProvider>
-            {children}
-            <ThemedToaster />
-          </TooltipProvider>
+          <UiVersionProvider>
+            <TooltipProvider>
+              {children}
+              <V2Toggle />
+              <ThemedToaster />
+            </TooltipProvider>
+          </UiVersionProvider>
         </ThemeProvider>
         {/* Placeholder for @vercel/analytics */}
         {/* <Analytics /> */}
