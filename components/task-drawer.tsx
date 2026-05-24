@@ -424,12 +424,15 @@ function DrawerInner({
     });
   };
 
+  // Skeleton state — same chrome as the loaded drawer (header,
+  // scroll area, footer) with structural placeholders inside. The
+  // earlier centered spinner produced an empty-looking panel for
+  // ~100-300ms after the slide-in finished, so the drawer "appeared"
+  // but the body was blank until data landed. The skeleton keeps the
+  // perceived response time at zero: the layout is right immediately,
+  // the values fill in.
   if (loading) {
-    return (
-      <div className="grid h-full place-items-center text-muted-foreground">
-        <CircleNotch size={18} className="animate-spin" />
-      </div>
-    );
+    return <DrawerSkeleton onClose={onClose} />;
   }
 
   if (!task) {
@@ -717,6 +720,95 @@ function SectionDivider() {
   // as a no-op so existing call sites don't need to disappear; can be
   // deleted entirely once we audit other surfaces using this drawer.
   return null;
+}
+
+/**
+ * Loading state for the drawer. Mirrors the real layout 1-to-1 so the
+ * transition from skeleton → loaded reads as "values filling in," not
+ * "different screen replaced the old one."
+ *
+ * The Header + DrawerFooter are real (header navigation works even
+ * while data loads; the footer's primary CTA is disabled until the
+ * task is in hand). The body holds shape-matched bars where Title,
+ * Details rows, Description, Subtasks header, and Comments composer
+ * would be.
+ */
+function DrawerSkeleton({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="flex h-full flex-col">
+      <Header onClose={onClose} pending={false} />
+      <div className="flex-1 overflow-y-auto">
+        {/* Title placeholder — matches the 22px title-textarea height
+            so the layout doesn't jump when the title arrives. */}
+        <section className="px-6 pb-4 pt-4">
+          <SkeletonBar className="h-[28px] w-[70%]" />
+        </section>
+
+        {/* Details grid — same 110px label / 1fr value layout as the
+            loaded version, so each row's left edge lines up perfectly
+            once the chip text fills in. */}
+        <section className="px-6 py-4">
+          <SkeletonBar className="h-3 w-14" />
+          <dl className="mt-3 grid grid-cols-[110px_minmax(0,1fr)] items-center gap-x-4 gap-y-3">
+            <SkeletonBar className="h-3 w-16" />
+            <SkeletonBar className="h-7 w-28" />
+            <SkeletonBar className="h-3 w-16" />
+            <SkeletonBar className="h-7 w-24" />
+            <SkeletonBar className="h-3 w-16" />
+            <SkeletonBar className="h-7 w-32" />
+            <SkeletonBar className="h-3 w-16" />
+            <SkeletonBar className="h-7 w-20" />
+          </dl>
+          <div className="mt-3 border-t border-border/40 pt-3">
+            <SkeletonBar className="h-3 w-48" />
+          </div>
+        </section>
+
+        <section className="px-6 py-4">
+          <SkeletonBar className="h-3 w-20" />
+          <div className="mt-3 flex flex-col gap-2">
+            <SkeletonBar className="h-3 w-full" />
+            <SkeletonBar className="h-3 w-[85%]" />
+          </div>
+        </section>
+
+        <section className="px-6 py-4">
+          <SkeletonBar className="h-3 w-16" />
+          <SkeletonBar className="mt-3 h-4 w-32" />
+        </section>
+
+        <section className="px-6 py-4">
+          <SkeletonBar className="h-3 w-20" />
+          <div className="mt-3 flex items-start gap-3">
+            <SkeletonBar className="h-7 w-7 rounded-full" />
+            <SkeletonBar className="h-7 flex-1" />
+          </div>
+        </section>
+      </div>
+      <DrawerFooter
+        done={false}
+        pending={true}
+        onToggle={() => {}}
+        onDelete={() => {}}
+      />
+    </div>
+  );
+}
+
+/**
+ * One-line skeleton primitive. Pulses gently via Tailwind's `animate-pulse`,
+ * tinted with the muted token so it tracks the active theme.
+ */
+function SkeletonBar({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "animate-pulse rounded-md bg-muted-foreground/15",
+        className
+      )}
+    />
+  );
 }
 
 function SectionHeader({

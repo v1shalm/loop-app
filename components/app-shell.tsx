@@ -84,6 +84,30 @@ export function AppShell({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Prefetch the heavy modal chunks once the shell has painted so the
+  // first time the user opens one (task row click → drawer, FAB → quick
+  // add, Cmd+K → search), the chunk is already in cache and there's
+  // zero JS-download delay on top of the slide-in. Each chunk is ~30kb
+  // gzipped; downloading them after first paint costs nothing the user
+  // perceives. requestIdleCallback waits for an actual idle moment;
+  // setTimeout fallback for Safari and other browsers without it.
+  useEffect(() => {
+    const prefetch = () => {
+      void import("@/components/task-drawer");
+      void import("@/components/quick-add-dialog");
+      void import("@/components/search-palette");
+    };
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void) => number;
+    };
+    if (typeof w.requestIdleCallback === "function") {
+      w.requestIdleCallback(prefetch);
+    } else {
+      const t = setTimeout(prefetch, 1500);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   return (
     // reducedMotion="user" makes every motion.* component in the tree
     // respect the OS prefers-reduced-motion setting: drawer slide-up,
