@@ -323,43 +323,6 @@ async function fetchTasks(
   return data ?? [];
 }
 
-export async function getTodayTasks(): Promise<TaskWithRelations[]> {
-  const profile = await getCurrentProfile();
-  if (!profile) return [];
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date();
-  end.setHours(23, 59, 59, 999);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return fetchTasks((q: any) =>
-    q
-      .eq("assignee_id", profile.id)
-      .neq("status", "done")
-      .gte("due_at", start.toISOString())
-      .lte("due_at", end.toISOString())
-      .order("priority", { ascending: true })
-      .order("due_at", { ascending: true })
-  );
-}
-
-export async function getUpcomingTasks(): Promise<TaskWithRelations[]> {
-  const profile = await getCurrentProfile();
-  if (!profile) return [];
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date();
-  end.setDate(end.getDate() + 14);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return fetchTasks((q: any) =>
-    q
-      .eq("assignee_id", profile.id)
-      .neq("status", "done")
-      .gte("due_at", start.toISOString())
-      .lte("due_at", end.toISOString())
-      .order("due_at", { ascending: true })
-  );
-}
-
 /**
  * Assigned-to-me sections — replaces the old "My tasks" list.
  *   • overdue: past due, not done
