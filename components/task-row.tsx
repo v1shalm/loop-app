@@ -37,6 +37,7 @@ import {
 import { cn } from "@/lib/utils";
 import { deleteTask, setTaskStatus, updateTask } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
+import { MentionText } from "@/components/mention-text";
 import type { TaskWithRelations } from "@/lib/queries";
 import { useTeamContext } from "@/components/team-provider";
 import { Avatar } from "@/components/avatar";
@@ -397,7 +398,7 @@ export function TaskRow({
                 className="focus-ring group/title flex w-full min-w-0 items-center text-left"
               >
                 <span className="truncate text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2 group-hover/title:underline">
-                  {task.title}
+                  <MentionText text={task.title} />
                 </span>
               </button>
 

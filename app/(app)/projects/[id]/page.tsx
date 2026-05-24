@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Hash } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
@@ -131,7 +132,7 @@ function ProgressBlock({
 
   return (
     <div>
-      <div className="h-1 w-full overflow-hidden rounded-full bg-secondary">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-primary/15 ring-1 ring-inset ring-primary/10">
         <div
           className="h-full rounded-full bg-primary transition-[width] duration-500 ease-[var(--ease-out)]"
           style={{
@@ -226,34 +227,39 @@ async function RecentActivity({ projectId }: { projectId: string }) {
             <li
               key={`${r.id}-${completed ? "done" : "add"}`}
               className={
-                isLast
-                  ? "flex items-center gap-3 py-2.5"
-                  : "flex items-center gap-3 border-b border-border/50 py-2.5"
+                isLast ? "" : "border-b border-border/50"
               }
             >
-              {who && (
-                <Avatar
-                  src={who.avatar_url}
-                  initials={who.initials}
-                  color={who.avatar_color}
-                  size={18}
-                />
-              )}
-              <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
-                <span className="text-foreground">
-                  {who?.name ?? "Someone"}
-                </span>{" "}
-                {completed ? "completed" : "added"}{" "}
-                <span className="text-foreground">{r.title}</span>
-                {completed && (
-                  <span aria-hidden className="ml-1">
-                    🎉
-                  </span>
+              <Link
+                href={`?task=${r.id}`}
+                scroll={false}
+                prefetch={false}
+                className="focus-ring -mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40"
+              >
+                {who && (
+                  <Avatar
+                    src={who.avatar_url}
+                    initials={who.initials}
+                    color={who.avatar_color}
+                    size={18}
+                  />
                 )}
-              </p>
-              <span className="shrink-0 text-[11.5px] tabular-nums text-muted-foreground/70">
-                <RelativeTime date={at} />
-              </span>
+                <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
+                  <span className="text-foreground">
+                    {who?.name ?? "Someone"}
+                  </span>{" "}
+                  {completed ? "completed" : "added"}{" "}
+                  <span className="text-foreground">{r.title}</span>
+                  {completed && (
+                    <span aria-hidden className="ml-1">
+                      🎉
+                    </span>
+                  )}
+                </p>
+                <span className="shrink-0 text-[11.5px] tabular-nums text-muted-foreground/70">
+                  <RelativeTime date={at} />
+                </span>
+              </Link>
             </li>
           );
         })}

@@ -40,6 +40,7 @@ export {
   Flag,
   FlagBanner,
   Folder,
+  FunnelSimple,
   Gear,
   Hash,
   Kanban,

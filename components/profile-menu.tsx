@@ -24,6 +24,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Avatar } from "@/components/avatar";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { useIsMobile } from "@/lib/use-is-mobile";
@@ -40,6 +45,7 @@ export function ProfileMenu({
   onOpenHelp,
   showPresence,
   progressToday,
+  compact,
 }: {
   user: Profile;
   onOpenHelp?: () => void;
@@ -47,6 +53,9 @@ export function ProfileMenu({
   /** Optional today's progress for the menu header — when set, replaces
    *  the plain name+role card with a Todoist-style "X / Y today" ring. */
   progressToday?: { done: number; total: number };
+  /** When true, render an avatar-only square trigger (for the collapsed
+   *  sidebar). Same menu content, smaller footprint. */
+  compact?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [statusPending, startStatusTransition] = useTransition();
@@ -315,42 +324,69 @@ export function ProfileMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className="group/profile focus-ring flex w-full items-center gap-2.5 rounded-lg border border-border/60 bg-card px-2.5 py-2 text-left shadow-soft-xs transition-colors hover:bg-accent/40 data-[popup-open]:bg-accent/40"
-        aria-label="Open account menu"
-      >
-        <span className="relative shrink-0">
-          <Avatar
-            src={user.avatar_url}
-            initials={user.initials}
-            color={user.avatar_color}
-            size={36}
+      {compact ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <DropdownMenuTrigger
+                aria-label="Open account menu"
+                className="focus-ring relative grid size-9 place-items-center rounded-md transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 active:scale-[0.94] data-[popup-open]:bg-accent/50"
+              >
+                <Avatar
+                  src={user.avatar_url}
+                  initials={user.initials}
+                  color={user.avatar_color}
+                  size={28}
+                />
+                {showPresence && (
+                  <span
+                    aria-hidden
+                    className="absolute right-0.5 bottom-0.5 size-2 rounded-full bg-emerald-500 ring-2 ring-sidebar"
+                  />
+                )}
+              </DropdownMenuTrigger>
+            }
           />
-          {showPresence && (
-            <span
-              aria-hidden
-              className="absolute right-0 bottom-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-card"
+          <TooltipContent side="right">{user.name}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <DropdownMenuTrigger
+          className="group/profile focus-ring flex w-full items-center gap-2.5 rounded-lg border border-border/60 bg-card px-2.5 py-2 text-left shadow-soft-xs transition-colors hover:bg-accent/40 data-[popup-open]:bg-accent/40"
+          aria-label="Open account menu"
+        >
+          <span className="relative shrink-0">
+            <Avatar
+              src={user.avatar_url}
+              initials={user.initials}
+              color={user.avatar_color}
+              size={36}
             />
-          )}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold text-foreground">
-            {user.name}
-          </p>
-          <p className="truncate text-[11.5px] text-muted-foreground">
-            {user.role ?? "Team member"}
-          </p>
-        </div>
-        <Gear
-          size={14}
-          className="shrink-0 text-muted-foreground/60 transition-colors group-hover/profile:text-foreground"
-        />
-      </DropdownMenuTrigger>
+            {showPresence && (
+              <span
+                aria-hidden
+                className="absolute right-0 bottom-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-card"
+              />
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold text-foreground">
+              {user.name}
+            </p>
+            <p className="truncate text-[11.5px] text-muted-foreground">
+              {user.role ?? "Team member"}
+            </p>
+          </div>
+          <Gear
+            size={14}
+            className="shrink-0 text-muted-foreground/60 transition-colors group-hover/profile:text-foreground"
+          />
+        </DropdownMenuTrigger>
+      )}
 
       <DropdownMenuContent
-        side="top"
-        align="start"
-        sideOffset={8}
+        side={compact ? "right" : "top"}
+        align={compact ? "end" : "start"}
+        sideOffset={compact ? 12 : 8}
         className="w-[268px] rounded-xl border border-border/60 bg-popover p-1.5 shadow-soft-sm ring-0"
       >
         {/* Header: avatar (or progress ring), name, role / today's progress */}
@@ -420,9 +456,6 @@ export function ProfileMenu({
           >
             <Question size={15} className="text-muted-foreground" />
             <span className="flex-1">Help</span>
-            <kbd className="chip-3d inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 text-[10.5px] font-semibold text-muted-foreground">
-              ?
-            </kbd>
           </DropdownMenuItem>
         )}
 

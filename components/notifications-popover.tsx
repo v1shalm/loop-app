@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { RelativeTime } from "@/components/relative-time";
 import {
@@ -37,16 +37,40 @@ interface Item {
 }
 
 /**
- * Bell trigger + popover. Replaces the standalone /notifications page
- * for the common case — keeps the route around as a deep link, but the
- * popover is the primary surface.
+ * Notifications bell + popover. The single notifications surface in the
+ * app — there is no `/notifications` route. Renders in the top bar.
+ *
+ * Seen-state lives in localStorage as `notifications_last_seen_at`:
+ * any item with `at > seenAt` is "unread" and contributes to the
+ * red-dot badge. "Mark all read" sets seenAt = now. localStorage was
+ * chosen over a server column because for an internal team app the
+ * cost of a migration + sync isn't worth single-device read state.
  */
+const SEEN_AT_KEY = "loop:notifications-seen-at";
+
+function loadSeenAt(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = window.localStorage.getItem(SEEN_AT_KEY);
+    return raw ? Number(raw) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveSeenAt(at: number) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(SEEN_AT_KEY, String(at));
+  } catch {
+    // ignore quota/permission errors
+  }
+}
+
 export function NotificationsPopover({
-  unreadCount,
   currentUserId,
   className,
 }: {
-  unreadCount: number;
   currentUserId: string;
   className?: string;
 }) {
@@ -54,7 +78,14 @@ export function NotificationsPopover({
   const [tab, setTab] = useState<Tab>("all");
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
+  const [seenAt, setSeenAt] = useState<number>(0);
+  const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    setMounted(true);
+    setSeenAt(loadSeenAt());
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -104,7 +135,22 @@ export function NotificationsPopover({
     });
   }, [open, currentUserId]);
 
+  // "Unread" = items more recent than the last seen timestamp.
+  // Recomputed locally because seen-state isn't on the server.
+  const unreadCount = useMemo(() => {
+    if (!mounted) return 0;
+    return items.filter((it) => new Date(it.at).getTime() > seenAt).length;
+  }, [items, seenAt, mounted]);
+
+  const hasAnyUnread = unreadCount > 0;
+
   const filtered = tab === "tasks" ? items : items;
+
+  const markAllRead = () => {
+    const now = Date.now();
+    setSeenAt(now);
+    saveSeenAt(now);
+  };
 
   const body = (
     <NotificationsBody
@@ -113,6 +159,9 @@ export function NotificationsPopover({
       tab={tab}
       onTabChange={setTab}
       onItemClick={() => setOpen(false)}
+      onMarkAllRead={markAllRead}
+      hasAnyUnread={hasAnyUnread}
+      seenAt={seenAt}
     />
   );
 
@@ -132,13 +181,13 @@ export function NotificationsPopover({
           )}
         >
           <Bell size={18} />
-          {unreadCount > 0 && (
+          {hasAnyUnread && (
             <span
               aria-hidden
               className="absolute right-1.5 top-1.5 grid size-1.5 place-items-center"
             >
               <span className="absolute inline-flex size-1.5 animate-ping rounded-full bg-rose-400 opacity-75" />
-              <span className="relative size-1.5 rounded-full bg-rose-500 ring-2 ring-sidebar" />
+              <span className="relative size-1.5 rounded-full bg-rose-500 ring-2 ring-background" />
             </span>
           )}
         </button>
@@ -166,13 +215,13 @@ export function NotificationsPopover({
               )}
             >
               <Bell size={16} />
-              {unreadCount > 0 && (
+              {hasAnyUnread && (
                 <span
                   aria-hidden
                   className="absolute right-1.5 top-1.5 grid size-1.5 place-items-center"
                 >
                   <span className="absolute inline-flex size-1.5 animate-ping rounded-full bg-rose-400 opacity-75" />
-                  <span className="relative size-1.5 rounded-full bg-rose-500 ring-2 ring-sidebar" />
+                  <span className="relative size-1.5 rounded-full bg-rose-500 ring-2 ring-background" />
                 </span>
               )}
             </PopoverTrigger>
@@ -180,18 +229,18 @@ export function NotificationsPopover({
         />
         <TooltipContent side="bottom">
           Notifications
-          {unreadCount > 0 && (
+          {hasAnyUnread && (
             <span className="ml-1.5 text-background/70">
-              · {unreadCount} unread
+              · {unreadCount} new
             </span>
           )}
         </TooltipContent>
       </Tooltip>
 
       <PopoverContent
-        align="start"
+        align="end"
         sideOffset={6}
-        className="w-[360px] gap-0 p-0 shadow-soft-md"
+        className="w-[380px] gap-0 p-0 shadow-soft-md"
       >
         {body}
       </PopoverContent>
@@ -205,12 +254,18 @@ function NotificationsBody({
   tab,
   onTabChange,
   onItemClick,
+  onMarkAllRead,
+  hasAnyUnread,
+  seenAt,
 }: {
   loading: boolean;
   items: Item[];
   tab: Tab;
   onTabChange: (t: Tab) => void;
   onItemClick: () => void;
+  onMarkAllRead: () => void;
+  hasAnyUnread: boolean;
+  seenAt: number;
 }) {
   return (
     <>
@@ -218,13 +273,14 @@ function NotificationsBody({
         <h3 className="text-[13px] font-semibold tracking-tight text-foreground max-md:text-[15px]">
           Notifications
         </h3>
-        <Link
-          href="/notifications"
-          onClick={onItemClick}
-          className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground max-md:text-[13px]"
+        <button
+          type="button"
+          onClick={onMarkAllRead}
+          disabled={!hasAnyUnread}
+          className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 max-md:text-[13px]"
         >
-          View all
-        </Link>
+          Mark all read
+        </button>
       </div>
       <nav className="flex items-center gap-0.5 border-b border-border/60 px-2">
         {(["all", "tasks"] as Tab[]).map((t) => (
@@ -242,7 +298,7 @@ function NotificationsBody({
           </button>
         ))}
       </nav>
-      <div className="max-h-[420px] overflow-y-auto max-md:max-h-none max-md:flex-1">
+      <div className="max-h-[460px] overflow-y-auto max-md:max-h-none max-md:flex-1">
         {loading ? (
           <div className="grid place-items-center py-10 text-muted-foreground">
             <CircleNotch size={16} className="animate-spin" />
@@ -261,11 +317,18 @@ function NotificationsBody({
           </div>
         ) : (
           <ul className="flex flex-col py-1">
-            {items.map((item) => (
-              <li key={item.id}>
-                <NotificationRow item={item} onClose={onItemClick} />
-              </li>
-            ))}
+            {items.map((item) => {
+              const isNew = new Date(item.at).getTime() > seenAt;
+              return (
+                <li key={item.id}>
+                  <NotificationRow
+                    item={item}
+                    onClose={onItemClick}
+                    isNew={isNew}
+                  />
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -276,9 +339,11 @@ function NotificationsBody({
 function NotificationRow({
   item,
   onClose,
+  isNew,
 }: {
   item: Item;
   onClose: () => void;
+  isNew: boolean;
 }) {
   const href = item.project_id
     ? `/projects/${item.project_id}?task=${item.task_id}`
@@ -288,8 +353,15 @@ function NotificationRow({
     <Link
       href={href}
       onClick={onClose}
-      className="focus-ring flex items-start gap-2.5 px-4 py-2.5 transition-[background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 max-md:py-3.5"
+      className="focus-ring relative flex items-start gap-2.5 px-4 py-2.5 transition-[background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 max-md:py-3.5"
     >
+      {/* Unread indicator — a tiny brand-pink dot at the left edge */}
+      {isNew && (
+        <span
+          aria-hidden
+          className="absolute left-1.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-primary"
+        />
+      )}
       <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-muted">
         {item.kind === "i-completed" ? (
           <CheckCircle

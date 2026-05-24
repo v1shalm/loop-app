@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-  Bell,
   CalendarDots,
   CheckCircle,
   CircleNotch,
@@ -58,7 +57,6 @@ const JUMP_TARGETS: JumpItem[] = [
   { kind: "jump", id: "my-work", label: "My work", href: "/assigned-to-me", Icon: Crosshair },
   { kind: "jump", id: "upcoming", label: "Upcoming", href: "/upcoming", Icon: CalendarDots },
   { kind: "jump", id: "team", label: "Team", href: "/team", Icon: UsersThree },
-  { kind: "jump", id: "notifications", label: "Notifications", href: "/notifications", Icon: Bell },
 ];
 
 // Recents — five most-recent palette picks per browser. Stored as the

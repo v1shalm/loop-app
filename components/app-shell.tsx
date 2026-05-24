@@ -10,6 +10,7 @@ import { QuickAddProvider } from "@/components/quick-add-context";
 import { BulkSelectionProvider } from "@/components/bulk-selection";
 import { BulkActionBar } from "@/components/bulk-action-bar";
 import { OptimisticDeletesProvider } from "@/components/optimistic-deletes";
+import { AppControlsProvider } from "@/components/app-controls-context";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileFab } from "@/components/mobile-fab";
 import { MobileMenuSheet } from "@/components/mobile-menu-sheet";
@@ -29,13 +30,6 @@ const SearchPalette = dynamic(
   () => import("@/components/search-palette").then((m) => m.SearchPalette),
   { ssr: false }
 );
-const KeyboardShortcutsDialog = dynamic(
-  () =>
-    import("@/components/keyboard-shortcuts-dialog").then(
-      (m) => m.KeyboardShortcutsDialog
-    ),
-  { ssr: false }
-);
 const RealtimeBridge = dynamic(
   () => import("@/components/realtime-bridge").then((m) => m.RealtimeBridge),
   { ssr: false }
@@ -53,37 +47,7 @@ export function AppShell({
 }: Omit<SidebarProps, "onOpenQuickAdd"> & { children: React.ReactNode }) {
   const [quickOpen, setQuickOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      const inEditable =
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.isContentEditable;
-
-      // Cmd/Ctrl+K — works even from inside inputs
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setSearchOpen(true);
-        return;
-      }
-
-      if (inEditable) return;
-
-      if (e.key === "q" || e.key === "Q") {
-        e.preventDefault();
-        setQuickOpen(true);
-      } else if (e.key === "?" && e.shiftKey) {
-        e.preventDefault();
-        setHelpOpen(true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   // Prefetch the heavy modal chunks once the shell has painted so the
   // first time the user opens one (task row click → drawer, FAB → quick
@@ -125,6 +89,13 @@ export function AppShell({
         <QuickAddProvider open={() => setQuickOpen(true)}>
          <BulkSelectionProvider>
           <OptimisticDeletesProvider>
+          <AppControlsProvider
+            value={{
+              openSearch: () => setSearchOpen(true),
+              currentUserId: user.id,
+              inboxCount: counts.inbox,
+            }}
+          >
           <div className="flex h-dvh w-full overflow-hidden bg-background">
             {/* Desktop sidebar — `contents` keeps it as a direct flex child
                 so the desktop layout is byte-for-byte unchanged. On mobile
@@ -139,8 +110,6 @@ export function AppShell({
                 members={members}
                 counts={counts}
                 onOpenQuickAdd={() => setQuickOpen(true)}
-                onOpenSearch={() => setSearchOpen(true)}
-                onOpenHelp={() => setHelpOpen(true)}
               />
             </div>
             <main className="flex-1 overflow-y-auto max-md:pb-[calc(env(safe-area-inset-bottom,0px)+64px)]">
@@ -167,7 +136,6 @@ export function AppShell({
               projects={projects}
               counts={counts}
               onOpenSearch={() => setSearchOpen(true)}
-              onOpenHelp={() => setHelpOpen(true)}
             />
             <QuickAddDialog
               open={quickOpen}
@@ -182,15 +150,12 @@ export function AppShell({
               currentUserId={user.id}
             />
             <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} />
-            <KeyboardShortcutsDialog
-              open={helpOpen}
-              onOpenChange={setHelpOpen}
-            />
             {workspace && (
               <RealtimeBridge userId={user.id} workspaceId={workspace.id} />
             )}
             <BulkActionBar members={members} />
           </div>
+          </AppControlsProvider>
           </OptimisticDeletesProvider>
          </BulkSelectionProvider>
         </QuickAddProvider>

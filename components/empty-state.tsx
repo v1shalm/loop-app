@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, UserPlus, CheckCircle } from "@/components/icons";
+import { Plus, UserPlus, CheckCircle, FunnelSimple } from "@/components/icons";
 import { useQuickAdd } from "@/components/quick-add-context";
 
 export interface EmptyStateAction {
@@ -28,11 +28,16 @@ interface EmptyStateProps {
    *  the secondary action needs its own state (e.g. opening a dialog)
    *  and the parent server component can't pass an onClick down. */
   secondarySlot?: React.ReactNode;
-  /** Short list of "things you can do here" rendered under the CTAs.
-   *  Pass React nodes (not just strings) so call sites can wrap keyboard
-   *  shortcuts in <kbd> chips — the bare ⌘ glyph collides with adjacent
-   *  letters in most UI fonts. */
+  /** Short list of "things you can do here" rendered under the CTAs. */
   tips?: React.ReactNode[];
+  /** When true, the state is rendered as "no results for active filter"
+   *  rather than the page-is-empty variant. Title/hint/icon/CTA are
+   *  swapped to a filter-clearing affordance — calling out that the
+   *  underlying list isn't *actually* empty, the filter is too narrow. */
+  filterActive?: boolean;
+  /** Required when `filterActive` is true — fired by the "Clear filters"
+   *  button. */
+  onClearFilters?: () => void;
 }
 
 /**
@@ -51,9 +56,42 @@ export function EmptyState({
   secondary,
   secondarySlot,
   tips,
+  filterActive,
+  onClearFilters,
 }: EmptyStateProps) {
   const { open } = useQuickAdd();
   const action = onAction ?? open;
+
+  // Filter-active variant: this list isn't empty, the filter is. Swap
+  // icon, title, hint, and CTA so the user can recover with one click
+  // instead of getting the misleading "All caught up" message.
+  if (filterActive) {
+    return (
+      <div className="w-full rounded-2xl border border-border/60 bg-card px-8 py-12 shadow-soft-xs sm:px-12">
+        <div className="mx-auto flex max-w-[440px] flex-col items-center text-center">
+          <span className="grid size-12 place-items-center rounded-xl bg-muted text-muted-foreground">
+            <FunnelSimple size={20} />
+          </span>
+          <h3 className="mt-4 text-[16px] font-semibold tracking-tight text-foreground">
+            No tasks match this filter
+          </h3>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+            Your filter is too narrow. Clear it to see the full list.
+          </p>
+          {onClearFilters && (
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="focus-ring mt-4 inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.97]"
+            >
+              <FunnelSimple size={12} weight="bold" />
+              Clear filters
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full rounded-2xl border border-border/60 bg-card px-8 py-12 shadow-soft-xs sm:px-12">
@@ -186,15 +224,6 @@ export function EmptyState({
           </div>
         )}
 
-        {showAction && !secondary && (
-          <p className="mt-2.5 text-[11.5px] text-muted-foreground/70">
-            or press{" "}
-            <kbd className="chip-3d ml-px inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-background px-1 text-[10.5px] font-semibold text-foreground">
-              Q
-            </kbd>
-          </p>
-        )}
-
         {tips && tips.length > 0 && (
           <ul className="mt-7 grid w-full max-w-[420px] gap-2 border-t border-border/50 pt-5 text-left">
             {tips.map((tip, i) => (
@@ -214,17 +243,6 @@ export function EmptyState({
         )}
       </div>
     </div>
-  );
-}
-
-/** Inline keyboard chip for hint copy. Use one per key so adjacent
- *  shortcuts (Cmd+K) render as two chips instead of one collision-prone
- *  glyph cluster. */
-export function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="chip-3d mx-px inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 align-middle font-sans text-[10.5px] font-semibold leading-none text-foreground/80">
-      {children}
-    </kbd>
   );
 }
 

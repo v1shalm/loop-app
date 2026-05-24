@@ -289,7 +289,7 @@ function ActivitySection({
 
   return (
     <section className="px-4 py-3.5">
-      <SectionHeader title="Recent activity" href="/notifications" />
+      <SectionHeader title="Recent activity" />
       {top.length === 0 ? (
         <p className="mt-3 text-[12.5px] text-muted-foreground">
           Nothing in the last 7 days.

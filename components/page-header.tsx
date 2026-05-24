@@ -1,5 +1,21 @@
+"use client";
+
+import { MagnifyingGlass } from "@/components/icons";
+import { NotificationsPopover } from "@/components/notifications-popover";
+import { useAppControls } from "@/components/app-controls-context";
 import { cn } from "@/lib/utils";
 
+/**
+ * Sticky top bar present on every route. Three slots:
+ *
+ *   [ icon + title (+ subtitle) ]  …  [ page-specific actions ]  |  [ search ] [ bell ]
+ *
+ * The right-most controls (search + notifications) live here rather
+ * than the sidebar so they stay visible when the sidebar collapses,
+ * are reachable from every page without sidebar context, and free the
+ * sidebar to do nothing but navigation. They are sourced from the
+ * AppControlsContext provided by AppShell.
+ */
 export function PageHeader({
   icon,
   title,
@@ -13,6 +29,8 @@ export function PageHeader({
   right?: React.ReactNode;
   className?: string;
 }) {
+  const controls = useAppControls();
+
   return (
     <header
       className={cn(
@@ -42,7 +60,39 @@ export function PageHeader({
         )}
       </div>
 
-      <div className="ml-auto flex items-center gap-1">{right}</div>
+      <div className="ml-auto flex items-center gap-1">
+        {right}
+        {controls && (
+          <>
+            {right && (
+              <span
+                aria-hidden
+                className="mx-1 h-4 w-px shrink-0 bg-border/70 max-md:hidden"
+              />
+            )}
+            <SearchTrigger onClick={controls.openSearch} />
+            <NotificationsPopover currentUserId={controls.currentUserId} />
+          </>
+        )}
+      </div>
     </header>
+  );
+}
+
+function SearchTrigger({ onClick }: { onClick: () => void }) {
+  // Desktop only — mobile already has a Search tab in the bottom nav
+  // (components/mobile-bottom-nav.tsx). Rendering a second search
+  // trigger here would be a duplicate affordance and crowd the top bar
+  // out of room for the page title.
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Search"
+      className="focus-ring hidden h-8 items-center gap-2 rounded-md border border-border/70 bg-card/60 px-2.5 text-left text-[12.5px] text-muted-foreground transition-[border-color,background-color,transform] duration-150 ease-[var(--ease-out)] hover:border-border hover:bg-card active:scale-[0.992] md:inline-flex md:w-[220px]"
+    >
+      <MagnifyingGlass size={13} className="text-muted-foreground/70" />
+      <span className="flex-1 truncate">Search or jump to…</span>
+    </button>
   );
 }

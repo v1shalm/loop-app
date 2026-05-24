@@ -30,6 +30,7 @@ import {
   Clock,
   DotsSixVertical,
   Flag,
+  Tray,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import {
@@ -45,6 +46,8 @@ import { playSound } from "@/lib/sounds";
 import type { TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
 import { ProjectDot } from "@/components/project-dot";
+import { MentionText } from "@/components/mention-text";
+import { EmptyState } from "@/components/empty-state";
 import {
   Popover,
   PopoverContent,
@@ -207,9 +210,16 @@ export function InboxList({
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border/60 bg-card/40 px-4 py-10 text-center text-[13px] text-muted-foreground">
-          Nothing matches this filter.
-        </p>
+        <EmptyState
+          icon={<Tray size={32} weight="fill" />}
+          title=""
+          hint=""
+          filterActive
+          onClearFilters={() => {
+            setFilter("all");
+            setProjectFilter(null);
+          }}
+        />
       ) : (
         <SortableInbox tasks={visible} />
       )}
@@ -400,7 +410,7 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
             sent you · <RelativeTime date={task.created_at} />
           </p>
           <p className="mt-1 text-[14px] font-medium leading-snug text-foreground">
-            {task.title}
+            <MentionText text={task.title} />
           </p>
           {task.description && (
             <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">

@@ -87,16 +87,10 @@ export default async function ProfilePage() {
 
         {/* Recent activity */}
         <section className="mb-8">
-          <header className="mb-2 flex items-baseline justify-between border-b border-border/50 pb-2">
+          <header className="mb-2 border-b border-border/50 pb-2">
             <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
               Recent activity
             </h3>
-            <a
-              href="/notifications"
-              className="focus-ring text-[12.5px] text-muted-foreground hover:text-foreground"
-            >
-              See all
-            </a>
           </header>
           {recent.length === 0 ? (
             <p className="px-3 py-3 text-[12.5px] text-muted-foreground/70">

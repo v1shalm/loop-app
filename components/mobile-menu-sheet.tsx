@@ -11,7 +11,6 @@ import {
 import {
   Gear,
   MagnifyingGlass,
-  Question,
   PushPin,
   SignOut,
 } from "@/components/icons";
@@ -36,7 +35,6 @@ interface MobileMenuSheetProps {
   projects: Project[];
   counts: SidebarCounts;
   onOpenSearch: () => void;
-  onOpenHelp: () => void;
 }
 
 /**
@@ -56,7 +54,6 @@ export function MobileMenuSheet({
   projects,
   counts,
   onOpenSearch,
-  onOpenHelp,
 }: MobileMenuSheetProps) {
   const pinIds = new Set(user.pinned_project_ids ?? []);
   const pinned = (user.pinned_project_ids ?? [])
@@ -180,14 +177,6 @@ export function MobileMenuSheet({
                 </div>
               </div>
             </Link>
-            <RowButton
-              icon={Question}
-              label="Keyboard shortcuts"
-              onClick={() => {
-                close();
-                onOpenHelp();
-              }}
-            />
             <Link
               href="/team/manage"
               onClick={close}
@@ -274,23 +263,3 @@ function ProjectRow({
   );
 }
 
-function RowButton({
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  icon: React.ElementType;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-11 items-center gap-3 rounded-xl px-2.5 text-left text-[14px] text-foreground active:bg-accent/40"
-    >
-      <Icon size={18} className="text-muted-foreground" />
-      <span>{label}</span>
-    </button>
-  );
-}

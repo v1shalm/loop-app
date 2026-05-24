@@ -318,6 +318,28 @@
     @apply font-sans;
   }
 
+  /* ── No widows, anywhere ──────────────────────────────────────────
+     Global typographic rule: a paragraph should never end with a
+     single dangling word on its own line, and a heading should never
+     break with a lonely last word. `text-wrap: pretty` is the modern
+     CSS for body copy (re-balances the last 4 lines to absorb
+     orphans/widows); `text-wrap: balance` evens out short multi-line
+     headings. Both degrade gracefully on browsers that don't support
+     them. We deliberately leave inputs, code, tabular blocks, and
+     anything that opts in via `whitespace-nowrap` alone — the rule
+     only applies to flowing prose. */
+  p,
+  li,
+  dd,
+  blockquote,
+  figcaption,
+  [data-prose] {
+    text-wrap: pretty;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
+
   /* Tailwind v4 dropped the user-agent `cursor: pointer` on buttons and
      role="button"-style controls. Restore it for every interactive
      affordance so the cursor reads correctly across the whole app. */

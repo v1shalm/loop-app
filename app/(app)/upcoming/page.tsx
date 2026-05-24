@@ -3,7 +3,7 @@ import { CalendarDots } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { TaskTable } from "@/components/task-table";
 import { SortableTaskList } from "@/components/sortable-task-list";
-import { EmptyState, Kbd } from "@/components/empty-state";
+import { EmptyState } from "@/components/empty-state";
 import { InviteCTA } from "@/components/invite-cta";
 import { SectionCount } from "@/components/section-count";
 import { RightRail } from "@/components/right-rail";
@@ -89,10 +89,7 @@ export default async function UpcomingPage({ searchParams }: PageProps) {
                 tips={[
                   "Tasks due tomorrow through the next two weeks show up grouped here.",
                   "Drag a date on a task to move it between buckets.",
-                  <>
-                    Press <Kbd>C</Kbd> on this page to switch to the
-                    calendar view.
-                  </>,
+                  "Toggle to the calendar view above to plan a full week visually.",
                 ]}
               />
             ) : (

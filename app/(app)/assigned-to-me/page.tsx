@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { TaskTable } from "@/components/task-table";
 import { SortableTaskList } from "@/components/sortable-task-list";
 import { CompletedSection } from "@/components/completed-section";
-import { EmptyState, Kbd } from "@/components/empty-state";
+import { EmptyState } from "@/components/empty-state";
 import { InviteCTA } from "@/components/invite-cta";
 import { SectionCount } from "@/components/section-count";
 import { BulkSelectToggle } from "@/components/bulk-select-toggle";
@@ -117,10 +117,7 @@ export default async function AssignedToMePage() {
                 tips={[
                   "Self-assigned tasks land straight here, no inbox step.",
                   "Use # to drop a task into a project, @ to assign it to someone.",
-                  <>
-                    Press <Kbd>Cmd</Kbd>
-                    <Kbd>K</Kbd> to jump anywhere, <Kbd>Q</Kbd> to add a task.
-                  </>,
+                  "Use the search bar at the top to jump to anything.",
                 ]}
               />
             ) : (

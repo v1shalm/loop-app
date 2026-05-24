@@ -9,7 +9,6 @@ import {
   CalendarDots,
   CaretDown,
   Crosshair,
-  MagnifyingGlass,
   Plus,
   PushPin,
   SidebarSimple,
@@ -32,8 +31,6 @@ import type {
   Workspace,
 } from "@/lib/queries";
 import { ProfileMenu } from "@/components/profile-menu";
-import { Avatar } from "@/components/avatar";
-import { NotificationsPopover } from "@/components/notifications-popover";
 import { projectColor } from "@/components/project-dot";
 import { Folder } from "@/components/icons";
 import { AddProjectPopover } from "@/components/add-project-popover";
@@ -53,8 +50,6 @@ export interface SidebarProps {
   members: MemberPulse[];
   counts: SidebarCounts;
   onOpenQuickAdd?: () => void;
-  onOpenSearch?: () => void;
-  onOpenHelp?: () => void;
 }
 
 /**
@@ -84,8 +79,6 @@ export function Sidebar({
   projects,
   counts,
   onOpenQuickAdd,
-  onOpenSearch,
-  onOpenHelp,
 }: SidebarProps) {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
@@ -141,50 +134,24 @@ export function Sidebar({
           </Tooltip>
         </div>
       ) : (
-        <div className="px-3 pt-3">
-          <div className="flex items-center gap-1">
-            {team && (
-              <WorkspacePill
-                team={team}
-                workspaceName={workspaceName}
-                isAdmin={isAdmin}
-              />
-            )}
-            <div className="ml-auto flex items-center gap-0.5">
-              <NotificationsPopover
-                unreadCount={counts.inbox}
-                currentUserId={user.id}
-              />
-              <Tooltip>
-                <TooltipTrigger
-                  onClick={toggle}
-                  aria-label="Collapse sidebar"
-                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.92]"
-                >
-                  <SidebarSimple size={14} />
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Collapse sidebar</TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            className="focus-ring mt-2.5 flex w-full items-center gap-2 rounded-md border border-border/70 bg-card/60 px-2.5 py-1.5 text-left text-[12.5px] text-muted-foreground transition-[border-color,background-color,transform] duration-150 ease-[var(--ease-out)] hover:border-border hover:bg-card active:scale-[0.992]"
-            aria-label="Search (⌘K)"
-          >
-            <MagnifyingGlass size={13} className="text-muted-foreground/70" />
-            <span className="flex-1 truncate">Search or jump to…</span>
-            <span className="ml-auto inline-flex items-center gap-0.5">
-              <kbd className="rounded bg-accent/60 px-1 py-px text-[10px] font-medium leading-none text-muted-foreground">
-                ⌘
-              </kbd>
-              <kbd className="rounded bg-accent/60 px-1 py-px text-[10px] font-medium leading-none text-muted-foreground">
-                K
-              </kbd>
-            </span>
-          </button>
+        <div className="flex h-12 items-center gap-1 px-3">
+          {team && (
+            <WorkspacePill
+              team={team}
+              workspaceName={workspaceName}
+              isAdmin={isAdmin}
+            />
+          )}
+          <Tooltip>
+            <TooltipTrigger
+              onClick={toggle}
+              aria-label="Collapse sidebar"
+              className="focus-ring ml-auto grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.92]"
+            >
+              <SidebarSimple size={14} />
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Collapse sidebar</TooltipContent>
+          </Tooltip>
         </div>
       )}
 
@@ -287,22 +254,15 @@ export function Sidebar({
             >
               <Plus size={16} weight="bold" />
             </TooltipTrigger>
-            <TooltipContent side="right">
-              <span className="inline-flex items-center gap-1.5">
-                Add task <Kbd>Q</Kbd>
-              </span>
-            </TooltipContent>
+            <TooltipContent side="right">Add task</TooltipContent>
           </Tooltip>
         ) : (
           <button
             onClick={onOpenQuickAdd}
-            className="focus-ring surface-brand surface-brand-hover group/cta flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-[13.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
+            className="focus-ring surface-brand surface-brand-hover flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-[13.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
           >
             <Plus size={15} weight="bold" />
             Add task
-            <kbd className="ml-auto rounded bg-white/15 px-1.5 py-px text-[11px] font-semibold tracking-wide text-white/90 transition-colors duration-150 ease-[var(--ease-out)] group-hover/cta:bg-white/20">
-              Q
-            </kbd>
           </button>
         )}
       </div>
@@ -314,47 +274,16 @@ export function Sidebar({
           collapsed ? "flex flex-col items-center gap-2 px-2 py-2" : "px-3 py-3"
         )}
       >
-        {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Link
-                  href="/profile"
-                  aria-label={user.name}
-                  className="focus-ring grid size-9 place-items-center rounded-md transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 active:scale-[0.94]"
-                >
-                  <Avatar
-                    src={user.avatar_url}
-                    initials={user.initials}
-                    color={user.avatar_color}
-                    size={28}
-                  />
-                </Link>
-              }
-            />
-            <TooltipContent side="right">{user.name}</TooltipContent>
-          </Tooltip>
-        ) : (
-          <ProfileMenu
-            user={user}
-            onOpenHelp={onOpenHelp}
-            progressToday={{
-              done: counts.completedToday,
-              total: counts.completedToday + counts.today,
-            }}
-          />
-        )}
+        <ProfileMenu
+          user={user}
+          compact={collapsed}
+          progressToday={{
+            done: counts.completedToday,
+            total: counts.completedToday + counts.today,
+          }}
+        />
       </div>
     </aside>
-  );
-}
-
-/* ── Compact key cap (tooltip helper) ─────────────────────────── */
-function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="rounded bg-background/15 px-1 py-px text-[10px] font-semibold leading-none text-background/85">
-      {children}
-    </kbd>
   );
 }
 
