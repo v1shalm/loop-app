@@ -101,14 +101,23 @@ function InvitePanel({
 
   return (
     <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft-xs">
-      <h3 className="text-[14px] font-semibold tracking-tight text-foreground">
-        Invite a teammate
-      </h3>
-      <p className="mt-1 text-[12.5px] text-muted-foreground">
-        Generate a one-time invite link. Share it via Slack or email —
-        when they sign in with this address, they&apos;ll be added to your
-        team.
-      </p>
+      {/* Header: small brand tile + tight title/helper stack. The tile
+          replaces the bare `<h3>` that read as a generic dashboard
+          section — gives the panel a center of gravity and matches the
+          treatment used on the inline InviteTeammateDialog. */}
+      <div className="flex items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+          <PaperPlaneTilt size={15} />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+            Invite a teammate
+          </h3>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            Generate a one-time link, share it via Slack or email.
+          </p>
+        </div>
+      </div>
 
       <div className="mt-4 flex items-center gap-2 max-md:flex-wrap">
         <input
@@ -126,7 +135,7 @@ function InvitePanel({
           className="focus-ring h-9 min-w-0 flex-1 rounded-md border border-border bg-background px-3 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/40 disabled:opacity-60 max-md:basis-full"
         />
         <Popover>
-          <PopoverTrigger className="focus-ring inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40">
+          <PopoverTrigger className="focus-ring inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40">
             {role === "admin" ? "Admin" : "Member"}
             <CaretDown size={10} weight="bold" className="opacity-60" />
           </PopoverTrigger>
@@ -338,9 +347,20 @@ function RoleRow({
 function MemberList({ members }: { members: TeamMember[] }) {
   return (
     <section>
-      <h3 className="mb-3 text-[14px] font-semibold tracking-tight text-foreground">
-        Current members
-      </h3>
+      {/* Heading + count. Stacking cards looked busy — rows now share
+          a single bordered container with hairlines between, so the
+          whole roster reads as one structural object instead of a
+          gallery of identical cards. */}
+      <div className="mb-3 flex items-baseline gap-2">
+        <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+          Current members
+        </h3>
+        {members.length > 0 && (
+          <span className="text-[12px] tabular-nums text-muted-foreground">
+            {members.length}
+          </span>
+        )}
+      </div>
       {members.length === 0 ? (
         <div className="grid place-items-center rounded-2xl border border-dashed border-border/60 bg-card/40 px-4 py-10 text-center text-muted-foreground">
           <span className="grid size-10 place-items-center rounded-full bg-muted">
@@ -349,9 +369,12 @@ function MemberList({ members }: { members: TeamMember[] }) {
           <p className="mt-3 text-[13px]">Nobody here yet.</p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {members.map((m) => (
-            <li key={m.id}>
+        <ul className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-soft-xs">
+          {members.map((m, i) => (
+            <li
+              key={m.id}
+              className={cn(i > 0 && "border-t border-border/50")}
+            >
               <MemberRow member={m} />
             </li>
           ))}
@@ -391,7 +414,12 @@ function MemberRow({ member }: { member: TeamMember }) {
   };
 
   return (
-    <article className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs">
+    // No per-row card chrome — the row inherits the parent ul's
+    // shared border/shadow and is separated from its siblings by a
+    // hairline. Reads as a roster, not a deck of cards. group/row +
+    // hover-revealed trash so the destructive action stays out of
+    // the way until the user wants it.
+    <article className="group/row flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/20">
       <Avatar
         src={member.avatar_url}
         initials={member.initials}
@@ -412,10 +440,14 @@ function MemberRow({ member }: { member: TeamMember }) {
         <PopoverTrigger
           disabled={pending}
           className={cn(
-            "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[11.5px] font-medium transition-colors disabled:opacity-50",
+            "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11.5px] font-medium transition-colors disabled:opacity-50",
+            // Softer admin tone — old version was `bg-violet-50` which
+            // read as a high-contrast badge fighting for attention. The
+            // role pill is a label, not a CTA: tint the text + a faint
+            // bg, no border outline.
             optRole === "admin"
-              ? "border-violet-200/70 bg-violet-50 text-violet-700 dark:border-violet-400/30 dark:bg-violet-500/15 dark:text-violet-200"
-              : "border-border bg-card text-muted-foreground hover:text-foreground"
+              ? "bg-violet-500/10 text-violet-700 hover:bg-violet-500/15 dark:text-violet-300 dark:hover:bg-violet-500/20"
+              : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
           )}
         >
           {optRole === "admin" ? "Admin" : "Member"}
@@ -442,7 +474,10 @@ function MemberRow({ member }: { member: TeamMember }) {
         onClick={remove}
         disabled={pending}
         aria-label={`Remove ${member.name}`}
-        className="text-muted-foreground hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
+        // Hover-revealed on desktop so the destructive action stays
+        // quiet until the user hovers the row. Stays visible on touch
+        // (no hover) and when the row is keyboard-focused.
+        className="text-muted-foreground transition-[opacity,background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-rose-50 hover:text-rose-600 focus-visible:opacity-100 md:opacity-0 md:group-hover/row:opacity-100 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
       >
         {pending ? (
           <CircleNotch size={13} className="animate-spin" />
