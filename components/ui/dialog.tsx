@@ -53,7 +53,15 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-[calc(50%+var(--sidebar-w,0px)/2)] z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-hidden rounded-xl border border-border/60 bg-popover p-4 text-sm text-popover-foreground shadow-soft-md duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // Mobile: dead-center on the viewport (sidebar is hidden via
+          // display:contents on max-md, but the --sidebar-w CSS var
+          // is still set to 248/64px on the documentElement — without
+          // this override the dialog would shift right by 124px and
+          // overflow the right edge on phones).
+          // Desktop (md+): shift by half the visible sidebar width so
+          // the dialog centers on the *content* area instead of the
+          // full viewport.
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-hidden rounded-xl border border-border/60 bg-popover p-4 text-sm text-popover-foreground shadow-soft-md duration-100 outline-none sm:max-w-sm md:left-[calc(50%+var(--sidebar-w,0px)/2)] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
