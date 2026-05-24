@@ -229,6 +229,11 @@ function DrawerInner({
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
+  // Ref on the scroll container so we can snap it back to the top
+  // whenever the drawer switches to a different task. Without this,
+  // opening task B while the previous task was scrolled down leaves
+  // B mid-scroll — Details row clipped under the header on mobile.
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Fetch task + comments on mount / id change.
   useEffect(() => {
@@ -278,6 +283,15 @@ function DrawerInner({
     return () => {
       active = false;
     };
+  }, [taskId]);
+
+  // Reset the scroll container to the top whenever taskId changes so
+  // the next task always opens with its title visible. Otherwise the
+  // scroll position from the previous task is preserved and the new
+  // task appears mid-content (Details row clipped under the sticky
+  // header).
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
   }, [taskId]);
 
   // Escape to close
@@ -456,7 +470,7 @@ function DrawerInner({
     <div className="flex h-full flex-col">
       <Header onClose={onClose} pending={pending} />
 
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Title — checkbox removed; completion lives on the footer
             primary CTA instead. Two paths to the same state-flip
             (inline checkbox + footer button) read as redundant in a
