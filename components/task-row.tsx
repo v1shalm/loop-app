@@ -242,16 +242,24 @@ export function TaskRow({
   };
 
   const dateText = formatTaskDate(due, overdue);
-  // Today and overdue read with the same urgency cue (red, medium weight).
-  // Everything else stays in the muted tertiary tone — Linear's pattern.
+  // Three tiers of date urgency:
+  //   overdue (past due) → rose. You missed the deadline.
+  //   today (due today)  → amber. Deadline is today; it's the
+  //                        working day, not a failure.
+  //   later              → muted. Tertiary tone.
+  // Previously today + overdue both rendered rose, which made the
+  // Today section look like an overdue list — semantically wrong.
   const dateIsToday = !!(due && isToday(due));
-  const dateUrgent = overdue || dateIsToday;
-  const dateTone = dateUrgent
+  const dateTone = overdue
     ? "text-rose-500 font-medium"
-    : "text-muted-foreground";
-  const dateIconTone = dateUrgent
+    : dateIsToday
+      ? "text-amber-600 font-medium dark:text-amber-400"
+      : "text-muted-foreground";
+  const dateIconTone = overdue
     ? "text-rose-500"
-    : "text-muted-foreground/70";
+    : dateIsToday
+      ? "text-amber-600 dark:text-amber-400"
+      : "text-muted-foreground/70";
 
   return (
     <AnimatePresence initial={false}>
