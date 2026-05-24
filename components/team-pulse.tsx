@@ -84,7 +84,7 @@ function PulseRow({
           <span className="font-semibold text-background">
             {member.completed_today}
           </span>{" "}
-          done today
+          done
         </span>
       </div>
     </div>
@@ -127,12 +127,12 @@ function PulseRow({
   }
 
   // Subtext: prefer the user's chosen status label if set, otherwise show
-  // a short "N open" or "active now" so the row always has signal.
+  // the open task count so the row always has signal.
   const subtext =
     label ??
     (member.open_tasks > 0
-      ? `${member.open_tasks} open · active now`
-      : "Active now");
+      ? `${member.open_tasks} open`
+      : "Available");
 
   // Presence dot color — green if they have open work in flight, neutral
   // gray otherwise. We don't have a real presence channel; this maps to

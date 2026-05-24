@@ -50,7 +50,7 @@ export function CreateTeamForm() {
   return (
     <form
       onSubmit={submit}
-      className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft-sm"
+      className="rounded-2xl border border-border/60 bg-card p-7 shadow-soft-sm"
     >
       <label className="block">
         <span className="block text-[12.5px] font-medium text-foreground">
@@ -63,22 +63,22 @@ export function CreateTeamForm() {
           maxLength={60}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Design, Engineering, Marketing"
+          placeholder="Design, Engineering, Marketing…"
           aria-invalid={!!error}
           aria-describedby={error ? "create-team-error" : undefined}
           disabled={pending}
-          className="focus-ring mt-1.5 h-10 w-full rounded-md border border-border bg-background px-3 text-[14px] text-foreground outline-none transition-[border-color,background-color] duration-150 ease-[var(--ease-out)] placeholder:text-muted-foreground/60 hover:border-border focus:border-ring/50 disabled:opacity-60"
+          className="focus-ring mt-2 h-11 w-full rounded-md border border-border bg-background px-3 text-[14px] text-foreground outline-none transition-[border-color,background-color] duration-150 ease-[var(--ease-out)] placeholder:text-muted-foreground/60 hover:border-border focus:border-ring/50 disabled:opacity-60"
         />
       </label>
 
-      <fieldset className="mt-4">
+      <fieldset className="mt-6">
         <legend className="text-[12.5px] font-medium text-foreground">
-          Accent color
+          Color
         </legend>
         <div
-          className="mt-2 flex items-center gap-2"
+          className="mt-2.5 flex items-center gap-2"
           role="radiogroup"
-          aria-label="Accent color"
+          aria-label="Team color"
         >
           {COLOR_OPTIONS.map((c) => {
             const active = c.value === color;
@@ -118,61 +118,41 @@ export function CreateTeamForm() {
         </div>
       </fieldset>
 
-      <label
-        className={cn(
-          "group mt-5 flex cursor-pointer items-start gap-2.5 rounded-md border bg-background/40 p-3 transition-[background-color,border-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/30",
-          seedSamples
-            ? "border-primary/30 bg-primary/4"
-            : "border-border/60"
-        )}
-      >
+      <label className="group mt-6 flex cursor-pointer items-center gap-2.5 text-[13px] text-foreground">
         <input
           type="checkbox"
           checked={seedSamples}
           onChange={(e) => setSeedSamples(e.target.checked)}
           disabled={pending}
-          className="mt-0.5 size-3.5 cursor-pointer accent-primary"
+          className="size-4 cursor-pointer accent-primary"
         />
-        <div className="min-w-0 flex-1">
-          <p className="text-[12.5px] font-medium text-foreground">
-            Start with sample content
-          </p>
-          <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">
-            One starter project and five walkthrough tasks so nothing&apos;s
-            blank. Delete them when your real work is in.
-          </p>
-        </div>
+        Start with sample tasks
       </label>
 
       {error && (
         <p
           id="create-team-error"
           role="alert"
-          className="mt-4 rounded-md border border-rose-200/70 bg-rose-50 px-3 py-2 text-[12px] text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200"
+          className="mt-5 rounded-md border border-rose-200/70 bg-rose-50 px-3 py-2 text-[12px] text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200"
         >
           {error}
         </p>
       )}
 
-      <div className="mt-5 flex items-center justify-between gap-3">
-        <p className="text-[11.5px] text-muted-foreground/80">
-          You&apos;ll be the team&apos;s admin.
-        </p>
-        <button
-          type="submit"
-          disabled={pending || !name.trim()}
-          aria-disabled={pending || !name.trim()}
-          className={cn(
-            "focus-ring inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13.5px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)]",
-            pending || !name.trim()
-              ? "cursor-not-allowed bg-muted text-muted-foreground shadow-none"
-              : "surface-brand surface-brand-hover text-primary-foreground shadow-[var(--shadow-cta)] active:scale-[0.97]"
-          )}
-        >
-          {pending && <CircleNotch size={13} className="animate-spin" />}
-          {pending ? "Creating…" : "Create team"}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={pending || !name.trim()}
+        aria-disabled={pending || !name.trim()}
+        className={cn(
+          "focus-ring mt-8 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-md text-[14px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)]",
+          pending || !name.trim()
+            ? "cursor-not-allowed bg-muted text-muted-foreground shadow-none"
+            : "surface-brand surface-brand-hover text-primary-foreground shadow-[var(--shadow-cta)] active:scale-[0.97]"
+        )}
+      >
+        {pending && <CircleNotch size={14} className="animate-spin" />}
+        {pending ? "Creating…" : "Create team"}
+      </button>
     </form>
   );
 }

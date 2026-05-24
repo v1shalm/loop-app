@@ -92,7 +92,7 @@ export default async function AssignedToMePage() {
         subtitle={
           activeCount === 0
             ? "All clear"
-            : `${activeCount} active · ${completedToday.length} done today`
+            : `${activeCount} ${activeCount === 1 ? "task" : "tasks"}`
         }
         right={<BulkSelectToggle />}
       />

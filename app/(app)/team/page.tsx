@@ -126,7 +126,7 @@ function MemberCard({
           <span className="text-[15px] font-semibold tabular-nums text-foreground">
             {member.completed_today}
           </span>{" "}
-          <span className="text-muted-foreground">done today</span>
+          <span className="text-muted-foreground">done</span>
         </span>
       </div>
     </Link>

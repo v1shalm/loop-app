@@ -310,6 +310,29 @@
     @apply font-sans;
   }
 
+  /* Tailwind v4 dropped the user-agent `cursor: pointer` on buttons and
+     role="button"-style controls. Restore it for every interactive
+     affordance so the cursor reads correctly across the whole app. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="switch"]:not([aria-disabled="true"]),
+  [role="radio"]:not([aria-disabled="true"]),
+  [role="checkbox"]:not([aria-disabled="true"]),
+  a[href],
+  summary,
+  label[for],
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+
   ::selection {
     background: var(--rb-selection-bg);
     color: var(--primary-foreground);
@@ -525,17 +548,12 @@
 /* Override the SVG pill surface to match the page theme. CSS `fill`
    beats SVG inline `fill=` presentation attributes. We target the
    two rects sileo uses for the pill + expanded body, not every
-   shape — state-coloured icons inside the badge need their own fill. */
+   shape — state-coloured icons inside the badge need their own fill.
+   No stroke — depth comes from the drop-shadow filter below. */
 [data-sileo-svg] [data-sileo-pill],
 [data-sileo-svg] [data-sileo-body] {
   fill: var(--popover) !important;
-  stroke: var(--border) !important;
-  stroke-width: 1 !important;
-  vector-effect: non-scaling-stroke;
-}
-.dark [data-sileo-svg] [data-sileo-pill],
-.dark [data-sileo-svg] [data-sileo-body] {
-  stroke: oklch(1 0 0 / 0.08) !important;
+  stroke: none !important;
 }
 
 [data-sileo-toast] {
