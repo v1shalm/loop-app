@@ -46,13 +46,10 @@ function Hero() {
       <h1 className="mt-3 text-[44px] font-semibold leading-[1.05] tracking-[-0.02em] text-foreground sm:text-[56px]">
         Loop
       </h1>
-      <p className="mt-4 max-w-[680px] text-[16px] leading-relaxed text-muted-foreground sm:text-[17px]">
-        I built Loop in two days for the Tist round-two assignment.
-        The thinking — product framing, UX calls, visual system,
-        copy — is mine. Claude Code did most of the typing under my
-        direction. This page covers the decisions I made, the
-        moments I had to pull AI back from a slop pattern, and what
-        I&apos;d ship next.
+      <p className="mt-4 max-w-[640px] text-[16px] leading-relaxed text-muted-foreground sm:text-[17px]">
+        Two days, built end-to-end. I made the product calls.
+        Claude Code wrote most of the code under my direction. This
+        page is how I thought about each decision.
       </p>
 
       <div className="mt-7 flex flex-wrap items-center gap-2.5">
@@ -252,37 +249,37 @@ const SCREENS: Array<{ name: string; alt: string; caption: string }> = [
     name: "login",
     alt: "Login screen with Google OAuth and email/password",
     caption:
-      "Login. Google OAuth and email/password against Supabase Auth. Demo credentials are in the table further down so reviewers don't have to hunt.",
+      "Sign-in stays small and out of the way. Demo accounts live in the table below so reviewers don't have to hunt for them.",
   },
   {
     name: "my-work",
     alt: "My work page with greeting, today's tasks, and right rail",
     caption:
-      "My work. Greeting, today's list grouped by urgency, and a right rail that consolidates progress, team pulse, and activity into one card.",
+      "The first screen after sign-in. I group tasks by urgency — Overdue at the top, Today, then Upcoming — instead of dropping everything into one list.",
   },
   {
     name: "inbox",
     alt: "Inbox with filter chips and triage actions",
     caption:
-      "Inbox. Filter chips with live counts, reply-first composer, snooze with explicit wake times.",
+      "Inbox is for triage, not for working. I made Reply the default because the first thing you usually want to say is \"why me?\". Snooze always shows when the task will come back — no Later black hole.",
   },
   {
     name: "projects-board",
     alt: "Kanban-style project board with gray columns and white task cards",
     caption:
-      "Projects. Kanban board, one column per project, white task cards stacked inside.",
+      "Projects sit side by side as columns. Easier to scan across when you're planning a week than a flat list of project pages.",
   },
   {
     name: "task-drawer",
     alt: "Floating task drawer with title, chips, description, metadata, threaded comments",
     caption:
-      "Task drawer. Floats inset from the edges, opens via ?task= so the URL is shareable, supports threaded comments collapsed by default.",
+      "Opening a task slides this drawer in instead of taking you to a new page, so you don't lose the list you came from. Comment threads stay collapsed by default.",
   },
   {
     name: "manage-team",
     alt: "Admin-only manage team page with invite form and member list",
     caption:
-      "Manage team (admin only). Invite by link, change roles, remove members. RLS gates the writes — the form is the second line of defense, not the first.",
+      "Admin-only. Members can't reach this page at all, so they never see options they can't use.",
   },
 ];
 
@@ -524,102 +521,87 @@ function UXDecisions() {
           </p>
         </Decision>
 
-        <Decision title="I rendered parsed tokens as live chips above the input.">
+        <Decision title="I made the parser visible — chips light up as you type.">
           <p>
-            Loop already had a natural-language parser
-            (<code>#project @name p1 tomorrow</code>). The first version
-            just stripped the tokens silently and hoped you trusted it.
-            I added a chip strip above the input that lights up live as
-            the parser resolves each token — project chip, person chip,
-            date chip, priority chip — plus a &quot;Saved as: …&quot;
-            preview of the cleaned title.
+            Loop reads tokens like <code>#project @name p1 tomorrow</code>{" "}
+            inline. First version just stripped them silently and
+            hoped you trusted it. Now chips appear above the input
+            as each one is recognised, plus a small &quot;Saved as: …&quot;
+            preview of the final title.
           </p>
           <p>
-            I borrowed the visual grammar from Todoist&apos;s syntax
-            preview. The chips double as a tutorial: typing{" "}
-            <code>#plat</code> makes a project chip appear, teaching
-            the syntax by demonstrating it instead of asking users to
-            read help docs.
+            The chips double as a tutorial — typing{" "}
+            <code>#plat</code> makes a project chip appear, which
+            teaches the syntax better than a help doc ever could.
+            Borrowed from Todoist.
           </p>
         </Decision>
 
-        <Decision title="I threaded comments one level deep — no nested arguments.">
+        <Decision title="Comments thread one level deep — no nested arguments.">
           <p>
-            Long task discussions in flat comment lists become walls of
-            text. Slack&apos;s thread model is the right answer: each
-            top-level comment can hold a reply chain, collapsed by
-            default with a &quot;N replies&quot; pill that peeks the
-            most recent replier&apos;s avatar.
+            Long task discussions in a flat list become a wall of
+            text. I borrowed Slack&apos;s model: each top-level
+            comment can hold a reply chain, collapsed by default with
+            a &quot;N replies&quot; pill that peeks the latest
+            replier&apos;s avatar.
           </p>
           <p>
-            I deliberately stopped at one level. A DB trigger blocks
-            replies-to-replies because nobody wants a 5-level nested
-            argument in their task tracker. Different from Reddit on
-            purpose.
+            One level deep on purpose — nobody wants a 5-level
+            nested argument in their task tracker.
           </p>
         </Decision>
 
-        <Decision title="I moved search and notifications to a top bar.">
+        <Decision title="I moved search and notifications to the top bar.">
           <p>
-            I had search and the notifications bell in the sidebar
-            header. When the sidebar collapsed, both disappeared. I
-            moved them to a sticky top bar where they&apos;re always
-            visible, and freed the sidebar to be navigation only. The
-            existing PageHeader on every route grew the two new
-            controls; pages don&apos;t have to opt in.
+            They lived in the sidebar header at first. When the
+            sidebar collapsed, both disappeared. I moved them to a
+            sticky top bar so they&apos;re always visible, and the
+            sidebar went back to being just navigation. Two jobs,
+            two places.
           </p>
         </Decision>
 
         <Decision title="I removed every keyboard shortcut.">
           <p>
-            I had ⌘K for search, Q for quick-add, ? for shortcuts help.
-            Then I thought about who uses Loop: internal team members
-            who don&apos;t spend hours memorising shortcuts the way a
-            Linear power user does. Shortcuts crowd the UI with
-            keyboard chips and add an invisible dimension of how-to.
-          </p>
-          <p>
-            I stripped every keydown handler and every chip. The
-            keyboard-shortcuts dialog is gone. The search box in the
-            top bar and the &quot;+ Add task&quot; button replace what
-            those shortcuts did, more discoverably.
+            I had ⌘K, Q, and ? wired up early on. Then I thought
+            about who actually uses Loop: internal team members,
+            not Linear power users. Shortcuts crowd the UI with key
+            chips and add a hidden layer of how-to. So I cut all of
+            them. The visible search box and the Add task button do
+            the same jobs, more discoverably.
           </p>
         </Decision>
 
-        <Decision title="I gave filter-aware empty states their own variant.">
+        <Decision title="I gave filtered empty states their own message.">
           <p>
-            Filtering an inbox by <code>@Priya</code> and seeing &quot;All
-            caught up&quot; is a lie — the inbox isn&apos;t empty, the
-            filter is. I added a <code>filterActive</code> branch to
-            the EmptyState component. When the parent knows the list is
-            filter-empty, the copy becomes &quot;No tasks match this
-            filter&quot; with a one-click Clear filters affordance.
+            If I filter inbox by <code>@Priya</code> and see &quot;All
+            caught up,&quot; that&apos;s a lie — the inbox isn&apos;t
+            empty, the filter is. I made the empty state aware of
+            filters: when one is active, the message becomes &quot;No
+            tasks match this filter&quot; with a one-click Clear button.
+            Tiny detail, big difference in trust.
           </p>
         </Decision>
 
-        <Decision title="I surfaced collaborators on task rows with a tiny +N pip.">
+        <Decision title="I surfaced collaborators with a tiny +N pip.">
           <p>
-            Loop has multi-assignee (first assignee is the owner, the
-            rest are collaborators). The drawer popover lets you manage
-            the list, but the row was only showing the primary avatar
-            — so users couldn&apos;t tell which tasks had multiple
-            owners at a glance. I added a small{" "}
-            <code>+N</code> pip in the bottom-right of the primary
-            avatar. No extra row width, no popover change. The drawer
-            popover header reads &quot;Owner + collaborators&quot; now
-            so the model is explicit.
+            A task can have one owner and multiple collaborators.
+            But the row was only showing the owner&apos;s avatar — so
+            you couldn&apos;t tell which tasks had more people on
+            them at a glance. I added a small <code>+N</code> pip in
+            the corner of the primary avatar. No extra space taken,
+            the information is just there when you need it.
           </p>
         </Decision>
 
-        <Decision title="I added a global no-widows CSS rule.">
+        <Decision title="No widows, anywhere — set as a global rule.">
           <p>
-            One screenshot showed the empty-state hint ending with a
-            single word on its own line — a typographic widow.
-            Instead of fixing one paragraph, I added{" "}
-            <code>text-wrap: pretty</code> to <code>p, li</code>{" "}
-            and <code>text-wrap: balance</code> to{" "}
-            <code>h1–h6</code> in <code>globals.css</code>. Every prose
-            block in the app now self-corrects.
+            One screenshot showed an empty-state hint ending with
+            &quot;now.&quot; on its own line. Instead of fixing that
+            paragraph, I made it a global rule: every paragraph and
+            heading in the app now auto-corrects to avoid orphan
+            words on the last line. Small detail you only notice
+            when it&apos;s broken.
           </p>
         </Decision>
       </div>
@@ -757,18 +739,10 @@ function AILoop() {
     <Section title="AI in the loop" id="ai">
       <Prose>
         <p>
-          I used Claude Code as a build partner, not a designer. The
-          division of labour was clear: I made every product call —
-          information architecture, visual system, copy, motion
-          choices, what to ship vs cut. Claude turned those decisions
-          into TypeScript and SQL.
-        </p>
-        <p>
-          That split is why this section has two cards and not five.
-          The wins are about implementation speed once I&apos;d done
-          the thinking. The overrides are the few moments Claude
-          reached for a generic pattern on top of my spec and I had
-          to pull it back. The brief asked for one of each.
+          I used Claude Code as a build partner, not a designer. I
+          made the product calls; Claude turned them into code. Here
+          is one moment where that worked well, and one where I had
+          to pull it back.
         </p>
       </Prose>
 
@@ -776,60 +750,40 @@ function AILoop() {
         <SplitCard
           tone="win"
           tag="Where Claude helped"
-          title="I described the kanban; Claude shipped it in ten minutes"
+          title="The kanban board, ten minutes instead of an hour"
         >
           <p>
             I&apos;d already decided the structure: one column per
-            project, white nested task cards inside gray columns,
-            status icon and tag chip in the footer. The first pass
-            came back with the wrong abstraction — flat project cards
-            instead of nested ones. I sent one screenshot back with
-            the correction. The next pass was correct.
+            project, task cards stacked inside. The first pass came
+            back with flat project cards instead of nested ones. I
+            sent a quick screenshot back, the next pass was right.
           </p>
           <p>
-            An hour of layout fiddling became ten minutes of typing
-            because I knew exactly what I wanted before I asked.
-            Claude was fast precisely because the design call had
-            already been made.
+            Fast because the design call was already made. Claude is
+            a multiplier on decisions you&apos;ve made, not a
+            substitute for making them.
           </p>
         </SplitCard>
 
         <SplitCard
           tone="override"
           tag="Where I overrode Claude"
-          title="I cut the colored-stripe AI-slop reflex"
+          title="The colored-stripe reflex"
         >
           <p>
-            I asked for an &quot;urgent&quot; visual treatment on
-            overdue tasks. Claude reached for the side-stripe — a 3px
-            colored bar on the left edge of every card. That&apos;s
-            the most overused AI design tell, and one of my rules
-            bans it explicitly.
+            I asked for an &quot;urgent&quot; treatment on overdue
+            tasks. Claude reached for the classic AI move: a 3px
+            colored bar on the left edge of every card. Generic, and
+            it doesn&apos;t scale once you have priority colors too.
           </p>
           <p>
-            I called it out:{" "}
-            <span className="font-medium text-foreground">
-              no colored hairlines, no AI slop
-            </span>
-            . The fix I directed signals urgency through the date
-            text turning rose and the priority flag color. Same
-            information, none of the decoration. This kind of
-            override happened maybe a dozen times across the two
-            days; the colored stripe is the most representative.
+            I cut it. Urgency comes through the date text turning
+            rose and the priority flag color — same signal, no
+            decoration. This kind of pullback happened a few times
+            across the two days.
           </p>
         </SplitCard>
       </div>
-
-      <Prose>
-        <p className="mt-6 text-[13.5px]">
-          The takeaway, to me, is that AI is a velocity multiplier on
-          decisions I&apos;ve already made — and a slop machine on
-          decisions I leave open. Every UX call in this product is
-          mine. Claude built them faster than I could have alone, and
-          I caught the moments it tried to round off my edges into a
-          generic template.
-        </p>
-      </Prose>
     </Section>
   );
 }
