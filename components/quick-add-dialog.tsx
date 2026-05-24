@@ -252,7 +252,7 @@ export function QuickAddDialog({
             <Popover>
               <PopoverTrigger
                 className={cn(
-                  "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground",
+                  "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground max-md:h-10 max-md:px-3.5 max-md:text-[14px]",
                   due &&
                     !isSameDay(due, today()) &&
                     !isSameDay(due, tomorrow()) &&
@@ -294,7 +294,7 @@ export function QuickAddDialog({
                   key={o.p}
                   onClick={() => setPriority(o.p)}
                   className={cn(
-                    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12.5px] transition-colors",
+                    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12.5px] transition-colors max-md:h-10 max-md:px-3.5 max-md:text-[14px]",
                     active
                       ? o.activeClass
                       : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
@@ -327,7 +327,7 @@ export function QuickAddDialog({
                     title={m.name}
                     aria-label={`Assign to ${m.name}`}
                     className={cn(
-                      "focus-ring relative grid size-7 place-items-center rounded-full ring-2 transition-transform",
+                      "focus-ring relative grid size-7 place-items-center rounded-full ring-2 transition-transform max-md:size-10",
                       isSelected
                         ? "z-10 scale-110 ring-primary"
                         : "ring-card hover:scale-105"
@@ -345,7 +345,7 @@ export function QuickAddDialog({
               <Popover>
                 <PopoverTrigger
                   aria-label={overflowCount > 0 ? `${overflowCount} more` : "More members"}
-                  className="focus-ring grid size-7 place-items-center rounded-full border border-dashed border-border bg-card text-[10.5px] font-semibold text-muted-foreground ring-2 ring-card transition-colors hover:bg-accent/40 hover:text-foreground"
+                  className="focus-ring grid size-7 place-items-center rounded-full border border-dashed border-border bg-card text-[10.5px] font-semibold text-muted-foreground ring-2 ring-card transition-colors hover:bg-accent/40 hover:text-foreground max-md:size-10 max-md:text-[12px]"
                 >
                   {overflowCount > 0 ? `+${overflowCount}` : "+"}
                 </PopoverTrigger>
@@ -452,7 +452,7 @@ function QuickDateChip({
     <button
       onClick={onClick}
       className={cn(
-        "focus-ring inline-flex h-7 items-center rounded-md border px-2.5 text-[12.5px] transition-colors",
+        "focus-ring inline-flex h-7 items-center rounded-md border px-2.5 text-[12.5px] transition-colors max-md:h-10 max-md:px-3.5 max-md:text-[14px]",
         active
           ? "border-primary/60 bg-primary/8 text-primary"
           : "border-border bg-card text-muted-foreground hover:bg-accent/40 hover:text-foreground"

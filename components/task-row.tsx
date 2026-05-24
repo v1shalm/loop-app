@@ -361,7 +361,7 @@ export function TaskRow({
               <Popover>
                 <PopoverTrigger
                   aria-label="Assignee"
-                  className="focus-ring grid size-7 place-items-center rounded-full transition-colors hover:bg-accent/40"
+                  className="focus-ring touch-expand grid size-7 place-items-center rounded-full transition-colors hover:bg-accent/40 max-md:size-9"
                 >
                   {optAssignee ? (
                     <Avatar
@@ -409,18 +409,19 @@ export function TaskRow({
                 <button
                   onClick={openDrawer}
                   aria-label={`${commentCount} ${commentCount === 1 ? "comment" : "comments"}`}
-                  className="focus-ring inline-flex items-center gap-0.5 rounded-md px-1.5 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                  className="focus-ring touch-expand inline-flex items-center gap-0.5 rounded-md px-1.5 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground max-md:min-h-9 max-md:px-2"
                 >
                   <ChatCircle size={13} />
                   <span className="tabular-nums">{commentCount}</span>
                 </button>
               )}
 
-              {/* More menu — hides until the row is hovered or focused. */}
+              {/* More menu — hides until the row is hovered or focused on
+                  desktop. Mobile has no hover, so it stays visible there. */}
               <Popover>
                 <PopoverTrigger
                   aria-label="More actions"
-                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground opacity-0 transition-[opacity,background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100 data-[popup-open]:opacity-100"
+                  className="focus-ring touch-expand grid size-7 place-items-center rounded-md text-muted-foreground transition-[opacity,background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground focus-visible:opacity-100 data-[popup-open]:opacity-100 md:opacity-0 md:group-hover:opacity-100 max-md:size-9"
                 >
                   <DotsThree size={16} weight="bold" />
                 </PopoverTrigger>

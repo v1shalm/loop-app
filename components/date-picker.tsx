@@ -65,7 +65,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
   ];
 
   return (
-    <div className={cn("w-[284px] p-2.5", className)}>
+    <div className={cn("w-[284px] p-2.5 max-md:w-[336px] max-md:p-3", className)}>
       {/* Quick chips */}
       <div className="mb-2 flex flex-wrap items-center gap-1">
         {chips.map((c) => {
@@ -149,7 +149,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
               onClick={() => select(d)}
               aria-pressed={isSel ? true : undefined}
               className={cn(
-                "focus-ring relative grid h-8 place-items-center rounded-md text-[12.5px] tabular-nums transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.94]",
+                "focus-ring relative grid h-8 place-items-center rounded-md text-[12.5px] tabular-nums transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.94] max-md:h-11 max-md:text-[14px]",
                 !inMonth && "text-muted-foreground/35",
                 inMonth && !isSel && "text-foreground hover:bg-accent/50",
                 isSel &&

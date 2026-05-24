@@ -442,7 +442,9 @@
 
   /* Expand a button's hit area without enlarging its visible footprint.
      Use on small icon buttons (≤24px visual) where bigger min-width would
-     break visual rhythm. The pseudo extends ~10px past each edge. */
+     break visual rhythm. The pseudo extends ~10px past each edge on
+     desktop. On mobile (max-md) the inset bumps to -13px so a 18px
+     visual control reaches the 44pt iOS touch-target minimum. */
   .touch-expand {
     position: relative;
   }
@@ -450,6 +452,11 @@
     content: "";
     position: absolute;
     inset: -10px;
+  }
+  @media (max-width: 767px) {
+    .touch-expand::before {
+      inset: -13px;
+    }
   }
 
   /* Tactile chip — top inset highlight + bottom inner shadow + tiny drop.
