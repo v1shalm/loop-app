@@ -507,23 +507,45 @@
 /* =========================================================
    Sileo toast overrides
    ---------------------------------------------------------
-   sileo's default stylesheet has light text on light theme
-   and dark text on dark theme for the description line —
-   which makes the secondary copy unreadable. Pin every
-   text + surface to our theme tokens so contrast is right
-   regardless of which `--sileo-state-*` colour is active.
+   Two bugs to fix in sileo's defaults:
+
+   1. The pill surface is painted by an SVG canvas with an
+      INVERTED fill (light theme → dark surface, dark theme →
+      light surface, à la Apple's Dynamic Island). The title
+      element inherits `currentColor` from --foreground, which
+      lands dark-on-dark in light mode → invisible. We force
+      the SVG fill to match the page theme (popover surface)
+      so standard text tokens read correctly.
+
+   2. The description colour is hard-coded to 50%-alpha pure
+      black/white per theme, which fights our token system
+      and looks washed out. Pin it to --muted-foreground.
    ========================================================= */
 
+/* Override the SVG pill surface to match the page theme. CSS `fill`
+   beats SVG inline `fill=` presentation attributes. We target the
+   two rects sileo uses for the pill + expanded body, not every
+   shape — state-coloured icons inside the badge need their own fill. */
+[data-sileo-svg] [data-sileo-pill],
+[data-sileo-svg] [data-sileo-body] {
+  fill: var(--popover) !important;
+  stroke: var(--border) !important;
+  stroke-width: 1 !important;
+  vector-effect: non-scaling-stroke;
+}
+.dark [data-sileo-svg] [data-sileo-pill],
+.dark [data-sileo-svg] [data-sileo-body] {
+  stroke: oklch(1 0 0 / 0.08) !important;
+}
+
 [data-sileo-toast] {
-  background: var(--popover) !important;
-  border: 1px solid var(--border) !important;
   color: var(--foreground) !important;
-  border-radius: 0.625rem;
+  filter: drop-shadow(0 6px 18px oklch(0 0 0 / 0.18))
+          drop-shadow(0 1px 2px oklch(0 0 0 / 0.08));
 }
 .dark [data-sileo-toast] {
-  box-shadow:
-    0 12px 28px oklch(0 0 0 / 0.45),
-    0 0 0 1px oklch(1 0 0 / 0.04);
+  filter: drop-shadow(0 10px 26px oklch(0 0 0 / 0.55))
+          drop-shadow(0 1px 2px oklch(0 0 0 / 0.35));
 }
 
 [data-sileo-toast] [data-sileo-title] {
@@ -531,9 +553,9 @@
   font-weight: 600;
 }
 
-/* Description: the line sileo defaults to a 50%-alpha colour. Force it
-   to our muted-foreground token so it stays legible at the right
-   contrast in both themes. */
+/* Description: sileo's defaults invert per theme to follow the
+   inverted pill surface. We've un-inverted the surface, so we
+   un-invert the text too. */
 [data-sileo-viewport][data-theme="dark"] [data-sileo-description],
 [data-sileo-viewport][data-theme="light"] [data-sileo-description],
 [data-sileo-toast] [data-sileo-description] {
@@ -541,21 +563,28 @@
   opacity: 1 !important;
 }
 
-/* Action button on info/action toasts — match the brand pill style
-   used everywhere else instead of inheriting the state colour. */
+/* Action button — compact brand pill. Width is content-sized
+   (inline-flex) instead of stretching to fill its row. */
 [data-sileo-toast] [data-sileo-button] {
+  display: inline-flex !important;
+  width: auto !important;
   background: var(--primary) !important;
   color: var(--primary-foreground) !important;
-  border-radius: 0.375rem;
-  padding: 0.25rem 0.625rem;
-  font-weight: 600;
-  font-size: 12px;
-  transition: filter 150ms ease;
+  border-radius: 9999px !important;
+  padding: 0.25rem 0.75rem !important;
+  height: 1.625rem !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-cta) !important;
+  transition: filter 150ms ease, transform 150ms ease;
 }
 [data-sileo-toast] [data-sileo-button]:hover {
   filter: brightness(1.05);
 }
+[data-sileo-toast] [data-sileo-button]:active {
+  transform: translateY(0.5px);
+}
 
-/* State badges still want to track the state colour (success = green,
-   error = red, etc.) — only the description got inverted in sileo's
-   defaults, so the badge is left alone. */
+/* State badges still track the state colour (success = green,
+   error = red) — colour signal stays, just the surface is fixed. */
