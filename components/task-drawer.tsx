@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { format, isPast, isToday } from "date-fns";
 import { DatePicker, formatDueShort } from "@/components/date-picker";
 import { sileo } from "sileo";
@@ -98,6 +98,10 @@ export function TaskDrawer({
   const pathname = usePathname();
   const taskId = params.get("task");
   const [mounted, setMounted] = useState(false);
+  // Mobile sheet drag is owned by the panel but only activates from
+  // the handle. Without this split, motion's drag listener captures
+  // every touch in the panel and breaks inner scrolling on phones.
+  const dragControls = useDragControls();
 
   useEffect(() => setMounted(true), []);
 
@@ -124,11 +128,11 @@ export function TaskDrawer({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
           />
-          {/* Floating panel — inset from edges, full slide from right with
-              the Vaul/Ionic deceleration curve. Same curve Shopify Shop
-              uses for its bottom sheet. */}
+          {/* Desktop: floating side panel inset from the edges, slides in
+              from the right with the Vaul/Ionic deceleration curve.
+              Hidden on mobile (md and below). */}
           <motion.div
-            key="panel"
+            key="panel-desktop"
             initial={{ x: "calc(100% + 24px)" }}
             animate={{ x: 0 }}
             exit={{ x: "calc(100% + 24px)" }}
@@ -136,11 +140,57 @@ export function TaskDrawer({
               duration: 0.42,
               ease: [0.32, 0.72, 0, 1],
             }}
-            className="pointer-events-none absolute inset-y-3 right-3 flex w-full max-w-[480px] flex-col"
+            className="pointer-events-none absolute inset-y-3 right-3 hidden w-full max-w-[480px] flex-col md:flex"
           >
-            <div
-              className="pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-popover shadow-[0_24px_64px_-12px_rgba(15,23,42,0.32),0_8px_16px_-8px_rgba(15,23,42,0.18)]"
-            >
+            <div className="pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-popover shadow-[0_24px_64px_-12px_rgba(15,23,42,0.32),0_8px_16px_-8px_rgba(15,23,42,0.18)]">
+              <DrawerInner
+                taskId={taskId}
+                projects={projects}
+                members={members}
+                currentUserId={currentUserId}
+                onClose={close}
+              />
+            </div>
+          </motion.div>
+
+          {/* Mobile: bottom sheet, slides up from the bottom edge with
+              drag-to-dismiss. Top inset leaves enough room to see the
+              page behind so users know they can tap above to close.
+              md:hidden so desktop stays untouched. */}
+          <motion.div
+            key="panel-mobile"
+            drag="y"
+            dragListener={false}
+            dragControls={dragControls}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.5 }}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 120 || info.velocity.y > 600) close();
+            }}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{
+              type: "spring",
+              damping: 32,
+              stiffness: 320,
+              mass: 0.8,
+            }}
+            className="absolute inset-x-0 bottom-0 top-14 flex flex-col md:hidden"
+          >
+            <div className="flex h-full flex-col overflow-hidden rounded-t-2xl border-t border-border/60 bg-popover shadow-[0_-12px_40px_-12px_rgba(15,23,42,0.32)]">
+              {/* Drag handle — the ONLY surface that starts the drag.
+                  Touch-action: none here prevents the browser's vertical
+                  scroll from intercepting; the rest of the sheet keeps
+                  default touch-action so the inner content scrolls. */}
+              <div
+                onPointerDown={(e) => dragControls.start(e)}
+                aria-hidden
+                className="flex shrink-0 cursor-grab items-center justify-center py-2.5 active:cursor-grabbing"
+                style={{ touchAction: "none" }}
+              >
+                <span className="block h-1 w-9 rounded-full bg-muted-foreground/30" />
+              </div>
               <DrawerInner
                 taskId={taskId}
                 projects={projects}
@@ -648,7 +698,7 @@ function DrawerFooter({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between border-t border-border/60 bg-popover px-5 py-3">
+    <div className="flex items-center justify-between border-t border-border/60 bg-popover px-5 py-3 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <Button
         variant="ghost"
         size="sm"
