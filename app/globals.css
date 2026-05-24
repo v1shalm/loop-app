@@ -581,15 +581,23 @@
   opacity: 1 !important;
 }
 
-/* Action button — compact brand pill. Width is content-sized
-   (inline-flex) instead of stretching to fill its row. */
+/* Action button — compact brand pill that lives on its OWN line below
+   the description text.
+   - `display: flex` (sileo's default) keeps it block-level outer so it
+     line-breaks below the description text instead of sitting inline.
+   - `width: fit-content` constrains horizontal size to its content so it
+     doesn't stretch into a full-width banner.
+   - `margin-top` is preserved from sileo's default (0.75rem) to give it
+     breathing room from the description above.
+   DO NOT use `display: inline-flex` here — that puts the button on the
+   same line as the description text, causing visible overlap. */
 [data-sileo-toast] [data-sileo-button] {
-  display: inline-flex !important;
-  width: auto !important;
+  display: flex !important;
+  width: fit-content !important;
   background: var(--primary) !important;
   color: var(--primary-foreground) !important;
   border-radius: 9999px !important;
-  padding: 0.25rem 0.75rem !important;
+  padding: 0 0.875rem !important;
   height: 1.625rem !important;
   font-weight: 600 !important;
   font-size: 0.75rem !important;
