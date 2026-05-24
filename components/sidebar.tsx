@@ -16,6 +16,7 @@ import {
   Tray,
 } from "@/components/icons";
 import { togglePinnedProject } from "@/lib/actions";
+import { playSound } from "@/lib/sounds";
 import {
   Tooltip,
   TooltipContent,
@@ -603,6 +604,7 @@ function PinToggle({
     e.stopPropagation();
     if (pending) return;
     setOptimistic(!optimistic);
+    playSound("pin");
     startTransition(async () => {
       const res = await togglePinnedProject(projectId);
       if (res.error) {

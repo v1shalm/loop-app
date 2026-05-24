@@ -6,6 +6,7 @@ import { TaskTable } from "@/components/task-table";
 import { SortableTaskList } from "@/components/sortable-task-list";
 import { CompletedSection } from "@/components/completed-section";
 import { EmptyState, Kbd } from "@/components/empty-state";
+import { InviteCTA } from "@/components/invite-cta";
 import { BulkSelectToggle } from "@/components/bulk-select-toggle";
 import { RightRail } from "@/components/right-rail";
 import {
@@ -111,10 +112,7 @@ export default async function AssignedToMePage() {
                 title="Nothing's on you right now"
                 hint="Add one for yourself, or hand work off to a teammate."
                 actionLabel="Assign your first task"
-                secondary={{
-                  label: "Invite a teammate",
-                  href: "/team/manage",
-                }}
+                secondarySlot={<InviteCTA />}
                 tips={[
                   "Self-assigned tasks land straight here, no inbox step.",
                   "Use # to drop a task into a project, @ to assign it to someone.",

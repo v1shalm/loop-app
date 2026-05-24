@@ -195,6 +195,7 @@ export function InboxList({
             if (res.view) setViews((v) => [...v, res.view!]);
           }}
           onDelete={async (id) => {
+            playSound("deleted");
             const res = await deleteSavedView(id);
             if (res.error) {
               sileo.error({ title: res.error });

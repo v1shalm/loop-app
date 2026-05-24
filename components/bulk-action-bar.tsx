@@ -25,6 +25,7 @@ import {
   bulkSetTaskStatus,
 } from "@/lib/actions";
 import type { Profile } from "@/lib/queries";
+import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 
 /**
@@ -53,7 +54,10 @@ export function BulkActionBar({ members }: { members: Profile[] }) {
 
   const onComplete = () =>
     run(() => bulkSetTaskStatus([...ids], "done"));
-  const onDelete = () => run(() => bulkDeleteTasks([...ids]));
+  const onDelete = () => {
+    playSound("deleted");
+    return run(() => bulkDeleteTasks([...ids]));
+  };
   const onAssign = (userId: string) =>
     run(() => bulkSetTaskAssignee([...ids], userId));
   const onSchedule = (offsetDays: number) => {

@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { TaskTable } from "@/components/task-table";
 import { SortableTaskList } from "@/components/sortable-task-list";
 import { EmptyState, Kbd } from "@/components/empty-state";
+import { InviteCTA } from "@/components/invite-cta";
 import { RightRail } from "@/components/right-rail";
 import { UpcomingCalendar } from "@/components/upcoming-calendar";
 import { UpcomingViewToggle } from "@/components/upcoming-view-toggle";
@@ -83,10 +84,7 @@ export default async function UpcomingPage({ searchParams }: PageProps) {
                 title="Nothing scheduled"
                 hint="Schedule something for later this week or pass work to a teammate."
                 actionLabel="Add a task"
-                secondary={{
-                  label: "Invite a teammate",
-                  href: "/team/manage",
-                }}
+                secondarySlot={<InviteCTA />}
                 tips={[
                   "Tasks due tomorrow through the next two weeks show up grouped here.",
                   "Drag a date on a task to move it between buckets.",

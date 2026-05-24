@@ -100,6 +100,11 @@ export function QuickAddDialog({
       setPriority(4);
       setProjectId(null);
       setAssigneeId(currentUserId);
+    } else {
+      // Quick-add opens from four places (sidebar CTA, mobile FAB,
+      // keyboard Q, empty-state Add task buttons) — wiring the sound
+      // here covers all of them with one line instead of four.
+      playSound("pin");
     }
   }, [open, currentUserId]);
 

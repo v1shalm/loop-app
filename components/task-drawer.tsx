@@ -416,6 +416,7 @@ function DrawerInner({
     // Close the drawer immediately so the row animates out; the server
     // action runs in a transition behind the scenes.
     onClose();
+    playSound("deleted");
     startTransition(async () => {
       const res = await deleteTask(task.id);
       if (res.error) sileo.error({ title: res.error });
@@ -872,6 +873,7 @@ function CommentsSection({
 
   const remove = (id: string) => {
     setComments((prev) => prev.filter((c) => c.id !== id));
+    playSound("deleted");
     startTransition(async () => {
       const res = await deleteComment(id);
       if (res.error) sileo.error({ title: res.error });

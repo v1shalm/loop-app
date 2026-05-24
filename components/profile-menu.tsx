@@ -275,6 +275,10 @@ export function ProfileMenu({
                   aria-checked={active}
                   onClick={(e) => {
                     e.preventDefault();
+                    // Only chime when the theme actually changes — clicking
+                    // the already-active theme should be silent (otherwise
+                    // every re-click makes a sound for nothing).
+                    if (!active) playSound("pin");
                     setTheme(t.key);
                   }}
                   className={cn(
@@ -484,6 +488,7 @@ export function ProfileMenu({
                 aria-checked={active}
                 onClick={(e) => {
                   e.preventDefault();
+                  if (!active) playSound("pin");
                   setTheme(t.key);
                 }}
                 className={cn(

@@ -24,6 +24,10 @@ interface EmptyStateProps {
   showAction?: boolean;
   /** Optional secondary CTA shown next to the primary. */
   secondary?: EmptyStateAction;
+  /** Custom secondary slot — overrides `secondary` entirely. Used when
+   *  the secondary action needs its own state (e.g. opening a dialog)
+   *  and the parent server component can't pass an onClick down. */
+  secondarySlot?: React.ReactNode;
   /** Short list of "things you can do here" rendered under the CTAs.
    *  Pass React nodes (not just strings) so call sites can wrap keyboard
    *  shortcuts in <kbd> chips — the bare ⌘ glyph collides with adjacent
@@ -45,6 +49,7 @@ export function EmptyState({
   onAction,
   showAction = true,
   secondary,
+  secondarySlot,
   tips,
 }: EmptyStateProps) {
   const { open } = useQuickAdd();
@@ -91,7 +96,8 @@ export function EmptyState({
               <Plus size={13} weight="bold" />
               {actionLabel}
             </button>
-            {secondary && <SecondaryButton action={secondary} />}
+            {secondarySlot ??
+              (secondary && <SecondaryButton action={secondary} />)}
           </div>
         )}
 

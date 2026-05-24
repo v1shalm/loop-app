@@ -204,6 +204,7 @@ export function TaskRow({
   };
 
   const remove = () => {
+    playSound("deleted");
     startTransition(async () => {
       const res = await deleteTask(task.id);
       if (res.error) sileo.error({ title: res.error });
@@ -218,6 +219,7 @@ export function TaskRow({
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(23, 59, 0, 0);
     setOptDueAt(tomorrow.toISOString());
+    playSound("pin");
     startTransition(async () => {
       const res = await updateTask(task.id, { dueAt: tomorrow.toISOString() });
       if (res.error) {

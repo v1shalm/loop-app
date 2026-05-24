@@ -29,6 +29,7 @@ function getPatch(): AudioPatch | null {
  *   reaction    send, very high + half volume — bright pop
  *   dropped     send, low + low volume — quiet "settle" thud
  *   pin         send, sparkly high + low volume — crisp click
+ *   deleted     send, deep down-shift + low volume — "tucked away forever"
  *   error       error
  */
 export function play(name: SoundName, ...args: unknown[]): void {
@@ -85,6 +86,14 @@ export function play(name: SoundName, ...args: unknown[]): void {
     case "pin":
       // Crisp short click — very high, very quiet.
       p.play("send", { detune: 500, volume: 0.55 });
+      return;
+
+    case "deleted":
+      // Destructive but quiet — "tucked away forever". Deeper than
+      // `uncomplete` (which is a same-day reverse) and softer than
+      // `error` (which means something went wrong, not that the
+      // user *chose* to remove something).
+      p.play("send", { detune: -360, volume: 0.5 });
       return;
 
     case "error":

@@ -28,6 +28,7 @@ import {
   sendInvite,
 } from "@/lib/actions";
 import type { PendingInvitation, TeamMember } from "@/lib/queries";
+import { playSound } from "@/lib/sounds";
 
 export function ManageTeamUI({
   members,
@@ -214,7 +215,8 @@ function PendingInviteRow({
     }
   };
 
-  const cancel = () =>
+  const cancel = () => {
+    playSound("deleted");
     startTransition(async () => {
       const res = await cancelInvite(invite.id);
       if (res.error) {
@@ -224,6 +226,7 @@ function PendingInviteRow({
       onCancelled(invite.id);
       sileo.success({ title: "Invite cancelled" });
     });
+  };
 
   const expiresIn = Math.max(
     0,
@@ -379,6 +382,7 @@ function MemberRow({ member }: { member: TeamMember }) {
 
   const remove = () => setConfirmOpen(true);
   const actuallyRemove = () => {
+    playSound("deleted");
     startTransition(async () => {
       const res = await removeTeamMember(member.id);
       if (res.error) sileo.error({ title: res.error });

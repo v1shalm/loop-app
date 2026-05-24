@@ -2,6 +2,7 @@ import { Tray } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { InboxList } from "@/components/inbox-list";
 import { EmptyState, Kbd } from "@/components/empty-state";
+import { InviteCTA } from "@/components/invite-cta";
 import { RightRail } from "@/components/right-rail";
 import {
   getCurrentProfile,
@@ -39,10 +40,7 @@ export default async function InboxPage() {
                 title="All caught up"
                 hint="New assignments from teammates land here. Nothing to triage right now."
                 actionLabel="Assign your first task"
-                secondary={{
-                  label: "Invite a teammate",
-                  href: "/team/manage",
-                }}
+                secondarySlot={<InviteCTA />}
                 tips={[
                   "Tasks someone else assigns to you appear here first.",
                   "Hit Accept to add them to your day, or Mark later to push them out a week.",

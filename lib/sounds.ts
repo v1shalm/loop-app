@@ -30,6 +30,7 @@ export type SoundName =
   | "reaction"
   | "dropped"
   | "pin"
+  | "deleted"
   | "error";
 
 type CompletedArgs = [priority?: 1 | 2 | 3 | 4];
