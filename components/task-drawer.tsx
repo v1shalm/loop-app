@@ -60,6 +60,7 @@ import {
 } from "@/components/mention-input";
 import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ProjectDot } from "@/components/project-dot";
 import { Button } from "@/components/ui/button";
 
@@ -222,6 +223,7 @@ function DrawerInner({
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [pending, startTransition] = useTransition();
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   // Multi-assignee state — co-assignees on top of the primary
   // tasks.assignee_id. Source: task_assignees join table.
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
@@ -377,12 +379,17 @@ function DrawerInner({
     }
   };
 
+  // Delete flow: clicking the menu item opens the in-app ConfirmDialog
+  // (replaces the browser-chrome window.confirm). actuallyDelete is what
+  // the dialog calls when the user clicks the destructive button.
   const remove = () => {
     if (!task) return;
-    const ok = window.confirm(`Delete "${task.title}"? This can't be undone.`);
-    if (!ok) return;
-    // Close immediately so the drawer feels snappy; the row will animate out
-    // when the revalidated list re-renders.
+    setConfirmDeleteOpen(true);
+  };
+  const actuallyDelete = () => {
+    if (!task) return;
+    // Close the drawer immediately so the row animates out; the server
+    // action runs in a transition behind the scenes.
     onClose();
     startTransition(async () => {
       const res = await deleteTask(task.id);
@@ -658,6 +665,22 @@ function DrawerInner({
         pending={pending}
         onToggle={toggleDone}
         onDelete={remove}
+      />
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        title="Delete this task?"
+        description={
+          <>
+            <span className="font-medium text-foreground">
+              {task?.title || "Untitled task"}
+            </span>{" "}
+            will be removed for everyone. This can&apos;t be undone.
+          </>
+        }
+        confirmLabel="Delete"
+        onConfirm={actuallyDelete}
       />
     </div>
   );

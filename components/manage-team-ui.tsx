@@ -10,6 +10,7 @@ import {
 } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   Popover,
   PopoverContent,
@@ -172,6 +173,7 @@ function MemberList({ members }: { members: TeamMember[] }) {
 function MemberRow({ member }: { member: TeamMember }) {
   const [pending, startTransition] = useTransition();
   const [optRole, setOptRole] = useState<"admin" | "member">(member.team_role);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const setRole = (next: "admin" | "member") => {
     const prev = optRole;
@@ -187,11 +189,8 @@ function MemberRow({ member }: { member: TeamMember }) {
     });
   };
 
-  const remove = () => {
-    const ok = window.confirm(
-      `Remove ${member.name} from this team? They lose access to its tasks.`
-    );
-    if (!ok) return;
+  const remove = () => setConfirmOpen(true);
+  const actuallyRemove = () => {
     startTransition(async () => {
       const res = await removeTeamMember(member.id);
       if (res.error) sileo.error({ title: res.error });
@@ -259,6 +258,20 @@ function MemberRow({ member }: { member: TeamMember }) {
           <Trash size={13} />
         )}
       </Button>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Remove ${member.name}?`}
+        description={
+          <>
+            They&apos;ll lose access to this team and its tasks. You can
+            invite them back any time.
+          </>
+        }
+        confirmLabel="Remove"
+        onConfirm={actuallyRemove}
+      />
     </article>
   );
 }
