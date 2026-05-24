@@ -257,7 +257,13 @@ async function captureMode(browser, mode) {
 async function main() {
   const browser = await chromium.launch();
 
-  for (const mode of ["light", "dark"]) {
+  // The case study renders dark-mode only — Loop's brand pink reads
+  // boldest against the dark surfaces, and showing one mode keeps the
+  // page focused on the decision per screen, not the comparison.
+  // Pass MODES=light,dark in the env to capture both if I ever want to.
+  const modes = (process.env.MODES ?? "dark").split(",").map((s) => s.trim());
+
+  for (const mode of modes) {
     await captureMode(browser, mode);
   }
 
@@ -269,7 +275,7 @@ async function main() {
   );
 
   await browser.close();
-  console.log("\n✓ done — screens in public/screens/{light,dark}/");
+  console.log(`\n✓ done — screens in public/screens/${modes.join(",")}/`);
 }
 
 main().catch((err) => {
