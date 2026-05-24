@@ -157,7 +157,7 @@ function InvitePanel({
         <Button
           onClick={submit}
           disabled={pending || !email.trim()}
-          variant="default"
+          variant="cta"
         >
           {pending ? (
             <CircleNotch size={13} className="animate-spin" />

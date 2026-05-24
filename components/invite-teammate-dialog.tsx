@@ -207,7 +207,7 @@ export function InviteTeammateDialog({
           {generated ? (
             <Button
               onClick={() => onOpenChange(false)}
-              variant="default"
+              variant="cta"
               size="sm"
             >
               Done
@@ -216,7 +216,7 @@ export function InviteTeammateDialog({
             <Button
               onClick={submit}
               disabled={pending || !email.trim()}
-              variant="default"
+              variant="cta"
               size="sm"
             >
               {pending ? (
