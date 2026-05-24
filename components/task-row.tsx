@@ -2,8 +2,14 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "motion/react";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useTransform,
+} from "motion/react";
 import { sileo } from "sileo";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import {
   differenceInCalendarDays,
   format,
@@ -23,6 +29,7 @@ import {
   CalendarBlank,
   ChatCircle,
   Check,
+  CheckCircle,
   DotsThree,
   Flag,
 } from "@/components/icons";
@@ -83,6 +90,12 @@ export function TaskRow({
   const pathname = usePathname();
   const params = useSearchParams();
   const { members, currentUserId } = useTeamContext();
+  const isMobile = useIsMobile();
+  // Horizontal drag offset for the mobile swipe gesture. The underlay
+  // indicators read this value to fade in as the user drags.
+  const dragX = useMotionValue(0);
+  const completeOpacity = useTransform(dragX, [0, 60, 100], [0, 0.7, 1]);
+  const rescheduleOpacity = useTransform(dragX, [-100, -60, 0], [1, 0.7, 0]);
   const { mode: selectionMode, ids: selectedIds, toggle: toggleSelection } =
     useBulkSelection();
   const selected = selectedIds.has(task.id);
@@ -196,6 +209,38 @@ export function TaskRow({
     });
   };
 
+  // Mobile swipe-left: bump the due date forward by one day (or set to
+  // tomorrow if undated). Mirrors Todoist's swipe-to-reschedule pattern.
+  const rescheduleTomorrow = () => {
+    const prev = optDueAt;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(23, 59, 0, 0);
+    setOptDueAt(tomorrow.toISOString());
+    startTransition(async () => {
+      const res = await updateTask(task.id, { dueAt: tomorrow.toISOString() });
+      if (res.error) {
+        sileo.error({ title: res.error });
+        setOptDueAt(prev);
+        return;
+      }
+      sileo.success({
+        title: "Scheduled for tomorrow",
+        description: task.title,
+        button: {
+          title: "Undo",
+          onClick: () => {
+            setOptDueAt(prev);
+            startTransition(async () => {
+              await updateTask(task.id, { dueAt: prev });
+            });
+          },
+        },
+        duration: 4000,
+      });
+    });
+  };
+
   const dateText = formatTaskDate(due, overdue);
   // Today and overdue read with the same urgency cue (red, medium weight).
   // Everything else stays in the muted tertiary tone — Linear's pattern.
@@ -211,19 +256,63 @@ export function TaskRow({
   return (
     <AnimatePresence initial={false}>
       {!done && (
-        <motion.article
+        <motion.div
           layout
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0 }}
           transition={{ duration: 0.18, ease: [0.32, 0.72, 0.32, 1] }}
-          className={cn(
-            "group transition-shadow duration-150 ease-[var(--ease-out)]",
-            flat
-              ? "bg-transparent px-4 py-3"
-              : "rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs hover:shadow-soft-sm"
-          )}
+          className="relative"
         >
+          {/* Mobile-only swipe underlay. The indicators sit BEHIND the
+              row and fade in based on dragX so the user sees what each
+              direction will do before they commit. Hidden on desktop. */}
+          {isMobile && (
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-0 flex items-center justify-between overflow-hidden md:hidden",
+                flat ? "px-4" : "rounded-xl px-5"
+              )}
+            >
+              <motion.div
+                style={{ opacity: completeOpacity }}
+                className="flex items-center gap-2 text-[13px] font-semibold text-emerald-600"
+              >
+                <CheckCircle size={20} weight="fill" />
+                <span>Complete</span>
+              </motion.div>
+              <motion.div
+                style={{ opacity: rescheduleOpacity }}
+                className="flex items-center gap-2 text-[13px] font-semibold text-amber-600"
+              >
+                <span>Tomorrow</span>
+                <CalendarBlank size={20} weight="fill" />
+              </motion.div>
+            </div>
+          )}
+          <motion.article
+            drag={isMobile ? "x" : false}
+            dragConstraints={{ left: -160, right: 160 }}
+            dragElastic={0.15}
+            dragDirectionLock
+            style={{ x: dragX, touchAction: isMobile ? "pan-y" : undefined }}
+            onDragEnd={(_, info) => {
+              if (info.offset.x > 100 || info.velocity.x > 600) {
+                toggle();
+              } else if (info.offset.x < -100 || info.velocity.x < -600) {
+                rescheduleTomorrow();
+              }
+              dragX.set(0);
+            }}
+            className={cn(
+              "group transition-shadow duration-150 ease-[var(--ease-out)]",
+              flat
+                ? "bg-transparent px-4 py-3"
+                : "rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs hover:shadow-soft-sm",
+              isMobile && "cursor-grab active:cursor-grabbing"
+            )}
+          >
           <div className="flex items-start gap-3">
             {/* Checkbox — toggles completion by default, toggles bulk
                 selection when the page has entered selection mode. */}
@@ -436,7 +525,8 @@ export function TaskRow({
               </Popover>
             </div>
           </div>
-        </motion.article>
+          </motion.article>
+        </motion.div>
       )}
     </AnimatePresence>
   );
