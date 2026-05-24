@@ -136,6 +136,14 @@
 }
 
 :root {
+  /* Switzer (loaded via Fontshare in app/layout.tsx) is the body face.
+     System fallbacks cover the brief window before Switzer fetches and
+     any client that fails the CDN (offline / blocked network). The
+     @theme block above re-exposes this as Tailwind's `font-sans`. */
+  --font-sans:
+    "Switzer", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, ui-sans-serif, system-ui, sans-serif;
+
   /* Cool blue-grey neutrals — resume-builder palette */
   --background: oklch(0.985 0.003 250);
   --foreground: oklch(0.2 0.008 250);

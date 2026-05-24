@@ -1,16 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, ThemeInitScript } from "@/components/theme-provider";
 import { ThemedToaster } from "@/components/themed-toaster";
 import "sileo/styles.css";
 import "./globals.css";
-
-const sans = Geist({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Loop. Share work across your team.",
@@ -31,10 +24,25 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sans.variable} h-full antialiased`}
+      className="h-full antialiased"
       suppressHydrationWarning
     >
       <head>
+        {/* Switzer via Fontshare. preconnect to cdn.fontshare.com cuts
+            the woff2 fetch handshake; the css endpoint at api.fontshare
+            returns the @font-face block pointing at the CDN. Only the
+            four weights the UI actually uses (400/500/600/700) so the
+            font payload stays small. */}
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link
+          rel="preconnect"
+          href="https://cdn.fontshare.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap"
+        />
         <ThemeInitScript />
       </head>
       <body
