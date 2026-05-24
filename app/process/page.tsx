@@ -19,7 +19,7 @@ export const metadata = {
 
 export default function ProcessPage() {
   return (
-    <main className="mx-auto w-full max-w-[760px] px-6 pb-32 pt-16 sm:px-8 sm:pt-24">
+    <main className="mx-auto w-full max-w-[1120px] px-6 pb-32 pt-16 sm:px-10 sm:pt-24 lg:px-14">
       <Hero />
       <BriefAnswers />
       <WhatIBuilt />
@@ -46,11 +46,13 @@ function Hero() {
       <h1 className="mt-3 text-[44px] font-semibold leading-[1.05] tracking-[-0.02em] text-foreground sm:text-[56px]">
         Loop
       </h1>
-      <p className="mt-4 max-w-[580px] text-[16px] leading-relaxed text-muted-foreground sm:text-[17px]">
+      <p className="mt-4 max-w-[680px] text-[16px] leading-relaxed text-muted-foreground sm:text-[17px]">
         I built Loop in two days for the Tist round-two assignment.
-        This page is the case study: the brief I read, the decisions I
-        made, the calls I overrode AI on, and what I&apos;d ship next.
-        Sober tone, first-person, evidence over claims.
+        The thinking — product framing, UX calls, visual system,
+        copy — is mine. Claude Code did most of the typing under my
+        direction. This page covers the decisions I made, the
+        moments I had to pull AI back from a slop pattern, and what
+        I&apos;d ship next.
       </p>
 
       <div className="mt-7 flex flex-wrap items-center gap-2.5">
@@ -91,7 +93,7 @@ function BriefAnswers() {
         </p>
       </Prose>
 
-      <div className="mt-6 flex flex-col gap-4">
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <BriefRow
           ask="Task operations: create, edit, delete with title, description, assignee, status, due date, priority."
           ans="I shipped all six fields. Title and description are inline-editable in the drawer. Priority is a P1–P4 flag chip with five color tones. Due dates accept natural-language tokens (today, tomorrow, next week, weekday names). Status is a binary checkbox; workflow status moved up to the project (decision below)."
@@ -118,7 +120,7 @@ function BriefAnswers() {
         Ambiguities the brief left to me
       </p>
 
-      <div className="mt-3 flex flex-col gap-4">
+      <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <BriefRow
           ask="Architecture: data persistence is your call."
           ans="Supabase Postgres + RLS. I picked it because the brief ranks UX first and Supabase removes a whole day of auth + DB plumbing. Server actions handle writes, RLS enforces tenancy, realtime ships presence and inbox updates for free."
@@ -183,7 +185,7 @@ function WhatIBuilt() {
         </p>
       </Prose>
 
-      <ul className="mt-6 grid grid-cols-2 gap-3">
+      <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Feature
           icon={<Crosshair size={14} />}
           title="My work"
@@ -398,7 +400,7 @@ function Principles() {
           further down read in context, not as one-offs.
         </p>
       </Prose>
-      <ul className="mt-6 flex flex-col gap-3">
+      <ul className="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
         {PRINCIPLES.map((p, i) => (
           <li
             key={i}
@@ -431,7 +433,7 @@ function UXDecisions() {
           didn&apos;t hold up.
         </p>
       </Prose>
-      <div className="mt-6 flex flex-col gap-5">
+      <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Decision title="I made the team creator the admin by default — nobody picks their own role.">
           <p>
             When a new user signs in without a team, I land them on{" "}
@@ -624,7 +626,7 @@ function UXDecisions() {
 function ArchitectureDecisions() {
   return (
     <Section title="Architecture decisions">
-      <div className="mt-2 flex flex-col gap-5">
+      <div className="mt-2 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Decision title="Stack: Next.js 16 + Supabase + Tailwind v4.">
           <p>
             Next.js 16 with the App Router gives me server components,
@@ -749,58 +751,79 @@ function AILoop() {
     <Section title="AI in the loop" id="ai">
       <Prose>
         <p>
-          I used Claude Code throughout: scaffolding routes, writing
-          SQL migrations, drafting empty states. It sped up the
-          mechanical parts. It also tried to ship things I had to push
-          back on. The brief asked for one win and one override — here
-          they are.
+          I used Claude Code as a build partner, not a designer. The
+          division of labour was clear: I made every product call —
+          information architecture, visual system, copy, motion
+          choices, what to ship vs cut. Claude turned those decisions
+          into TypeScript and SQL.
+        </p>
+        <p>
+          That split is why this section has two cards and not five.
+          The wins are about implementation speed once I&apos;d done
+          the thinking. The overrides are the few moments Claude
+          reached for a generic pattern on top of my spec and I had
+          to pull it back. The brief asked for one of each.
         </p>
       </Prose>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <SplitCard
           tone="win"
-          tag="Where AI helped"
-          title="I sketched the kanban board in ten minutes"
+          tag="Where Claude helped"
+          title="I described the kanban; Claude shipped it in ten minutes"
         >
           <p>
-            When I asked for a project-as-column / task-as-card view,
-            the first pass came back with the wrong abstraction: flat
-            project cards instead of nested cards. I sent one
-            screenshot back. The next pass had the correct structure:
-            gray columns, white nested cards, status icon and tag chip
-            in the footer.
+            I&apos;d already decided the structure: one column per
+            project, white nested task cards inside gray columns,
+            status icon and tag chip in the footer. The first pass
+            came back with the wrong abstraction — flat project cards
+            instead of nested ones. I sent one screenshot back with
+            the correction. The next pass was correct.
           </p>
           <p>
-            An hour of layout fiddling became ten minutes of
-            conversation. The pattern I learned: describe the visual
-            grammar precisely once, then iterate via screenshots, not
-            text.
+            An hour of layout fiddling became ten minutes of typing
+            because I knew exactly what I wanted before I asked.
+            Claude was fast precisely because the design call had
+            already been made.
           </p>
         </SplitCard>
 
         <SplitCard
           tone="override"
-          tag="Where I overrode"
+          tag="Where I overrode Claude"
           title="I cut the colored-stripe AI-slop reflex"
         >
           <p>
-            When I asked for an &quot;urgent&quot; visual treatment on
-            overdue tasks, AI reached for the side-stripe: a 3px
+            I asked for an &quot;urgent&quot; visual treatment on
+            overdue tasks. Claude reached for the side-stripe — a 3px
             colored bar on the left edge of every card. That&apos;s
-            the most overused AI design tell, and my rules ban it.
+            the most overused AI design tell, and one of my rules
+            bans it explicitly.
           </p>
           <p>
             I called it out:{" "}
             <span className="font-medium text-foreground">
               no colored hairlines, no AI slop
             </span>
-            . The fix signals urgency through the date text turning
-            rose and through the priority flag color. Same information,
-            none of the decoration.
+            . The fix I directed signals urgency through the date
+            text turning rose and the priority flag color. Same
+            information, none of the decoration. This kind of
+            override happened maybe a dozen times across the two
+            days; the colored stripe is the most representative.
           </p>
         </SplitCard>
       </div>
+
+      <Prose>
+        <p className="mt-6 text-[13.5px]">
+          The takeaway, to me, is that AI is a velocity multiplier on
+          decisions I&apos;ve already made — and a slop machine on
+          decisions I leave open. Every UX call in this product is
+          mine. Claude built them faster than I could have alone, and
+          I caught the moments it tried to round off my edges into a
+          generic template.
+        </p>
+      </Prose>
     </Section>
   );
 }
@@ -1021,8 +1044,11 @@ function Section({
 }
 
 function Prose({ children }: { children: React.ReactNode }) {
+  // Constrain prose paragraphs to a readable ~70-char column even
+  // when the outer container goes wide. Cards, grids, and pair
+  // layouts use the full container width; flowing text doesn't.
   return (
-    <div className="flex flex-col gap-3 text-[14.5px] leading-[1.65] text-foreground/80">
+    <div className="flex max-w-[760px] flex-col gap-3 text-[14.5px] leading-[1.65] text-foreground/80">
       {children}
     </div>
   );
