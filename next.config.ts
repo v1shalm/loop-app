@@ -26,10 +26,19 @@ const nextConfig: NextConfig = {
   compress: true,
 
   experimental: {
+    // Tree-shake barrel imports for heavy libraries. Without this, an
+    // `import { Tray } from "@phosphor-icons/react"` pulled the whole
+    // 800kb icon set; with it Next only emits the requested glyphs.
+    // Same shape of win for date-fns (per-function modules), motion
+    // (per-component modules), and base-ui / dnd-kit (large barrels).
     optimizePackageImports: [
       "@phosphor-icons/react",
       "date-fns",
       "motion",
+      "@base-ui/react",
+      "@dnd-kit/core",
+      "@dnd-kit/sortable",
+      "@dnd-kit/utilities",
     ],
     // Keep the prefetched page payload in the client cache long enough that
     // tab-switching between sidebar items doesn't re-trigger the server fetch

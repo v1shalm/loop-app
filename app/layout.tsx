@@ -21,6 +21,21 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Resolve the Supabase origin at render time so we can issue a
+  // preconnect for the first auth + postgrest request. `new URL` is safe
+  // server-side; falls through to null when the env var is missing so
+  // the layout still renders during a misconfigured local boot.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseOrigin = supabaseUrl
+    ? (() => {
+        try {
+          return new URL(supabaseUrl).origin;
+        } catch {
+          return null;
+        }
+      })()
+    : null;
+
   return (
     <html
       lang="en"
@@ -43,6 +58,19 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap"
         />
+        {/* Supabase preconnect — covers REST, auth, AND realtime (all
+            share the project's `*.supabase.co` origin). crossOrigin is
+            required because supabase-js sends the apikey header on
+            every request, which makes them CORS-credentialed; without
+            crossOrigin set here the preconnected socket is discarded
+            and the browser opens a fresh one anyway. */}
+        {supabaseOrigin && (
+          <link
+            rel="preconnect"
+            href={supabaseOrigin}
+            crossOrigin="anonymous"
+          />
+        )}
         <ThemeInitScript />
       </head>
       <body
