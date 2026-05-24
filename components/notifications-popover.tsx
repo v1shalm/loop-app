@@ -19,6 +19,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { MobileSheet } from "@/components/mobile-sheet";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 
@@ -52,6 +54,7 @@ export function NotificationsPopover({
   const [tab, setTab] = useState<Tab>("all");
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!open) return;
@@ -103,6 +106,53 @@ export function NotificationsPopover({
 
   const filtered = tab === "tasks" ? items : items;
 
+  const body = (
+    <NotificationsBody
+      loading={loading}
+      items={filtered}
+      tab={tab}
+      onTabChange={setTab}
+      onItemClick={() => setOpen(false)}
+    />
+  );
+
+  // Mobile: native-style bottom sheet from the bell trigger. The trigger
+  // is a plain button that opens the sheet; on desktop the trigger is
+  // the PopoverTrigger anchor.
+  if (isMobile) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Notifications"
+          className={cn(
+            "focus-ring relative grid size-9 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]",
+            className
+          )}
+        >
+          <Bell size={18} />
+          {unreadCount > 0 && (
+            <span
+              aria-hidden
+              className="absolute right-1.5 top-1.5 grid size-1.5 place-items-center"
+            >
+              <span className="absolute inline-flex size-1.5 animate-ping rounded-full bg-rose-400 opacity-75" />
+              <span className="relative size-1.5 rounded-full bg-rose-500 ring-2 ring-sidebar" />
+            </span>
+          )}
+        </button>
+        <MobileSheet
+          open={open}
+          onClose={() => setOpen(false)}
+          ariaLabel="Notifications"
+        >
+          {body}
+        </MobileSheet>
+      </>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <Tooltip>
@@ -143,66 +193,83 @@ export function NotificationsPopover({
         sideOffset={6}
         className="w-[360px] gap-0 p-0 shadow-soft-md"
       >
-        {/* Header with tabs */}
-        <div className="flex items-center justify-between border-b border-border/60 px-4 pt-3">
-          <h3 className="text-[13px] font-semibold tracking-tight text-foreground">
-            Notifications
-          </h3>
-          <Link
-            href="/notifications"
-            onClick={() => setOpen(false)}
-            className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground"
-          >
-            View all
-          </Link>
-        </div>
-        <nav className="flex items-center gap-0.5 border-b border-border/60 px-2">
-          {(["all", "tasks"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={cn(
-                "focus-ring -mb-px border-b-2 px-2.5 py-2 text-[12.5px] transition-[color,border-color] duration-150 ease-[var(--ease-out)]",
-                tab === t
-                  ? "border-foreground font-medium text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {t === "all" ? "All" : "Tasks"}
-            </button>
-          ))}
-        </nav>
-
-        {/* Body */}
-        <div className="max-h-[420px] overflow-y-auto">
-          {loading ? (
-            <div className="grid place-items-center py-10 text-muted-foreground">
-              <CircleNotch size={16} className="animate-spin" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="grid place-items-center px-4 py-10 text-center">
-              <span className="grid size-9 place-items-center rounded-full bg-muted text-muted-foreground">
-                <Bell size={16} />
-              </span>
-              <p className="mt-2.5 text-[13px] font-medium text-foreground">
-                All caught up
-              </p>
-              <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                New assignments will show up here.
-              </p>
-            </div>
-          ) : (
-            <ul className="flex flex-col py-1">
-              {filtered.map((item) => (
-                <li key={item.id}>
-                  <NotificationRow item={item} onClose={() => setOpen(false)} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {body}
       </PopoverContent>
     </Popover>
+  );
+}
+
+function NotificationsBody({
+  loading,
+  items,
+  tab,
+  onTabChange,
+  onItemClick,
+}: {
+  loading: boolean;
+  items: Item[];
+  tab: Tab;
+  onTabChange: (t: Tab) => void;
+  onItemClick: () => void;
+}) {
+  return (
+    <>
+      <div className="flex items-center justify-between border-b border-border/60 px-4 pt-3 max-md:pt-2">
+        <h3 className="text-[13px] font-semibold tracking-tight text-foreground max-md:text-[15px]">
+          Notifications
+        </h3>
+        <Link
+          href="/notifications"
+          onClick={onItemClick}
+          className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground max-md:text-[13px]"
+        >
+          View all
+        </Link>
+      </div>
+      <nav className="flex items-center gap-0.5 border-b border-border/60 px-2">
+        {(["all", "tasks"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => onTabChange(t)}
+            className={cn(
+              "focus-ring -mb-px border-b-2 px-2.5 py-2 text-[12.5px] transition-[color,border-color] duration-150 ease-[var(--ease-out)] max-md:min-h-[44px] max-md:px-4 max-md:text-[14px]",
+              tab === t
+                ? "border-foreground font-medium text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t === "all" ? "All" : "Tasks"}
+          </button>
+        ))}
+      </nav>
+      <div className="max-h-[420px] overflow-y-auto max-md:max-h-none max-md:flex-1">
+        {loading ? (
+          <div className="grid place-items-center py-10 text-muted-foreground">
+            <CircleNotch size={16} className="animate-spin" />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="grid place-items-center px-4 py-10 text-center">
+            <span className="grid size-9 place-items-center rounded-full bg-muted text-muted-foreground">
+              <Bell size={16} />
+            </span>
+            <p className="mt-2.5 text-[13px] font-medium text-foreground">
+              All caught up
+            </p>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+              New assignments will show up here.
+            </p>
+          </div>
+        ) : (
+          <ul className="flex flex-col py-1">
+            {items.map((item) => (
+              <li key={item.id}>
+                <NotificationRow item={item} onClose={onItemClick} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -221,7 +288,7 @@ function NotificationRow({
     <Link
       href={href}
       onClick={onClose}
-      className="focus-ring flex items-start gap-2.5 px-4 py-2.5 transition-[background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40"
+      className="focus-ring flex items-start gap-2.5 px-4 py-2.5 transition-[background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 max-md:py-3.5"
     >
       <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-muted">
         {item.kind === "i-completed" ? (
