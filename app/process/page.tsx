@@ -287,6 +287,10 @@ const SCREENS: Array<{ name: string; alt: string; caption: string }> = [
 ];
 
 function Screens() {
+  // Break out of the page's 1120px reading column so the screens can
+  // breathe. The pairs use the full viewport up to ~1640px, so on a
+  // 16" laptop each frame renders at roughly 800px wide — actually
+  // showing the UI rather than thumbnails of it.
   return (
     <Section title="The interface, light and dark">
       <Prose>
@@ -298,10 +302,12 @@ function Screens() {
           Light on the left, dark on the right.
         </p>
       </Prose>
-      <div className="mt-6 flex flex-col gap-7">
-        {SCREENS.map((s) => (
-          <ScreenPair key={s.name} {...s} />
-        ))}
+      <div className="mt-8 ml-[calc(50%-50vw+8px)] mr-[calc(50%-50vw+8px)] max-w-none sm:ml-[calc(50%-50vw+16px)] sm:mr-[calc(50%-50vw+16px)]">
+        <div className="mx-auto flex max-w-[1640px] flex-col gap-10 px-2 sm:px-4">
+          {SCREENS.map((s) => (
+            <ScreenPair key={s.name} {...s} />
+          ))}
+        </div>
       </div>
     </Section>
   );
@@ -317,12 +323,12 @@ function ScreenPair({
   caption: string;
 }) {
   return (
-    <figure className="flex flex-col gap-2">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <figure className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ScreenFrame src={`/screens/light/${name}.png`} alt={`${alt} (light mode)`} mode="light" />
         <ScreenFrame src={`/screens/dark/${name}.png`} alt={`${alt} (dark mode)`} mode="dark" />
       </div>
-      <figcaption className="px-1 text-[12px] leading-relaxed text-muted-foreground">
+      <figcaption className="mx-auto max-w-[760px] px-2 text-center text-[13px] leading-relaxed text-muted-foreground">
         {caption}
       </figcaption>
     </figure>
@@ -339,11 +345,11 @@ function ScreenFrame({
   mode: "light" | "dark";
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/60 bg-foreground/[0.04] p-2">
-      <div className="relative overflow-hidden rounded-md border border-border/60 bg-card shadow-soft-xs">
+    <div className="overflow-hidden rounded-2xl border border-border/60 bg-foreground/[0.04] p-3 shadow-soft-xs">
+      <div className="relative overflow-hidden rounded-lg border border-border/60 bg-card shadow-soft-sm">
         <span
           aria-hidden
-          className="absolute right-1.5 top-1.5 z-[1] inline-flex h-[18px] items-center rounded-md border border-border/60 bg-background/85 px-1.5 text-[9.5px] font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur"
+          className="absolute right-2.5 top-2.5 z-[1] inline-flex h-[22px] items-center rounded-md border border-border/60 bg-background/85 px-2 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur"
         >
           {mode}
         </span>
