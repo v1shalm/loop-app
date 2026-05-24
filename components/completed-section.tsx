@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CaretRight } from "@/components/icons";
+import { SectionCount } from "@/components/section-count";
 import { cn } from "@/lib/utils";
 
 export function CompletedSection({
@@ -35,9 +36,7 @@ export function CompletedSection({
             Completed today
           </h2>
         </div>
-        <span className="text-[11.5px] tabular-nums text-muted-foreground/80">
-          {count} {count === 1 ? "task" : "tasks"}
-        </span>
+        <SectionCount n={count} />
       </button>
       {open && <div className="mt-3 flex flex-col gap-2">{children}</div>}
     </section>

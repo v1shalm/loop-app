@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { format, isPast, isToday } from "date-fns";
 import { CaretRight, UsersThree } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
+import { SectionCount } from "@/components/section-count";
 import { TaskRow } from "@/components/task-row";
 import { TaskTable } from "@/components/task-table";
 import {
@@ -173,9 +174,7 @@ function Section({
             </span>
           )}
         </div>
-        <span className="text-[12px] tabular-nums text-muted-foreground">
-          {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
-        </span>
+        <SectionCount n={tasks.length} />
       </header>
       <TaskTable showAdd={false}>
         {tasks.map((t) => (

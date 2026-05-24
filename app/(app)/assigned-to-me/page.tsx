@@ -7,6 +7,7 @@ import { SortableTaskList } from "@/components/sortable-task-list";
 import { CompletedSection } from "@/components/completed-section";
 import { EmptyState, Kbd } from "@/components/empty-state";
 import { InviteCTA } from "@/components/invite-cta";
+import { SectionCount } from "@/components/section-count";
 import { BulkSelectToggle } from "@/components/bulk-select-toggle";
 import { RightRail } from "@/components/right-rail";
 import {
@@ -210,9 +211,7 @@ function Section({
             </span>
           )}
         </div>
-        <span className="text-[12px] tabular-nums text-muted-foreground">
-          {count} {count === 1 ? "task" : "tasks"}
-        </span>
+        <SectionCount n={count} />
       </header>
       <TaskTable showAdd={addFooter}>{children}</TaskTable>
     </section>

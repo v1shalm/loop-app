@@ -16,6 +16,7 @@ import {
   subMonths,
 } from "date-fns";
 import { CaretLeft, CaretRight, Flag } from "@/components/icons";
+import { SectionCount } from "@/components/section-count";
 import { cn } from "@/lib/utils";
 import type { TaskWithRelations } from "@/lib/queries";
 
@@ -194,10 +195,7 @@ export function UpcomingCalendar({ tasks }: CalendarProps) {
           <h4 className="text-[13px] font-semibold tracking-tight text-foreground">
             {isToday(selected) ? "Today" : format(selected, "EEEE, d MMM")}
           </h4>
-          <span className="text-[11.5px] tabular-nums text-muted-foreground">
-            {selectedTasks.length}{" "}
-            {selectedTasks.length === 1 ? "task" : "tasks"}
-          </span>
+          <SectionCount n={selectedTasks.length} />
         </div>
         <div className="mt-2 flex flex-col gap-1">
           <AnimatePresence initial={false} mode="popLayout">

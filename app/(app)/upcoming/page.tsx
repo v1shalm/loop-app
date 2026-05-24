@@ -5,6 +5,7 @@ import { TaskTable } from "@/components/task-table";
 import { SortableTaskList } from "@/components/sortable-task-list";
 import { EmptyState, Kbd } from "@/components/empty-state";
 import { InviteCTA } from "@/components/invite-cta";
+import { SectionCount } from "@/components/section-count";
 import { RightRail } from "@/components/right-rail";
 import { UpcomingCalendar } from "@/components/upcoming-calendar";
 import { UpcomingViewToggle } from "@/components/upcoming-view-toggle";
@@ -144,9 +145,7 @@ function Bucket({
             </span>
           )}
         </div>
-        <span className="text-[12px] tabular-nums text-muted-foreground">
-          {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
-        </span>
+        <SectionCount n={tasks.length} />
       </header>
       {tasks.length === 0 ? (
         <p className="px-3 py-3 text-[12.5px] text-muted-foreground/70">

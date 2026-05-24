@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { InboxList } from "@/components/inbox-list";
 import { EmptyState, Kbd } from "@/components/empty-state";
 import { InviteCTA } from "@/components/invite-cta";
+import { SectionCount } from "@/components/section-count";
 import { RightRail } from "@/components/right-rail";
 import {
   getCurrentProfile,
@@ -56,9 +57,7 @@ export default async function InboxPage() {
                   <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
                     New assignments
                   </h2>
-                  <span className="text-[12px] tabular-nums text-muted-foreground">
-                    {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
-                  </span>
+                  <SectionCount n={tasks.length} />
                 </header>
                 <InboxList tasks={tasks} savedViews={savedViews} />
               </>
