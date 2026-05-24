@@ -24,6 +24,7 @@ import {
   ArrowUp,
   CalendarBlank,
   CaretDown,
+  CaretLeft,
   Check,
   CheckCircle,
   ChatCircle,
@@ -36,6 +37,7 @@ import {
   Plus,
   Trash,
   Tray,
+  User,
   UserPlus,
   X,
 } from "@/components/icons";
@@ -440,11 +442,19 @@ function DrawerInner({
 
   return (
     <div className="flex h-full flex-col">
-      <Header onClose={onClose} pending={pending} onDelete={remove} task={task} />
+      <Header
+        onClose={onClose}
+        pending={pending}
+        onDelete={remove}
+        task={task}
+        projects={projects}
+        onChangeProject={(id) => patch({ projectId: id })}
+      />
 
       <div className="flex-1 overflow-y-auto">
-        {/* Title + checkbox + chips */}
-        <section className="px-6 pb-5 pt-5">
+        {/* Title + checkbox — chip cluster moved into the Details
+            key-value grid below. */}
+        <section className="px-6 pb-4 pt-5">
           <div className="flex items-start gap-3">
             <button
               onClick={toggleDone}
@@ -471,101 +481,117 @@ function DrawerInner({
             />
           </div>
 
-          {/* Tinted context chips */}
-          <div className="mt-4 flex flex-wrap items-center gap-1.5">
-            <Popover>
-              <PopoverTrigger
-                className={cn(
-                  "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors hover:brightness-[0.97]",
-                  dueChipTone
-                )}
-              >
-                <CalendarBlank size={13} weight="fill" />
-                <span className="tabular-nums">
-                  {due ? formatDueShort(due) : "Due date"}
-                </span>
-              </PopoverTrigger>
-              <PopoverContent className="gap-0 p-0" align="start">
-                <DatePicker
-                  value={due}
-                  onChange={(d) =>
-                    patch({ dueAt: d ? d.toISOString() : null })
-                  }
-                />
-              </PopoverContent>
-            </Popover>
+        </section>
 
-            <Popover>
-              <PopoverTrigger
-                className={cn(
-                  "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium transition-colors hover:brightness-[0.97]",
-                  priorityChipTone[task.priority as Priority]
-                )}
-              >
-                <Flag
-                  size={13}
-                  weight={task.priority === 4 ? "regular" : "fill"}
-                />
-                {priorityOpt.label}
-              </PopoverTrigger>
-              <PopoverContent className="w-[180px] gap-0 p-1" align="start">
-                {PRIORITY_OPTIONS.map((o) => (
-                  <PopoverItem
-                    key={o.p}
-                    selected={task.priority === o.p}
-                    onSelect={() => patch({ priority: o.p })}
-                  >
-                    <Flag
-                      size={14}
-                      className={o.cls}
-                      weight={o.p === 4 ? "regular" : "fill"}
-                    />
-                    <span>{o.label}</span>
-                  </PopoverItem>
-                ))}
-              </PopoverContent>
-            </Popover>
+        <SectionDivider />
 
-            <AssigneeStackPicker
-              taskId={task.id}
-              members={members}
-              currentUserId={currentUserId}
-              assigneeIds={assigneeIds}
-              setAssigneeIds={setAssigneeIds}
-              primaryId={task.assignee?.id ?? null}
-              onSetPrimary={(id) => patch({ assigneeId: id })}
-            />
+        {/* Details — key-value rows: Assignee, Due date, Priority, Created.
+            Each row's right column is the existing picker chip so behaviour
+            stays unchanged; the label column reads as static structural
+            chrome. "Created" is read-only and merges author + timestamp. */}
+        <section className="px-6 py-4">
+          <dl className="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-x-4 gap-y-1">
+            <DetailLabel icon={<User size={14} />}>Assignee</DetailLabel>
+            <dd>
+              <AssigneeStackPicker
+                taskId={task.id}
+                members={members}
+                currentUserId={currentUserId}
+                assigneeIds={assigneeIds}
+                setAssigneeIds={setAssigneeIds}
+                primaryId={task.assignee?.id ?? null}
+                onSetPrimary={(id) => patch({ assigneeId: id })}
+              />
+            </dd>
 
-            <Popover>
-              <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12px] font-medium text-foreground transition-colors hover:brightness-[0.97]">
-                {task.project ? (
-                  <ProjectDot project={task.project as Project} size={9} />
-                ) : (
-                  <Tray size={13} className="text-muted-foreground" />
-                )}
-                {task.project ? task.project.name : "Inbox"}
-              </PopoverTrigger>
-              <PopoverContent className="w-[240px] gap-0 p-1" align="start">
-                <PopoverItem
-                  selected={task.project_id === null}
-                  onSelect={() => patch({ projectId: null })}
+            <DetailLabel icon={<CalendarBlank size={14} />}>Due date</DetailLabel>
+            <dd>
+              <Popover>
+                <PopoverTrigger
+                  className={cn(
+                    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] font-medium transition-colors hover:brightness-[0.97]",
+                    dueChipTone
+                  )}
                 >
-                  <Tray size={14} className="text-muted-foreground" />
-                  <span>Inbox (no project)</span>
-                </PopoverItem>
-                {projects.map((p) => (
-                  <PopoverItem
-                    key={p.id}
-                    selected={task.project_id === p.id}
-                    onSelect={() => patch({ projectId: p.id })}
-                  >
-                    <ProjectDot project={p} size={9} />
-                    <span className="truncate">{p.name}</span>
-                  </PopoverItem>
-                ))}
-              </PopoverContent>
-            </Popover>
-          </div>
+                  <CalendarBlank size={13} weight="fill" />
+                  <span className="tabular-nums">
+                    {due ? formatDueShort(due) : "No date"}
+                  </span>
+                </PopoverTrigger>
+                <PopoverContent className="gap-0 p-0" align="start">
+                  <DatePicker
+                    value={due}
+                    onChange={(d) =>
+                      patch({ dueAt: d ? d.toISOString() : null })
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
+            </dd>
+
+            <DetailLabel icon={<Flag size={14} />}>Priority</DetailLabel>
+            <dd>
+              <Popover>
+                <PopoverTrigger
+                  className={cn(
+                    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] font-medium transition-colors hover:brightness-[0.97]",
+                    priorityChipTone[task.priority as Priority]
+                  )}
+                >
+                  <Flag
+                    size={13}
+                    weight={task.priority === 4 ? "regular" : "fill"}
+                  />
+                  {priorityOpt.label}
+                </PopoverTrigger>
+                <PopoverContent className="w-[180px] gap-0 p-1" align="start">
+                  {PRIORITY_OPTIONS.map((o) => (
+                    <PopoverItem
+                      key={o.p}
+                      selected={task.priority === o.p}
+                      onSelect={() => patch({ priority: o.p })}
+                    >
+                      <Flag
+                        size={14}
+                        className={o.cls}
+                        weight={o.p === 4 ? "regular" : "fill"}
+                      />
+                      <span>{o.label}</span>
+                    </PopoverItem>
+                  ))}
+                </PopoverContent>
+              </Popover>
+            </dd>
+
+            <DetailLabel icon={<Clock size={14} />}>Created</DetailLabel>
+            <dd className="flex min-w-0 items-center gap-1.5 text-[12.5px]">
+              {task.author ? (
+                <>
+                  <Avatar
+                    src={task.author.avatar_url}
+                    initials={task.author.initials}
+                    color={task.author.avatar_color}
+                    size={18}
+                  />
+                  <span className="truncate font-medium text-foreground">
+                    {task.author.name}
+                  </span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">Unknown</span>
+              )}
+              <span className="text-muted-foreground/60">·</span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                {format(new Date(task.created_at), "d MMM, h:mm a")}
+              </span>
+            </dd>
+          </dl>
+          {task.completed_at && (
+            <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-emerald-700 dark:text-emerald-300">
+              <CheckCircle size={13} weight="fill" />
+              Completed {format(new Date(task.completed_at), "d MMM, h:mm a")}
+            </div>
+          )}
         </section>
 
         <SectionDivider />
@@ -597,45 +623,6 @@ function DrawerInner({
           </>
         )}
 
-        {/* Created by | Added — two columns with a hairline between */}
-        <section className="px-6 py-5">
-          <div className="grid grid-cols-2 gap-0">
-            <Meta label="Created by">
-              {task.author ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Avatar
-                    src={task.author.avatar_url}
-                    initials={task.author.initials}
-                    color={task.author.avatar_color}
-                    size={18}
-                  />
-                  <span className="text-[13px] text-foreground">
-                    {task.author.name}
-                  </span>
-                </span>
-              ) : (
-                <span className="text-[13px] text-muted-foreground">
-                  Unknown
-                </span>
-              )}
-            </Meta>
-            <Meta label="Added" leftBorder>
-              <span className="inline-flex items-center gap-1.5 text-[13px] text-foreground">
-                <Clock size={14} className="text-muted-foreground" />
-                {format(new Date(task.created_at), "d MMM, h:mm a")}
-              </span>
-            </Meta>
-          </div>
-          {task.completed_at && (
-            <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-emerald-700">
-              <CheckCircle size={13} weight="fill" />
-              Completed {format(new Date(task.completed_at), "d MMM, h:mm a")}
-            </div>
-          )}
-        </section>
-
-        <SectionDivider />
-
         {/* Comments */}
         <section className="px-6 py-5">
           <CommentsSection
@@ -665,7 +652,7 @@ function SectionDivider() {
 }
 
 function SectionHeader({
-  icon,
+  icon: _icon,
   label,
   trailing,
 }: {
@@ -673,16 +660,34 @@ function SectionHeader({
   label: string;
   trailing?: React.ReactNode;
 }) {
+  // icon prop is accepted for backwards compatibility but no longer
+  // rendered — section labels are now pure typographic chrome
+  // (uppercase + tracked, like the quick-add modal's section labels)
+  // so DESCRIPTION / SUBTASKS / COMMENTS read as structural headings
+  // rather than competing with the body for visual weight.
+  void _icon;
   return (
-    <div className="flex items-center gap-2">
-      <span className="grid size-5 place-items-center rounded text-muted-foreground">
-        {icon}
-      </span>
-      <h3 className="text-[13px] font-semibold tracking-tight text-foreground">
+    <div className="flex items-baseline gap-2">
+      <h3 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/80">
         {label}
       </h3>
       {trailing && <div className="ml-auto">{trailing}</div>}
     </div>
+  );
+}
+
+function DetailLabel({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <dt className="flex h-9 items-center gap-2 text-[12.5px] text-muted-foreground">
+      <span className="shrink-0 text-muted-foreground/70">{icon}</span>
+      <span>{children}</span>
+    </dt>
   );
 }
 
@@ -698,34 +703,41 @@ function DrawerFooter({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between border-t border-border/60 bg-popover px-5 py-3 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <Button
-        variant="ghost"
-        size="sm"
+    <div className="flex items-center gap-2 border-t border-border/60 bg-popover px-5 py-3 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      {/* Primary action — full-width emerald pill when the task is open,
+          softer ghost when it's already done (so re-opening reads as a
+          recovery move, not the headline action). */}
+      <button
         onClick={onToggle}
         disabled={pending}
         className={cn(
-          !done &&
-            "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-200"
+          "focus-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md text-[13.5px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100",
+          done
+            ? "border border-border bg-card text-foreground hover:bg-accent/40"
+            : "bg-emerald-600 text-white shadow-[0_1px_2px_oklch(0_0_0/0.08),inset_0_1px_0_oklch(1_0_0/0.18)] hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
         )}
       >
         <CheckCircle
           size={15}
           weight={done ? "regular" : "fill"}
-          className={done ? "text-muted-foreground" : "text-emerald-600"}
+          className={done ? "text-muted-foreground" : ""}
         />
-        {done ? "Reopen task" : "Mark as complete"}
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onDelete}
-        disabled={pending}
-        className="text-rose-600 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
-      >
-        <Trash size={15} />
-        Delete task
-      </Button>
+        {done ? "Reopen task" : "Mark complete"}
+      </button>
+      <Popover>
+        <PopoverTrigger
+          aria-label="More actions"
+          className="focus-ring grid size-10 shrink-0 place-items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+        >
+          <DotsThree size={18} weight="bold" />
+        </PopoverTrigger>
+        <PopoverContent className="w-[180px] gap-0 p-1" align="end">
+          <PopoverItem onSelect={onDelete}>
+            <Trash size={13} className="text-rose-600" />
+            <span className="text-rose-600">Delete task</span>
+          </PopoverItem>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -834,19 +846,7 @@ function CommentsSection({
         }
       />
 
-      {comments.length === 0 ? (
-        <div className="mt-3 grid place-items-center rounded-xl border border-border/60 bg-card px-4 py-8 text-center">
-          <span className="grid size-8 place-items-center rounded-full bg-muted text-muted-foreground">
-            <ChatCircle size={16} />
-          </span>
-          <p className="mt-3 text-[13px] font-medium text-foreground">
-            Be the first to comment
-          </p>
-          <p className="mt-1 text-[12px] text-muted-foreground">
-            Ask questions, give updates, or share feedback.
-          </p>
-        </div>
-      ) : (
+      {comments.length === 0 ? null : (
         <ul className="mt-3 flex flex-col">
           {visible.map((c, i) => (
             <CommentItem
@@ -1014,14 +1014,19 @@ function Header({
   onDelete,
   pending,
   task,
+  projects,
+  onChangeProject,
 }: {
   onClose: () => void;
   onDelete?: () => void;
   pending: boolean;
   task?: TaskWithRelations | null;
+  projects?: Project[];
+  onChangeProject?: (id: string | null) => void;
 }) {
   const project = task?.project as Project | null | undefined;
   const label = project?.name ?? "Inbox";
+  const projectId = task?.project_id ?? null;
   // Rounded icon tile — Folder tinted with the project's color when
   // attached to a project, hash on a primary wash for Inbox. Gives the
   // header more visual weight than a 9px dot and reads as a real
@@ -1045,14 +1050,65 @@ function Header({
       <Hash size={14} weight="bold" />
     </span>
   );
+
+  // Project chip: clickable popover that doubles as the project picker
+  // when the drawer has the necessary props. Falls back to a non-clickable
+  // display in the "task deleted" empty state.
+  const projectChip =
+    projects && onChangeProject ? (
+      <Popover>
+        <PopoverTrigger className="focus-ring group/proj inline-flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-accent/40">
+          {tile}
+          <span className="min-w-0 truncate text-[13.5px] font-semibold tracking-tight text-foreground">
+            {label}
+          </span>
+          <CaretDown
+            size={10}
+            weight="bold"
+            className="shrink-0 text-muted-foreground/60 transition-opacity group-hover/proj:opacity-100"
+          />
+        </PopoverTrigger>
+        <PopoverContent className="w-[240px] gap-0 p-1" align="start">
+          <PopoverItem
+            selected={projectId === null}
+            onSelect={() => onChangeProject(null)}
+          >
+            <Tray size={14} className="text-muted-foreground" />
+            <span>Inbox (no project)</span>
+          </PopoverItem>
+          {projects.map((p) => (
+            <PopoverItem
+              key={p.id}
+              selected={projectId === p.id}
+              onSelect={() => onChangeProject(p.id)}
+            >
+              <ProjectDot project={p} size={9} />
+              <span className="truncate">{p.name}</span>
+            </PopoverItem>
+          ))}
+        </PopoverContent>
+      </Popover>
+    ) : (
+      <div className="inline-flex min-w-0 items-center gap-2 px-1.5 py-1">
+        {tile}
+        <span className="min-w-0 truncate text-[13.5px] font-semibold tracking-tight text-foreground">
+          {label}
+        </span>
+      </div>
+    );
+
   return (
-    <div className="flex items-center gap-2.5 border-b border-border/60 px-4 py-3">
-      {tile}
-      <h2 className="min-w-0 truncate text-[13.5px] font-semibold tracking-tight text-foreground">
-        {label}
-      </h2>
+    <div className="flex items-center gap-1 border-b border-border/60 px-3 py-3">
+      <button
+        onClick={onClose}
+        aria-label="Back"
+        className="focus-ring grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.94]"
+      >
+        <CaretLeft size={14} weight="bold" />
+      </button>
+      {projectChip}
       {pending && (
-        <CircleNotch size={13} className="animate-spin text-muted-foreground" />
+        <CircleNotch size={13} className="ml-1 animate-spin text-muted-foreground" />
       )}
       <div className="ml-auto flex items-center gap-0.5">
         {onDelete && (
@@ -1105,25 +1161,6 @@ function PopoverItem({
       {children}
       {selected && <Check size={14} className="ml-auto text-primary" />}
     </button>
-  );
-}
-
-function Meta({
-  label,
-  children,
-  leftBorder,
-}: {
-  label: string;
-  children: React.ReactNode;
-  leftBorder?: boolean;
-}) {
-  return (
-    <div className={cn(leftBorder && "border-l border-border/60 pl-4")}>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <div className="mt-1.5 text-[13px] text-foreground">{children}</div>
-    </div>
   );
 }
 
