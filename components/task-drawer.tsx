@@ -578,8 +578,8 @@ function DrawerInner({
               tap-to-change row. Format: avatar + name · timestamp, all
               muted. Completed badge stacks under it when relevant. */}
           <div className="mt-3 border-t border-border/40 pt-3 text-[12px]">
-            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-muted-foreground">
-              <span className="text-muted-foreground/70">Created by</span>
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-foreground/65">
+              <span className="text-foreground/55">Created by</span>
               {task.author ? (
                 <span className="inline-flex items-center gap-1.5">
                   <Avatar
@@ -593,7 +593,7 @@ function DrawerInner({
               ) : (
                 <span>Unknown</span>
               )}
-              <span className="text-muted-foreground/50">·</span>
+              <span className="text-foreground/35">·</span>
               <span className="tabular-nums">
                 {format(new Date(task.created_at), "d MMM, h:mm a")}
               </span>
@@ -618,7 +618,7 @@ function DrawerInner({
             onBlur={saveDescription}
             placeholder="Add more details (optional)"
             minRows={3}
-            className="mt-2.5 w-full resize-none rounded-lg border border-border/60 bg-card p-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors focus:border-ring/40 placeholder:text-muted-foreground/50"
+            className="mt-3 w-full resize-none rounded-lg border border-border bg-card p-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors focus:border-ring/50 placeholder:text-foreground/40"
           />
         </section>
 
@@ -681,7 +681,7 @@ function SectionHeader({
   void _icon;
   return (
     <div className="flex items-baseline gap-2">
-      <h3 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/80">
+      <h3 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-foreground/70">
         {label}
       </h3>
       {trailing && <div className="ml-auto">{trailing}</div>}
@@ -694,8 +694,11 @@ function DetailLabel({ children }: { children: React.ReactNode }) {
   // picker chip (User next to assignee avatar, Calendar next to date
   // chip, Flag next to priority chip). At 13–14px each pair was just
   // visual noise. Label is now text-only; the chip carries the cue.
+  // foreground/65 instead of muted-foreground so the label reads
+  // legibly in both themes (muted-foreground at full opacity was
+  // still too dim against the dark surface).
   return (
-    <dt className="flex h-9 items-center text-[12.5px] text-muted-foreground">
+    <dt className="flex h-9 items-center text-[12.5px] font-medium text-foreground/65">
       {children}
     </dt>
   );
@@ -849,7 +852,7 @@ function CommentsSection({
               </PopoverContent>
             </Popover>
           ) : (
-            <span className="text-[11.5px] tabular-nums text-muted-foreground/70">
+            <span className="text-[11.5px] tabular-nums text-foreground/55">
               0
             </span>
           )
@@ -883,7 +886,7 @@ function CommentsSection({
             />
           </span>
         )}
-        <div className="min-w-0 flex-1 rounded-xl border border-border/60 bg-card transition-colors focus-within:border-ring/40">
+        <div className="min-w-0 flex-1 rounded-xl border border-border bg-card transition-colors focus-within:border-ring/50">
           <MentionInput
             ref={inputRef}
             value={body}
@@ -1185,7 +1188,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
               {done}/{total}
             </span>
           ) : (
-            <span className="text-[11.5px] tabular-nums text-muted-foreground/70">
+            <span className="text-[11.5px] tabular-nums text-foreground/55">
               0
             </span>
           )
@@ -1291,9 +1294,9 @@ function SubtasksSection({ taskId }: { taskId: string }) {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="focus-ring mt-1 flex items-center gap-2 rounded-md px-1 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
+          className="focus-ring mt-2 flex items-center gap-2 rounded-md px-1 py-1.5 text-[13px] text-foreground/75 transition-colors hover:text-foreground"
         >
-          <Plus size={12} weight="bold" />
+          <Plus size={13} weight="bold" />
           Add subtask
         </button>
       )}

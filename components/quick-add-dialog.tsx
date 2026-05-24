@@ -75,7 +75,7 @@ const PRIORITY_OPTIONS: {
 ];
 
 const sectionLabel =
-  "text-[11.5px] font-medium uppercase tracking-[0.06em] text-muted-foreground/80";
+  "text-[11.5px] font-semibold uppercase tracking-[0.06em] text-foreground/70";
 
 export function QuickAddDialog({
   open,
