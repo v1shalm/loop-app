@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { LoginForm } from "./login-form";
 
@@ -9,41 +8,23 @@ export const metadata = {
 export default function LoginPage() {
   return (
     <main className="grid min-h-dvh place-items-center bg-background px-6 py-10">
-      <div className="w-full max-w-[440px]">
-        {/* Card */}
+      <div className="w-full max-w-[400px]">
         <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-soft-sm">
-          <div className="px-7 pb-6 pt-7">
-            <p className="text-center text-[15px] font-semibold tracking-tight text-foreground">
+          <div className="px-7 pb-7 pt-8">
+            <p className="text-center text-[14px] font-semibold tracking-tight text-foreground">
               Loop
             </p>
-            <h1 className="mt-5 text-center text-[20px] font-semibold tracking-tight text-foreground">
-              Welcome
+            <h1 className="mt-6 text-center text-[22px] font-semibold tracking-[-0.01em] text-foreground">
+              Sign in
             </h1>
-            <p className="mt-1 text-center text-[13px] text-muted-foreground">
-              Sign in or create an account with your work email.
-            </p>
 
-            <div className="mt-6">
+            <div className="mt-7">
               <Suspense>
                 <LoginForm />
               </Suspense>
             </div>
           </div>
-
-          <div className="border-t border-border/50 bg-muted/40 px-7 py-3 text-center text-[11.5px] text-muted-foreground">
-            By continuing you agree to be a good teammate.
-          </div>
         </div>
-
-        <p className="mt-5 text-center text-[12px] text-muted-foreground">
-          Reviewing this take-home?{" "}
-          <Link
-            href="/process"
-            className="text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
-          >
-            Read the case study →
-          </Link>
-        </p>
       </div>
     </main>
   );

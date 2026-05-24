@@ -118,16 +118,18 @@ function SortableTaskItem({
     transition,
   };
 
-  // Grip lives in its own column to the LEFT of the card, never inside.
-  // Reveals on hover of the whole row; stays visible while the row is
-  // being dragged. The card itself keeps every pixel of its content
-  // surface for actual data.
+  // Grip floats absolutely in the gutter to the LEFT of the card, so
+  // the card itself stays flush with the section header's left edge.
+  // Previously the grip lived in a flex column inside the same row,
+  // which pushed every card 24px right and visually misaligned the
+  // section headers from the task content. Now the card and the
+  // section title share a column; the grip lives in the page padding.
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group/draggable relative flex items-start gap-1",
+        "group/draggable relative",
         // Flat mode: hairline divider between rows. The first row's
         // top border is suppressed via first:border-t-0 so it sits
         // flush with the container's own top edge.
@@ -142,18 +144,17 @@ function SortableTaskItem({
         {...attributes}
         {...listeners}
         className={cn(
-          "focus-ring mt-4 grid size-5 shrink-0 cursor-grab place-items-center rounded text-muted-foreground/70 transition-[opacity,color,background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:cursor-grabbing",
-          // Hidden at rest — appears only when the row is hovered or
-          // the handle itself takes focus. Matches the ··· menu pattern.
-          "opacity-0 group-hover/draggable:opacity-100 focus-visible:opacity-100",
+          "focus-ring absolute -left-7 top-4 grid size-5 cursor-grab place-items-center rounded text-muted-foreground/70 transition-[opacity,color,background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:cursor-grabbing",
+          // Desktop: hidden at rest, reveals on row hover or handle focus.
+          // Mobile: always visible — no hover state on touch, and the
+          // grip needs to be discoverable without a long-press affordance.
+          "md:opacity-0 md:group-hover/draggable:opacity-100 focus-visible:opacity-100",
           isDragging && "cursor-grabbing opacity-100"
         )}
       >
         <DotsSixVertical size={14} weight="bold" />
       </button>
-      <div className="min-w-0 flex-1">
-        <TaskRow task={task} flat={flat} />
-      </div>
+      <TaskRow task={task} flat={flat} />
     </div>
   );
 }
