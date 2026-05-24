@@ -746,6 +746,10 @@ export interface CommentRow {
   author_id: string | null;
   body: string;
   created_at: string;
+  /** Null for top-level comments; set to the root comment's id for
+   *  replies. The data model is one-level (replies cannot themselves be
+   *  replied to) — enforced by a DB trigger and mirrored client-side. */
+  parent_comment_id: string | null;
   author: {
     id: string;
     name: string;
@@ -761,7 +765,8 @@ export interface CommentRow {
 
 export async function addComment(
   taskId: string,
-  body: string
+  body: string,
+  parentCommentId?: string | null
 ): Promise<{ ok?: true; comment?: CommentRow; error?: string }> {
   const text = body?.trim();
   if (!text) return { error: "Comment can't be empty." };
@@ -773,13 +778,18 @@ export async function addComment(
   if (!profile) return { error: "Not signed in." };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase
+  const { data, error } = await ((supabase as any)
     .from("task_comments")
-    .insert({ task_id: taskId, author_id: profile.id, body: text })
+    .insert({
+      task_id: taskId,
+      author_id: profile.id,
+      body: text,
+      parent_comment_id: parentCommentId ?? null,
+    })
     .select(
-      "id, task_id, author_id, body, created_at, author:profiles!task_comments_author_id_fkey(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
+      "id, task_id, author_id, body, parent_comment_id, created_at, author:profiles!task_comments_author_id_fkey(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
     )
-    .single() as any);
+    .single());
 
   if (error) return { error: error.message };
   revalidateTaskRoutes();

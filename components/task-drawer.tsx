@@ -5,6 +5,7 @@ import {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   useTransition,
@@ -271,7 +272,7 @@ function DrawerInner({
     const commentsP = (supabase
       .from("task_comments")
       .select(
-        "id, task_id, author_id, body, created_at, author:profiles!task_comments_author_id_fkey(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
+        "id, task_id, author_id, body, parent_comment_id, created_at, author:profiles!task_comments_author_id_fkey(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
       )
       .eq("task_id", taskId)
       .order("created_at", { ascending: true }) as any);
@@ -936,13 +937,32 @@ function CommentsSection({
   const [sort, setSort] = useState<"recent" | "oldest">("recent");
   const inputRef = useRef<MentionInputHandle>(null);
 
-  const visible = [...comments].sort((a, b) =>
-    sort === "recent"
-      ? b.created_at.localeCompare(a.created_at)
-      : a.created_at.localeCompare(b.created_at)
-  );
+  // Group comments by parent. `roots` contains top-level comments;
+  // `replies[parentId]` contains the chronologically-ordered replies
+  // for that parent. Done once per comments-array change, not per row.
+  const { roots, replies } = useMemo(() => {
+    const rootArr: CommentRow[] = [];
+    const replyMap: Record<string, CommentRow[]> = {};
+    for (const c of comments) {
+      if (c.parent_comment_id) {
+        (replyMap[c.parent_comment_id] ??= []).push(c);
+      } else {
+        rootArr.push(c);
+      }
+    }
+    // Replies always render oldest → newest (conversation reads top-to-bottom).
+    for (const id of Object.keys(replyMap)) {
+      replyMap[id].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    }
+    rootArr.sort((a, b) =>
+      sort === "recent"
+        ? b.created_at.localeCompare(a.created_at)
+        : a.created_at.localeCompare(b.created_at)
+    );
+    return { roots: rootArr, replies: replyMap };
+  }, [comments, sort]);
 
-  const submit = () => {
+  const submit = (parentId: string | null = null) => {
     const text = body.trim();
     if (!text || pending) return;
 
@@ -953,6 +973,7 @@ function CommentsSection({
       task_id: taskId,
       author_id: currentUserId,
       body: text,
+      parent_comment_id: parentId,
       created_at: new Date().toISOString(),
       author: null,
     };
@@ -961,12 +982,44 @@ function CommentsSection({
     playSound("added");
 
     startTransition(async () => {
-      const res = await addComment(taskId, text);
+      const res = await addComment(taskId, text, parentId);
       if (res.error) {
         sileo.error({ title: res.error });
         // Revert
         setComments((prev) => prev.filter((c) => c.id !== tempId));
         setBody(text);
+        return;
+      }
+      if (res.comment) {
+        setComments((prev) =>
+          prev.map((c) => (c.id === tempId ? res.comment! : c))
+        );
+      }
+    });
+  };
+
+  // Submit reply uses a separate body buffer to keep the main composer
+  // independent from the in-thread reply box. Each <ReplyComposer/>
+  // owns its own buffer below.
+  const submitReply = (parentId: string, text: string) => {
+    if (!text.trim()) return;
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: CommentRow = {
+      id: tempId,
+      task_id: taskId,
+      author_id: currentUserId,
+      body: text.trim(),
+      parent_comment_id: parentId,
+      created_at: new Date().toISOString(),
+      author: null,
+    };
+    setComments((prev) => [...prev, optimistic]);
+    playSound("added");
+    startTransition(async () => {
+      const res = await addComment(taskId, text.trim(), parentId);
+      if (res.error) {
+        sileo.error({ title: res.error });
+        setComments((prev) => prev.filter((c) => c.id !== tempId));
         return;
       }
       if (res.comment) {
@@ -1021,16 +1074,19 @@ function CommentsSection({
         }
       />
 
-      {comments.length === 0 ? null : (
+      {roots.length === 0 ? null : (
         <ul className="mt-3 flex flex-col">
-          {visible.map((c, i) => (
+          {roots.map((c, i) => (
             <CommentItem
               key={c.id}
               comment={c}
-              isMe={c.author_id === currentUserId}
-              isLast={i === visible.length - 1}
-              onDelete={() => remove(c.id)}
+              replies={replies[c.id] ?? []}
+              currentUser={currentUser}
               currentUserId={currentUserId}
+              members={members}
+              isLast={i === roots.length - 1}
+              onDelete={() => remove(c.id)}
+              onSubmitReply={(text) => submitReply(c.id, text)}
             />
           ))}
         </ul>
@@ -1055,7 +1111,7 @@ function CommentsSection({
             ref={inputRef}
             value={body}
             onChange={setBody}
-            onSubmit={submit}
+            onSubmit={() => submit(null)}
             members={members}
             placeholder="Add a comment. Type @ to mention a teammate."
             minRows={2}
@@ -1064,7 +1120,7 @@ function CommentsSection({
           />
           <div className="flex items-center justify-end gap-2 pb-2">
             <Button
-              onClick={submit}
+              onClick={() => submit(null)}
               disabled={!body.trim() || pending}
               size="icon-sm"
               variant="default"
@@ -1125,17 +1181,31 @@ const AutoTextarea = forwardRef<HTMLTextAreaElement, AutoTextareaProps>(
 
 function CommentItem({
   comment,
-  isMe,
+  replies,
+  currentUser,
+  currentUserId,
+  members,
   isLast,
   onDelete,
-  currentUserId,
+  onSubmitReply,
 }: {
   comment: CommentRow;
-  isMe: boolean;
+  /** Direct replies to this comment, oldest → newest. */
+  replies: CommentRow[];
+  currentUser: Profile | null;
+  currentUserId: string;
+  members: Profile[];
   isLast: boolean;
   onDelete: () => void;
-  currentUserId: string;
+  onSubmitReply: (text: string) => void;
 }) {
+  const isMe = comment.author_id === currentUserId;
+  // Threads collapse by default — long discussions stay scannable.
+  // Click "N replies" to expand; the composer reveals together with
+  // the replies so the user can pick up the conversation immediately.
+  const [expanded, setExpanded] = useState(false);
+  const hasReplies = replies.length > 0;
+
   return (
     <li className="flex gap-2.5">
       {/* Left column: avatar + connector line down to the next comment */}
@@ -1181,8 +1251,200 @@ function CommentItem({
           reactions={comment.reactions ?? []}
           currentUserId={currentUserId}
         />
+
+        {/* Thread toggle — appears below the comment body. When
+            collapsed, shows "N replies · last reply 2h ago" with an
+            avatar peek of the most recent replier. When expanded, the
+            replies + a fresh reply composer appear, indented under
+            this comment. */}
+        <div className="mt-1.5 flex items-center gap-2">
+          {hasReplies && (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="focus-ring inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11.5px] font-medium text-primary transition-colors hover:bg-primary/10"
+            >
+              {/* Peek avatar — most recent replier */}
+              {(() => {
+                const last = replies[replies.length - 1];
+                if (!last?.author) return null;
+                return (
+                  <Avatar
+                    src={last.author.avatar_url}
+                    initials={last.author.initials}
+                    color={last.author.avatar_color}
+                    size={14}
+                  />
+                );
+              })()}
+              <span>
+                {replies.length}{" "}
+                {replies.length === 1 ? "reply" : "replies"}
+              </span>
+              <CaretDown
+                size={9}
+                weight="bold"
+                className={cn(
+                  "transition-transform duration-150 ease-[var(--ease-out)]",
+                  expanded && "rotate-180"
+                )}
+              />
+            </button>
+          )}
+          {!expanded && (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="focus-ring rounded-md px-1.5 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+            >
+              Reply
+            </button>
+          )}
+        </div>
+
+        {expanded && (
+          <div className="mt-2.5 border-l-2 border-border/60 pl-3">
+            {replies.length > 0 && (
+              <ul className="flex flex-col gap-3">
+                {replies.map((r) => (
+                  <ReplyItem
+                    key={r.id}
+                    reply={r}
+                    isMe={r.author_id === currentUserId}
+                    onDelete={onDelete}
+                  />
+                ))}
+              </ul>
+            )}
+            <ReplyComposer
+              currentUser={currentUser}
+              members={members}
+              onSubmit={(text) => {
+                onSubmitReply(text);
+              }}
+              onCancel={() => setExpanded(false)}
+            />
+          </div>
+        )}
       </div>
     </li>
+  );
+}
+
+/**
+ * A single reply inside an expanded thread. Lighter visual weight than
+ * the root comment — smaller avatar, no reply/delete chrome unless
+ * authored by the viewer.
+ */
+function ReplyItem({
+  reply,
+  isMe,
+  onDelete,
+}: {
+  reply: CommentRow;
+  isMe: boolean;
+  onDelete: () => void;
+}) {
+  return (
+    <li className="flex gap-2">
+      <Avatar
+        src={reply.author?.avatar_url ?? null}
+        initials={reply.author?.initials ?? "?"}
+        color={reply.author?.avatar_color ?? "#D4D4D4"}
+        size={20}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[12px] font-semibold text-foreground">
+            {isMe ? "You" : reply.author?.name ?? "Someone"}
+          </span>
+          <RelativeTime
+            date={reply.created_at}
+            className="text-[10.5px] text-muted-foreground/70"
+          />
+          {isMe && (
+            <button
+              onClick={onDelete}
+              className="focus-ring ml-auto text-[10.5px] text-muted-foreground hover:text-rose-600"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+        <MentionRenderer
+          text={reply.body}
+          className="mt-0.5 block text-[12.5px] leading-relaxed text-foreground"
+        />
+      </div>
+    </li>
+  );
+}
+
+/**
+ * Inline composer inside an expanded thread. Smaller than the main
+ * comment composer — replies are quick by definition. Press Cmd+Enter
+ * to send, Esc to cancel.
+ */
+function ReplyComposer({
+  currentUser,
+  members,
+  onSubmit,
+  onCancel,
+}: {
+  currentUser: Profile | null;
+  members: Profile[];
+  onSubmit: (text: string) => void;
+  onCancel: () => void;
+}) {
+  const [text, setText] = useState("");
+  const send = () => {
+    const t = text.trim();
+    if (!t) return;
+    onSubmit(t);
+    setText("");
+  };
+  return (
+    <div className="mt-3 flex items-start gap-2">
+      {currentUser && (
+        <Avatar
+          src={currentUser.avatar_url}
+          initials={currentUser.initials}
+          color={currentUser.avatar_color}
+          size={20}
+        />
+      )}
+      <div className="group/reply-composer min-w-0 flex-1 border-b border-border/70 transition-colors focus-within:border-foreground/40">
+        <MentionInput
+          value={text}
+          onChange={setText}
+          onSubmit={send}
+          members={members}
+          placeholder="Reply to this thread..."
+          minRows={1}
+          ariaLabel="Reply to thread"
+          className="bg-transparent py-1 text-[13px]"
+        />
+        <div className="flex items-center justify-end gap-1 pb-1.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="focus-ring rounded-md px-2 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <Button
+            onClick={send}
+            disabled={!text.trim()}
+            size="icon-sm"
+            variant="default"
+            aria-label="Send reply"
+            className="rounded-full"
+          >
+            <ArrowUp size={12} weight="bold" />
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

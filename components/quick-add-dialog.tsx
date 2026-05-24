@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { format } from "date-fns";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -14,13 +14,16 @@ import {
   Check,
   CircleNotch,
   Flag,
+  Hash,
   PaperPlaneTilt,
   X,
 } from "@/components/icons";
+import type { ParseHint } from "@/lib/parse-task";
 import { sileo } from "sileo";
 import { cn } from "@/lib/utils";
 import { createTask } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
+import { parseTask } from "@/lib/parse-task";
 import { DatePicker } from "@/components/date-picker";
 import { Avatar } from "@/components/avatar";
 import { ProjectDot } from "@/components/project-dot";
@@ -101,18 +104,61 @@ export function QuickAddDialog({
       setProjectId(null);
       setAssigneeId(currentUserId);
     } else {
-      // Quick-add opens from four places (sidebar CTA, mobile FAB,
-      // keyboard Q, empty-state Add task buttons) — wiring the sound
-      // here covers all of them with one line instead of four.
+      // Quick-add opens from three places (sidebar CTA, mobile FAB,
+      // empty-state Add task buttons) — wiring the sound here covers
+      // all of them with one line instead of three.
       playSound("pin");
     }
   }, [open, currentUserId]);
 
+  // ── Live natural-language parsing ─────────────────────────────────
+  //
+  // Run the parser on every keystroke. The chip strip above the input
+  // surfaces what the parser saw — "Project: Platform debt", "Due:
+  // Tomorrow" etc. — so users discover the syntax visually instead of
+  // memorising it. The cleaned title (with all parsed tokens stripped)
+  // is what we actually send to the server.
+  //
+  // Parsed tokens override prior manual selections. Trade-off: if you
+  // hand-picked Today via the chip and then type "tomorrow" in the
+  // title, Today gets overwritten. Feels right in practice — what you
+  // type wins over what you clicked earlier.
+  const parsed = useMemo(
+    () => parseTask(title, { projects, members }),
+    [title, projects, members]
+  );
+
+  useEffect(() => {
+    if (parsed.projectId !== null && parsed.projectId !== projectId) {
+      setProjectId(parsed.projectId);
+    }
+    if (parsed.assigneeId !== null && parsed.assigneeId !== assigneeId) {
+      setAssigneeId(parsed.assigneeId);
+    }
+    if (parsed.priority !== null && parsed.priority !== priority) {
+      setPriority(parsed.priority);
+    }
+    if (parsed.dueAt !== null) {
+      // Compare by ISO so we don't churn on equal-value Date instances
+      if (!due || due.getTime() !== parsed.dueAt.getTime()) {
+        setDue(parsed.dueAt);
+      }
+    }
+    // We deliberately do NOT clear state when the parser stops detecting
+    // a token — backspacing "tomorrow" out of the title shouldn't clear
+    // a Today chip the user clicked. State only moves forward via the
+    // parser; clearing is a manual action.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parsed.projectId, parsed.assigneeId, parsed.priority, parsed.dueAt]);
+
   const submit = () => {
     if (!title.trim()) return;
 
-    // Capture current form parameters before optimistically clearing them
-    const savedTitle = title;
+    // Send the cleaned title (no `#proj @user tomorrow p1` tokens) — but
+    // fall back to the raw title if the parser stripped everything (the
+    // user typed nothing but tokens, which would be an empty title).
+    const cleaned = parsed.title.trim();
+    const savedTitle = cleaned || title.trim();
     const savedDescription = description;
     const savedPriority = priority;
     const savedDue = due;
@@ -214,9 +260,33 @@ export function QuickAddDialog({
 
         {/* Title + description */}
         <div className="px-6 pb-2 pt-6">
+          {/* Parse chip strip — appears above the input as soon as the
+              parser resolves a token. Doubles as a tutorial: typing
+              "#plat" makes a project chip appear, teaching the syntax
+              by demonstrating it. */}
+          {parsed.hints.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {parsed.hints.map((h, i) => (
+                <ParseChip
+                  key={`${h.kind}-${i}`}
+                  hint={h}
+                  project={
+                    h.kind === "project"
+                      ? projects.find((p) => p.id === parsed.projectId) ?? null
+                      : null
+                  }
+                  member={
+                    h.kind === "assignee"
+                      ? members.find((m) => m.id === parsed.assigneeId) ?? null
+                      : null
+                  }
+                />
+              ))}
+            </div>
+          )}
           <input
             autoFocus
-            placeholder="What needs to get done?"
+            placeholder="What needs to get done? Try #project @name tomorrow p1"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -227,6 +297,17 @@ export function QuickAddDialog({
             }}
             className="w-full bg-transparent text-[19px] font-medium leading-[1.25] tracking-[-0.005em] text-foreground outline-none placeholder:text-muted-foreground/65"
           />
+          {/* Cleaned-title preview — only shown when the parser actually
+              stripped tokens. Confirms what the user will see saved
+              without making them mentally diff their input. */}
+          {parsed.hints.length > 0 && parsed.title.trim() !== title.trim() && (
+            <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+              Saved as{" "}
+              <span className="font-medium text-foreground">
+                {parsed.title.trim() || <em className="text-muted-foreground/70">(empty)</em>}
+              </span>
+            </p>
+          )}
           <textarea
             placeholder="Add context, a link, or @mention a teammate..."
             value={description}
@@ -466,6 +547,76 @@ function QuickDateChip({
     >
       {label}
     </button>
+  );
+}
+
+/**
+ * One chip in the parse-result strip above the title input. Each chip
+ * shows what the parser resolved a token to — a project, person, due
+ * date, or priority. Visual language matches the tokens themselves:
+ * project chips carry the project dot, mention chips carry an avatar,
+ * priority chips carry the colored flag.
+ */
+function ParseChip({
+  hint,
+  project,
+  member,
+}: {
+  hint: ParseHint;
+  project: Project | null;
+  member: Profile | null;
+}) {
+  const base =
+    "inline-flex h-6 items-center gap-1.5 rounded-md border border-border bg-card px-2 text-[11.5px] font-medium text-foreground";
+  if (hint.kind === "project") {
+    return (
+      <span className={base}>
+        {project ? (
+          <ProjectDot project={project} size={8} />
+        ) : (
+          <Hash size={11} className="text-muted-foreground" />
+        )}
+        {hint.label}
+      </span>
+    );
+  }
+  if (hint.kind === "assignee") {
+    return (
+      <span className={base}>
+        {member ? (
+          <Avatar
+            src={member.avatar_url}
+            initials={member.initials}
+            color={member.avatar_color}
+            size={14}
+          />
+        ) : null}
+        {hint.label}
+      </span>
+    );
+  }
+  if (hint.kind === "priority") {
+    const tone =
+      hint.label === "P1"
+        ? "text-rose-500"
+        : hint.label === "P2"
+          ? "text-amber-500"
+          : hint.label === "P3"
+            ? "text-emerald-500"
+            : "text-muted-foreground/70";
+    return (
+      <span className={base}>
+        <Flag size={11} weight="fill" className={tone} />
+        {hint.label}
+      </span>
+    );
+  }
+  // due
+  return (
+    <span className={cn(base, "border-primary/40 text-primary")}>
+      <CalendarBlank size={11} className="text-primary" />
+      {hint.label.charAt(0).toUpperCase() + hint.label.slice(1)}
+    </span>
   );
 }
 
