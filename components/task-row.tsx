@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
+  animate,
   motion,
   AnimatePresence,
   useMotionValue,
@@ -311,7 +312,18 @@ export function TaskRow({
               } else if (info.offset.x < -100 || info.velocity.x < -600) {
                 rescheduleTomorrow();
               }
-              dragX.set(0);
+              // Spring back smoothly instead of an instant .set(0).
+              // Instant resets can look "stuck" mid-frame if the
+              // gesture is interrupted (e.g. scroll captures the
+              // pointer), and the snap to origin reads as a glitch
+              // rather than a deliberate return. A short spring also
+              // covers the commit cases — the row animates out via
+              // AnimatePresence, so the spring is just a backstop.
+              animate(dragX, 0, {
+                type: "spring",
+                duration: 0.32,
+                bounce: 0.18,
+              });
             }}
             className={cn(
               "group transition-shadow duration-150 ease-[var(--ease-out)]",
