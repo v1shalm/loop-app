@@ -24,6 +24,7 @@ export default function ProcessPage() {
       <BriefAnswers />
       <WhatIBuilt />
       <Screens />
+      <SmallCalls />
       <Principles />
       <UXDecisions />
       <ArchitectureDecisions />
@@ -82,34 +83,26 @@ function Hero() {
 function BriefAnswers() {
   return (
     <Section title="The brief, answered">
-      <Prose>
-        <p>
-          The brief asked five specific things and left three on purpose
-          ambiguous. I read it as a test of judgment first, craft
-          second. Here&apos;s how I responded to each.
-        </p>
-      </Prose>
-
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="mt-2 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <BriefRow
-          ask="Task operations: create, edit, delete with title, description, assignee, status, due date, priority."
-          ans="I shipped all six fields. Title and description are inline-editable in the drawer. Priority is a P1–P4 flag chip with five color tones. Due dates accept natural-language tokens (today, tomorrow, next week, weekday names). Status is a binary checkbox; workflow status moved up to the project (decision below)."
+          ask="Task operations with title, description, assignee, status, due date, priority."
+          ans="All six. Inline-editable in the drawer. Due dates accept natural-language input."
         />
         <BriefRow
-          ask="Teams and users: at least two teams, a few users each, tasks scoped to a team."
-          ans="Two teams seeded — Design and Engineering — with two users each. Tasks live under a team via team_id with an RLS policy that refuses cross-team reads. A Design member cannot see Engineering tasks even by guessing IDs."
+          ask="At least two teams, a few users each, tasks scoped to a team."
+          ans="Design and Engineering, two users each. Cross-team reads refused at the database, not the client."
         />
         <BriefRow
-          ask="Authentication: login flow, demo account per role."
-          ans="Real auth via Supabase magic link + Google OAuth + email/password. Four demo accounts are seeded — one admin and one member per team — and the credentials are listed below in the Demo accounts table. A reviewer can sign in as any role in seconds."
+          ask="Login flow with a demo account per role."
+          ans="Google + email/password. Four demo accounts seeded, one admin and one member per team."
         />
         <BriefRow
-          ask="Views: list or board, plus filtering by status or assignee."
-          ans="My Work and Inbox are list views grouped by section (Overdue, Today, Upcoming). Projects renders as a kanban board — one column per project, task cards stacked inside. Inbox has filter chips (All, Unread, High, Snoozed) with live counts; project pages filter by status implicitly."
+          ask="List or board view with basic filtering."
+          ans="List for My Work and Inbox, kanban for Projects. Inbox filters live on the page, no modal."
         />
         <BriefRow
-          ask="Roles: at least two with different permissions."
-          ans="Admin and member. Admins can invite members, change roles, and remove people from the team. Members can only work on tasks. The check lives in RLS via is_team_admin(team_id), so even a forged client request gets refused at the database. /team/manage is server-side gated and redirects members."
+          ask="At least two roles with different permissions."
+          ans="Admin can manage the team, member can only work on tasks. Enforced in the DB, not the UI."
         />
       </div>
 
@@ -119,28 +112,25 @@ function BriefAnswers() {
 
       <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <BriefRow
-          ask="Architecture: data persistence is your call."
-          ans="Supabase Postgres + RLS. I picked it because the brief ranks UX first and Supabase removes a whole day of auth + DB plumbing. Server actions handle writes, RLS enforces tenancy, realtime ships presence and inbox updates for free."
+          ask="Data persistence: my call."
+          ans="Supabase. Removed a day of auth and DB plumbing so I could spend the time on UX."
         />
         <BriefRow
           ask='"Multiple teams" is underspecified.'
-          ans="I decided each user belongs to exactly one team and enforced it with a unique constraint on team_members(user_id). Multi-team membership would mean a team switcher in the header and every query scoped to a current-team context — a lot of plumbing for a feature an internal task tool rarely needs. The /team/manage flow has invite-by-link so onboarding is still self-serve."
+          ans="One team per user. A team switcher adds plumbing an internal task tool doesn't need."
         />
         <BriefRow
-          ask="AI usage: reflect on one help and one override."
+          ask="AI usage: one help, one override."
           ans={
             <>
-              Below in{" "}
+              In{" "}
               <a
                 href="#ai"
                 className="font-medium text-foreground underline-offset-2 hover:underline"
               >
                 AI in the loop
-              </a>
-              . The short version: AI sketched the kanban board in ten
-              minutes. AI also wanted to ship a colored side-stripe on
-              every overdue card — I told it no, and the fix turned out
-              cleaner.
+              </a>{" "}
+              below.
             </>
           }
         />
@@ -173,45 +163,36 @@ function BriefRow({ ask, ans }: { ask: string; ans: React.ReactNode }) {
 function WhatIBuilt() {
   return (
     <Section title="What I built">
-      <Prose>
-        <p>
-          A team task tracker with two teams, four demo accounts,
-          role-gated admin tools, and live sync. The interface stays
-          quiet on purpose: opinionated type, tinted neutrals, motion
-          that decelerates instead of bouncing.
-        </p>
-      </Prose>
-
-      <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Feature
           icon={<Crosshair size={14} />}
           title="My work"
-          body="Inbox, today, upcoming. Every task that lands on you, grouped by urgency."
+          body="Tasks grouped by urgency, not stuffed into one list."
         />
         <Feature
           icon={<Tray size={14} />}
           title="Inbox triage"
-          body="Reply before accepting. Snooze with explicit wake times. No black-hole later."
+          body="Reply-first. Snooze with a visible wake time."
         />
         <Feature
           icon={<Folder size={14} />}
           title="Project board"
-          body="Kanban-style columns per project with task cards inside. Workflow status sits on the project, not the task."
+          body="Kanban columns, one per project."
         />
         <Feature
           icon={<UsersThree size={14} />}
           title="Teams + roles"
-          body="Two teams, four accounts. Admin vs member enforced in RLS, not just the client."
+          body="Admin vs member, enforced in the DB."
         />
         <Feature
           icon={<Hash size={14} />}
           title="Natural-language add"
-          body="Type #design @ravi tomorrow p1 and the chips light up live as you type. Backspace clears them."
+          body="Chips light up as you type."
         />
         <Feature
           icon={<PaperPlaneTilt size={14} />}
           title="Threaded comments"
-          body="Replies collapse under their parent. Long discussions stay scannable instead of becoming a wall."
+          body="Replies collapse under their parent."
         />
       </ul>
     </Section>
@@ -292,14 +273,11 @@ function Screens() {
     <Section title="The interface, light and dark">
       <Prose>
         <p>
-          I designed for both modes from the first commit. The
-          screenshots below are the production app — captured via
-          Playwright against the live deploy — so what you see is
-          exactly what a reviewer signing in right now would see.
-          Light on the left, dark on the right.
+          Designed for both modes from day one. Light on the left,
+          dark on the right.
         </p>
       </Prose>
-      <div className="mt-8 ml-[calc(50%-50vw+8px)] mr-[calc(50%-50vw+8px)] max-w-none sm:ml-[calc(50%-50vw+16px)] sm:mr-[calc(50%-50vw+16px)]">
+      <div className="mt-6 ml-[calc(50%-50vw+8px)] mr-[calc(50%-50vw+8px)] max-w-none sm:ml-[calc(50%-50vw+16px)] sm:mr-[calc(50%-50vw+16px)]">
         <div className="mx-auto flex max-w-[1640px] flex-col gap-10 px-2 sm:px-4">
           {SCREENS.map((s) => (
             <ScreenPair key={s.name} {...s} />
@@ -363,47 +341,78 @@ function ScreenFrame({
   );
 }
 
+// ── Small calls (modals, edge cases, smart details) ───────────────────────
+
+const SMALL_CALLS: Array<{ name: string; alt: string; caption: string }> = [
+  {
+    name: "quick-add-chips",
+    alt: "Quick add dialog with parser chips lit up above the input",
+    caption: "Type tokens, chips appear. The product teaches its own syntax.",
+  },
+  {
+    name: "notifications-popover",
+    alt: "Notifications popover open from the top bar with Mark all read",
+    caption: "One notifications surface, one Mark all read.",
+  },
+  {
+    name: "empty-filter",
+    alt: "Empty inbox with the metallic pedestal empty state",
+    caption: "Empty states earn their canvas. CTA, secondary, three tips.",
+  },
+  {
+    name: "thread-expanded",
+    alt: "Task drawer comment with a reaction and a Reply affordance",
+    caption: "Comments take reactions and threaded replies.",
+  },
+];
+
+function SmallCalls() {
+  return (
+    <Section title="The small calls">
+      <div className="mt-2 ml-[calc(50%-50vw+8px)] mr-[calc(50%-50vw+8px)] max-w-none sm:ml-[calc(50%-50vw+16px)] sm:mr-[calc(50%-50vw+16px)]">
+        <div className="mx-auto flex max-w-[1640px] flex-col gap-10 px-2 sm:px-4">
+          {SMALL_CALLS.map((s) => (
+            <ScreenPair key={s.name} {...s} />
+          ))}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 // ── Design principles ──────────────────────────────────────────────────────
 
 const PRINCIPLES: { rule: string; why: string }[] = [
   {
     rule: "Quiet defaults, loud only when it matters",
-    why: "I kept color and motion neutral until something is overdue, high-priority, or unread. Then they pop. The product should feel calm at rest and informative at attention.",
+    why: "Color and motion stay neutral until something is overdue or high-priority. Then they pop.",
   },
   {
     rule: "One screen, one job",
-    why: "My Work answers \"what do I do today.\" Inbox answers \"what wants my attention.\" Projects answers \"where does this work live.\" Whenever two surfaces started competing for the same question, I picked one and redirected the other.",
+    why: "My Work answers \"what do I do today.\" Inbox answers \"what wants my attention.\" If two screens started competing, I cut one.",
   },
   {
     rule: "Empty states earn their canvas",
-    why: "I made every blank list teach the interface: a primary CTA, a secondary action, and a short list of what this page does once it has data. No \"nothing here\" walls, no dead canvases.",
+    why: "Every blank list gets a CTA and a short orientation. No \"nothing here\" walls.",
   },
   {
     rule: "Triage is a step, not a default",
-    why: "A task assigned to me by someone else lands in Inbox until I decide. Accept, reply, or snooze with a visible wake time. Nothing gets pushed silently into my day.",
+    why: "Work from someone else lands in Inbox. I choose what to do with it before it touches my day.",
   },
   {
-    rule: "Optimistic edits, undoable in six seconds",
-    why: "I made every destructive or status-changing action feel instant. The server reconciles in the background; if it errors, I roll back and surface a toast. Six seconds of Undo on completion is enough to catch a fat-finger, short enough to feel ephemeral.",
+    rule: "Optimistic edits, undoable",
+    why: "Every action lands instantly. Six seconds of Undo on completion catches the fat-finger.",
   },
   {
     rule: "No AI slop",
-    why: "No colored side-stripes, no gradient text, no random rounded-icon tiles above every heading. If a pattern reads as \"AI made this,\" I cut it. The shortest path to looking generic is to keep every default a tool gives you.",
+    why: "No colored side-stripes, no gradient text, no decorative icon tiles. If it reads as \"AI made this,\" I cut it.",
   },
 ];
 
 function Principles() {
   return (
     <Section title="Design principles">
-      <Prose>
-        <p>
-          These are the rules I held myself to. When a decision came up
-          mid-build, I asked which principle applied first and let that
-          shape the call. I&apos;m listing them here so the decisions
-          further down read in context, not as one-offs.
-        </p>
-      </Prose>
-      <ul className="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <ul className="mt-2 grid grid-cols-1 gap-3 lg:grid-cols-2">
         {PRINCIPLES.map((p, i) => (
           <li
             key={i}
@@ -427,181 +436,115 @@ function Principles() {
 function UXDecisions() {
   return (
     <Section title="UX decisions">
-      <Prose>
-        <p>
-          The product-level calls that shaped how Loop feels to use.
-          Each one started from a principle above. I&apos;ve written
-          these as I thought about them, including the version I
-          shipped first and the one I shipped second when the first
-          didn&apos;t hold up.
-        </p>
-      </Prose>
-      <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Decision title="I made the team creator the admin by default — nobody picks their own role.">
+      <div className="mt-2 grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Decision title="Team creator becomes the admin.">
           <p>
-            When a new user signs in without a team, I land them on{" "}
-            <code>/onboarding</code> and have them create a team.
-            Creating the team makes them its admin. There&apos;s no
-            &quot;pick your role&quot; dropdown anywhere in the product,
-            because letting a self-signed-in user grant themselves admin
-            is a security smell.
-          </p>
-          <p>
-            I borrowed this from Linear, Notion, Slack, and Asana — all
-            of them treat workspace creator as admin and require every
-            other member to arrive via an invite that specifies the
-            role. The <code>/team/manage</code> page (admin-gated) lets
-            admins promote or demote teammates after the fact.
+            Letting a user pick their own role is a security smell.
+            The first user creates the team and gets admin. Everyone
+            else arrives via invite, which fixes the role. Same
+            pattern as Linear, Notion, Slack.
           </p>
         </Decision>
 
-        <Decision title="I built the inbox reply-first, not accept-first.">
+        <Decision title="Inbox is reply-first, not accept-first.">
           <p>
-            The default action on an inbox card is{" "}
-            <span className="font-medium text-foreground">Reply</span>,
-            not Accept. I thought about the behaviour: when a teammate
-            sends me a task, the first thing I usually want to ask is
-            &quot;why me?&quot; or &quot;by when?&quot;. Forcing an
-            Accept before a Reply would either accept tasks I
-            haven&apos;t agreed to or, more likely, leave a stale inbox
-            because people don&apos;t want to commit silently.
-          </p>
-          <p>
-            Snooze sits next to Reply with explicit wake times (Tomorrow
-            9am, Next Monday, Friday, In a week). I didn&apos;t want a
-            &quot;remind me later&quot; that disappears into a black
-            hole.
+            When a teammate sends me a task, the first thing I want
+            to do is ask &quot;why me?&quot;, not commit silently.
+            Reply is the default action. Accept comes after.
           </p>
         </Decision>
 
-        <Decision title="I moved workflow status off tasks and onto projects.">
+        <Decision title="Workflow status moved off tasks, onto projects.">
           <p>
-            I shipped workflow status (Draft, In progress, Waiting
-            approval, Approved, Live) on tasks first. It immediately
-            conflicted with the todo/done checkbox and added a second
-            status indicator in the drawer header. Pure noise.
-          </p>
-          <p>
-            I moved it to projects, where it actually answers the
-            question: &quot;is this piece of work approved to ship.&quot;
-            Tasks stay binary (open vs done). One indicator per row,
-            one indicator per project. Density without overlap.
+            Tried it on tasks first — clashed with the todo/done
+            checkbox and added a second status indicator. Status
+            belongs at the project level. Tasks stay binary.
           </p>
         </Decision>
 
-        <Decision title="I consolidated three sidebar sections into one right rail.">
+        <Decision title="Three sidebar widgets → one right rail.">
           <p>
-            My first pass had Today, Team Pulse, and Recent Activity as
-            three separate sidebar sections. The sidebar got crowded
-            and the canvas felt small. I rebuilt them into a single
-            right-rail card with hairline dividers and moved Team Pulse
-            out of the left sidebar entirely. Two columns of attention
-            instead of three.
+            Today, Team Pulse, and Recent Activity sat as three
+            sidebar sections at first. The canvas felt cramped. One
+            consolidated card on the right freed the canvas and gave
+            them a clearer relationship.
           </p>
         </Decision>
 
-        <Decision title="I made the task drawer a floating panel, not a route.">
+        <Decision title="Task drawer floats. It isn&apos;t a new page.">
           <p>
-            Opening a task could have been a <code>/tasks/[id]</code>{" "}
-            route. Instead I made it a floating panel anchored from the
-            right, inset from the edges, with a Vaul-style slide curve.
-            The benefit: I stay in my context (the list I came from),
-            the drawer URL is shareable via{" "}
-            <code>?task=&lt;id&gt;</code>, and Escape closes it without
-            losing my scroll position.
+            Opening a task slides this panel in instead of taking
+            you to <code>/tasks/[id]</code>. You don&apos;t lose the
+            list. The URL still updates with <code>?task=</code> so
+            the view stays shareable.
           </p>
         </Decision>
 
-        <Decision title="I let self-assigned tasks skip the inbox.">
+        <Decision title="Self-assigned tasks skip the inbox.">
           <p>
-            If I create a task and assign it to myself, it lands
-            straight in My Work. No triage step. Triage exists to let
-            me decide whether to accept work from someone else; it
-            would be silly to triage my own work.
+            Triage exists to decide whether to accept work from
+            someone else. Triaging your own work is silly. Self-
+            assign lands straight in My Work.
           </p>
         </Decision>
 
-        <Decision title="I made the parser visible — chips light up as you type.">
+        <Decision title="The parser shows its work.">
           <p>
-            Loop reads tokens like <code>#project @name p1 tomorrow</code>{" "}
-            inline. First version just stripped them silently and
-            hoped you trusted it. Now chips appear above the input
-            as each one is recognised, plus a small &quot;Saved as: …&quot;
-            preview of the final title.
-          </p>
-          <p>
-            The chips double as a tutorial — typing{" "}
-            <code>#plat</code> makes a project chip appear, which
-            teaches the syntax better than a help doc ever could.
+            First version stripped <code>#project @name p1 tomorrow</code>{" "}
+            silently. Now the chips appear above the input as each
+            token is recognised — the product teaches its own syntax.
             Borrowed from Todoist.
           </p>
         </Decision>
 
-        <Decision title="Comments thread one level deep — no nested arguments.">
+        <Decision title="Comment threads, one level deep.">
           <p>
-            Long task discussions in a flat list become a wall of
-            text. I borrowed Slack&apos;s model: each top-level
-            comment can hold a reply chain, collapsed by default with
-            a &quot;N replies&quot; pill that peeks the latest
-            replier&apos;s avatar.
-          </p>
-          <p>
-            One level deep on purpose — nobody wants a 5-level
-            nested argument in their task tracker.
+            Long discussions in a flat list become a wall. Replies
+            collapse under their parent. One level only — nobody
+            wants a 5-deep argument in a task tracker.
           </p>
         </Decision>
 
-        <Decision title="I moved search and notifications to the top bar.">
+        <Decision title="Search and notifications in the top bar.">
           <p>
-            They lived in the sidebar header at first. When the
-            sidebar collapsed, both disappeared. I moved them to a
-            sticky top bar so they&apos;re always visible, and the
-            sidebar went back to being just navigation. Two jobs,
-            two places.
+            They lived in the sidebar header first. When the sidebar
+            collapsed, they disappeared. Moved to a top bar so
+            they&apos;re always reachable.
           </p>
         </Decision>
 
-        <Decision title="I removed every keyboard shortcut.">
+        <Decision title="No keyboard shortcuts.">
           <p>
-            I had ⌘K, Q, and ? wired up early on. Then I thought
-            about who actually uses Loop: internal team members,
-            not Linear power users. Shortcuts crowd the UI with key
-            chips and add a hidden layer of how-to. So I cut all of
-            them. The visible search box and the Add task button do
-            the same jobs, more discoverably.
+            ⌘K, Q, and ? were wired early. Then I asked who uses
+            Loop — internal team members, not Linear power users. I
+            cut all of them. The visible search box and Add task
+            button do the same jobs, more discoverably.
           </p>
         </Decision>
 
-        <Decision title="I gave filtered empty states their own message.">
+        <Decision title="Filtered empty states get their own message.">
           <p>
-            If I filter inbox by <code>@Priya</code> and see &quot;All
-            caught up,&quot; that&apos;s a lie — the inbox isn&apos;t
-            empty, the filter is. I made the empty state aware of
-            filters: when one is active, the message becomes &quot;No
-            tasks match this filter&quot; with a one-click Clear button.
-            Tiny detail, big difference in trust.
+            Filtering inbox by <code>@Priya</code> and seeing &quot;All
+            caught up&quot; is a lie. When a filter is active, the
+            message becomes &quot;No tasks match this filter&quot;
+            with a Clear button.
           </p>
         </Decision>
 
-        <Decision title="I surfaced collaborators with a tiny +N pip.">
+        <Decision title="Collaborators show as a +N pip.">
           <p>
-            A task can have one owner and multiple collaborators.
-            But the row was only showing the owner&apos;s avatar — so
-            you couldn&apos;t tell which tasks had more people on
-            them at a glance. I added a small <code>+N</code> pip in
-            the corner of the primary avatar. No extra space taken,
-            the information is just there when you need it.
+            A task can have one owner and several collaborators. The
+            row only showed the owner. A small <code>+N</code> in the
+            corner of the avatar tells you the rest are there.
           </p>
         </Decision>
 
-        <Decision title="No widows, anywhere — set as a global rule.">
+        <Decision title="No widows. Set as a global rule.">
           <p>
             One screenshot showed an empty-state hint ending with
             &quot;now.&quot; on its own line. Instead of fixing that
-            paragraph, I made it a global rule: every paragraph and
-            heading in the app now auto-corrects to avoid orphan
-            words on the last line. Small detail you only notice
-            when it&apos;s broken.
+            paragraph, I made it global. Every prose block in the app
+            self-corrects now.
           </p>
         </Decision>
       </div>
@@ -615,97 +558,54 @@ function ArchitectureDecisions() {
   return (
     <Section title="Architecture decisions">
       <div className="mt-2 grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Decision title="Stack: Next.js 16 + Supabase + Tailwind v4.">
+        <Decision title="Next.js + Supabase + Tailwind.">
           <p>
-            Next.js 16 with the App Router gives me server components,
-            server actions, and middleware-based auth gating — so I
-            don&apos;t have to wire auth myself. Supabase is the BaaS:
-            Postgres with RLS, hosted auth (Google + magic link),
-            realtime over websockets. Tailwind v4 keeps styling in the
-            markup; OKLCH tokens in <code>globals.css</code> stay
-            perceptually consistent across themes.
-          </p>
-          <p>
-            The alternative was Node + Prisma + custom auth. Day one
-            would have gone to plumbing. The brief ranks UX first, so I
-            picked the path that ships features fast and saves the
-            polish budget for the surfaces a reviewer actually touches.
+            Supabase removes a day of auth and DB plumbing. The brief
+            ranks UX first, so I picked the stack that ships features
+            fast and saves the polish budget for the surfaces a
+            reviewer actually touches.
           </p>
         </Decision>
 
-        <Decision title="Teams model: one team per user, enforced in the DB.">
+        <Decision title="One team per user.">
           <p>
-            The brief says &quot;users can be assigned tasks only within
-            their team,&quot; so I decided each user belongs to exactly
-            one team. A unique index on{" "}
-            <code>team_members(user_id)</code> enforces it in the
-            database. The user never sees a team switcher, never gets a
-            &quot;which team is this in?&quot; question, and never
-            spills tasks across teams.
-          </p>
-          <p>
-            Multi-team membership would have meant a switcher in the
-            header, every query scoped to &quot;current team&quot;
-            instead of &quot;my team,&quot; a context provider, and
-            edge cases like &quot;what does Inbox mean if I&apos;m on
-            three teams?&quot;. For a 2-day build, none of that pays
-            off. The decision is reversible later — the schema supports
-            multi-team if I drop the unique index.
+            Enforced with a unique index in the DB. A team switcher,
+            current-team context, and edge cases like &quot;what does
+            Inbox mean across three teams?&quot; aren&apos;t worth it
+            for a 2-day build. Reversible later if needed.
           </p>
         </Decision>
 
-        <Decision title="Roles: admin and member, enforced at the database.">
+        <Decision title="Roles enforced at the database.">
           <p>
-            <code>team_members.role</code> is either{" "}
-            <code>&apos;admin&apos;</code> or{" "}
-            <code>&apos;member&apos;</code>. Admins can add/remove team
-            members and change other roles; members cannot. The check
-            lives in RLS via an <code>is_team_admin(team_id)</code>{" "}
-            function. An app-code check alone would be bypassable; the
-            database refuses the write.
-          </p>
-          <p>
-            The <code>/team/manage</code> page is server-side gated. A
-            member who hits the URL gets redirected to{" "}
-            <code>/team</code>. Even if someone reaches the form, RLS
-            refuses the write.
+            Admin vs member lives in an{" "}
+            <code>is_team_admin()</code> RLS function. An app-only
+            check is bypassable; the DB refuses the write either way.
           </p>
         </Decision>
 
-        <Decision title="Auth: Supabase + Google OAuth + four seeded demo accounts.">
+        <Decision title="Real auth, not a fake password gate.">
           <p>
-            Real auth, not a fake password gate. Reviewers can sign in
-            with Google or with one of four seeded demo accounts (admin
-            and member per team) and see role isolation in seconds. The
-            demo credentials live in the table at the bottom of this
-            page — for a reviewer-facing demo I traded security theatre
-            for speed.
+            Google OAuth + email/password via Supabase. Four demo
+            accounts seeded — one admin and one member per team — with
+            credentials in the table below.
           </p>
         </Decision>
 
-        <Decision title="Region: Mumbai (ap-south-1).">
+        <Decision title="Region: Mumbai.">
           <p>
-            Default Supabase region is US-East. From Mumbai, round-trip
-            is ~180ms. ap-south-1 brings it to ~67ms. Initial page
-            loads and inline edits (rename, reassign, mark complete)
-            feel measurably faster.
+            Default Supabase region is US-East (~180ms round-trip).
+            ap-south-1 brings it to ~67ms. Inline edits feel
+            measurably faster.
           </p>
         </Decision>
 
-        <Decision title="Optimistic UI everywhere mutations happen.">
+        <Decision title="Optimistic UI everywhere.">
           <p>
-            Every mutation — complete, delete, reassign, reschedule,
-            pin, theme change — updates the client state first, then
-            calls the server action inside a{" "}
-            <code>startTransition</code>. If the server errors, the
-            client rolls back and a toast surfaces the error. I built a
-            shared <code>OptimisticDeletesProvider</code> so the row,
-            the drawer, and the bulk-action bar all hide a deleted
-            task in the same render cycle.
-          </p>
-          <p>
-            The perceived latency of every action is &lt;16ms. Real
-            network latency happens silently in the background.
+            Every mutation lands instantly on the client, then the
+            server reconciles. If it errors, I roll back and surface
+            a toast. Perceived latency is under 16ms; the network
+            happens in the background.
           </p>
         </Decision>
       </div>
@@ -739,10 +639,9 @@ function AILoop() {
     <Section title="AI in the loop" id="ai">
       <Prose>
         <p>
-          I used Claude Code as a build partner, not a designer. I
-          made the product calls; Claude turned them into code. Here
-          is one moment where that worked well, and one where I had
-          to pull it back.
+          Claude as a build partner, not a designer. I made the
+          product calls; Claude wrote the code. One win, one
+          override.
         </p>
       </Prose>
 
@@ -864,13 +763,12 @@ function DemoAccounts() {
     <Section title="Demo accounts">
       <Prose>
         <p>
-          I&apos;d sign in as an admin first to see the full surface,
-          then switch to the same team&apos;s member account to feel
-          the role gating. Each team has one of each.
+          Sign in as an admin to see the full surface, or a member
+          to feel the role gating.
         </p>
       </Prose>
 
-      <div className="mt-5 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

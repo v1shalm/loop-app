@@ -77,6 +77,112 @@ const screens = [
     path: "/team/manage",
     label: "Manage team (admin only)",
   },
+
+  // ── Modals, edge cases, smart details ───────────────────────────────────
+  //
+  // These are the moments that don't show up in a list-view tour: a
+  // dialog open, a thread expanded, a filter applied to zero results.
+  // Each one is captured with a small interaction script.
+
+  {
+    name: "quick-add-chips",
+    auth: true,
+    path: "/assigned-to-me",
+    label: "Quick add — parser chips light up as you type",
+    action: async (page) => {
+      try {
+        // Click the sidebar "Add task" CTA (the primary brand button).
+        // Mobile FAB uses an aria-label; desktop CTA shows the text.
+        await page
+          .locator('button:has-text("Add task")')
+          .first()
+          .click();
+        await page.waitForSelector(
+          'input[placeholder*="needs to get done"]',
+          { timeout: 8000 }
+        );
+        const input = page
+          .locator('input[placeholder*="needs to get done"]')
+          .first();
+        // Type a string that exercises all four parsers: project,
+        // person, date, priority.
+        await input.fill("Fix homepage hero #brand @mia tomorrow p1");
+        await page.waitForTimeout(1200); // let chips resolve
+      } catch (err) {
+        console.log(`    (quick-add interaction failed: ${err.message?.split("\n")[0]})`);
+      }
+    },
+  },
+  {
+    name: "notifications-popover",
+    auth: true,
+    path: "/assigned-to-me",
+    label: "Notifications — single surface, mark all read",
+    action: async (page) => {
+      try {
+        await page.waitForTimeout(1000);
+        await page
+          .locator('button[aria-label="Notifications"]')
+          .first()
+          .click();
+        await page.waitForTimeout(1200);
+      } catch (err) {
+        console.log(`    (notifications interaction failed: ${err.message?.split("\n")[0]})`);
+      }
+    },
+  },
+  {
+    name: "empty-filter",
+    auth: true,
+    path: "/inbox",
+    label: "Filtered empty — \"No tasks match this filter\"",
+    action: async (page) => {
+      try {
+        // Try the "Snoozed" filter chip first (most likely to be empty
+        // for the seeded demo data). Fall through if not found.
+        const snoozed = page
+          .locator('button:has-text("Snoozed")')
+          .first();
+        await snoozed.waitFor({ state: "visible", timeout: 4000 });
+        await snoozed.click();
+        await page.waitForTimeout(800);
+      } catch (err) {
+        console.log(`    (filter-empty interaction failed: ${err.message?.split("\n")[0]})`);
+      }
+    },
+  },
+  {
+    name: "thread-expanded",
+    auth: true,
+    path: "/assigned-to-me",
+    label: "Comments — threads collapsed by default, expandable",
+    action: async (page) => {
+      try {
+        // Open the first task in the list.
+        const titleButton = page
+          .locator(
+            'button[aria-label^="Open "]:not([aria-label="Open account menu"])'
+          )
+          .first();
+        await titleButton.waitFor({ state: "visible", timeout: 5000 });
+        await titleButton.click();
+        await page.waitForURL(/\?task=/, { timeout: 8000 });
+        await page.waitForTimeout(2000);
+
+        // If this task has a comment with replies, expand them. The
+        // toggle reads "N replies".
+        const replyToggle = page
+          .locator('button:has-text("replies")')
+          .first();
+        if ((await replyToggle.count()) > 0) {
+          await replyToggle.click();
+          await page.waitForTimeout(900);
+        }
+      } catch (err) {
+        console.log(`    (thread-expand interaction failed: ${err.message?.split("\n")[0]})`);
+      }
+    },
+  },
 ];
 
 async function login(page) {

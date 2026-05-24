@@ -22,5 +22,21 @@
   {
     "name": "manage-team",
     "label": "Manage team (admin only)"
+  },
+  {
+    "name": "quick-add-chips",
+    "label": "Quick add — parser chips light up as you type"
+  },
+  {
+    "name": "notifications-popover",
+    "label": "Notifications — single surface, mark all read"
+  },
+  {
+    "name": "empty-filter",
+    "label": "Filtered empty — \"No tasks match this filter\""
+  },
+  {
+    "name": "thread-expanded",
+    "label": "Comments — threads collapsed by default, expandable"
   }
 ]
