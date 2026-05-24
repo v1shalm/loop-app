@@ -63,7 +63,12 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
           All teammates
         </Link>
 
-        <header className="mb-6 flex items-center gap-4 rounded-2xl border border-border/60 bg-card p-5 shadow-soft-sm">
+        {/* Card uses flex-wrap so the two stats drop onto a second row on
+            narrow viewports. Without this, on a 360px phone the stats
+            stole horizontal space from the name+status column and the
+            three columns overlapped each other (name wrapped to two
+            lines, "(you)" landed on top of the Active value). */}
+        <header className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-4 rounded-2xl border border-border/60 bg-card p-5 shadow-soft-sm">
           <Avatar
             src={member.avatar_url}
             initials={member.initials}
@@ -89,8 +94,15 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
               )}
             </p>
           </div>
-          <Stat label="Active" value={member.open_tasks} />
-          <Stat label="Done today" value={member.completed_today} />
+          {/* basis-full on mobile forces the stats container onto its
+              own row (flex-wrap kicks in). On desktop the basis is auto,
+              so they stay inline to the right as before. md:text-right
+              preserves the previous desktop alignment via inheritance;
+              the wrapped mobile row reads left-aligned by default. */}
+          <div className="flex items-baseline gap-8 max-md:basis-full max-md:border-t max-md:border-border/40 max-md:pt-4 md:text-right">
+            <Stat label="Active" value={member.open_tasks} />
+            <Stat label="Done today" value={member.completed_today} />
+          </div>
         </header>
 
         <Section title="Overdue" tone="warn" tasks={overdue} />
@@ -118,8 +130,10 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
+  // Alignment is owned by the parent container (text-right inline on
+  // desktop, default left when wrapped onto a second row on mobile).
   return (
-    <div className="text-right">
+    <div>
       <div className="text-[18px] font-semibold tabular-nums text-foreground">
         {value}
       </div>
