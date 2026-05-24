@@ -74,7 +74,7 @@ export function BulkActionBar({ members }: { members: Profile[] }) {
           transition={{ type: "spring", duration: 0.4, bounce: 0.2 }}
           role="toolbar"
           aria-label="Bulk actions"
-          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2"
+          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 max-md:bottom-[calc(64px+env(safe-area-inset-bottom,0px))]"
         >
           <div className="flex items-center gap-1 rounded-xl border border-border bg-card px-2 py-1.5 shadow-soft-md ring-1 ring-foreground/5">
             <span className="px-2.5 text-[12.5px] font-medium tabular-nums text-foreground">
