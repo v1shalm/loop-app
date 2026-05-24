@@ -340,9 +340,9 @@ export async function createTeam(input: {
         due_at: day(0),
       },
       {
-        title: "Invite a teammate from /team",
+        title: "Invite a teammate",
         description:
-          "Loop works best with at least one other person. Open Team from the sidebar to invite someone.",
+          "Loop works best with at least one other person. Open Team → Manage from the sidebar, generate an invite link, and share it with them.",
         priority: 2,
         due_at: day(1),
       },
@@ -475,6 +475,137 @@ export async function changeTeamMemberRole(
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+// ── Team invitations ──────────────────────────────────────────────────────────
+//
+// Admins generate a token-keyed invitation row that yields a shareable
+// URL (`<origin>/accept-invite/<token>`). The admin pastes that link
+// into Slack/email; the recipient signs in to Loop (Google OAuth or
+// magic link), then accepts via the accept_team_invitation RPC.
+//
+// We deliberately don't auto-send the email here — no SMTP dependency,
+// no service-role-key requirement. The migration is set up for an
+// email-delivery path to be bolted on later without schema changes.
+
+/**
+ * URL-safe random token. 32 bytes → 43 chars in base64url, ~256 bits of
+ * entropy. Brute-forcing this is infeasible, so the token itself is
+ * the auth credential for the lookup_invitation_by_token RPC.
+ */
+function generateInviteToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  // base64url, no padding
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export interface SendInviteResult {
+  ok?: true;
+  error?: string;
+  /** Token to build the accept-invite URL on the client. */
+  token?: string;
+}
+
+export async function sendInvite(
+  email: string,
+  role: "admin" | "member"
+): Promise<SendInviteResult> {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) return { error: "Email required." };
+  // Light validation — Postgres won't reject malformed addresses, and
+  // a typo silently creates an invitation that no one can accept.
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)) {
+    return { error: "That doesn't look like an email address." };
+  }
+
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const [profile, team] = await Promise.all([getCurrentProfile(), getMyTeam()]);
+  if (!profile) return { error: "Not signed in." };
+  if (!team) return { error: "You're not on a team." };
+
+  const token = generateInviteToken();
+
+  // team_invitations isn't in the generated database.types yet — use
+  // the same `(supabase as any)` cast pattern as the other recent
+  // tables (saved_views, etc.).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from("team_invitations")
+    .insert({
+      team_id: team.id,
+      email: trimmed,
+      role,
+      token,
+      invited_by: profile.id,
+    });
+
+  if (error) {
+    if (
+      error.message.includes("team_invitations_one_pending_per_email") ||
+      error.message.toLowerCase().includes("duplicate")
+    ) {
+      return {
+        error: "There's already a pending invite for that email. Cancel it first.",
+      };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath("/team/manage");
+  return { ok: true, token };
+}
+
+export async function cancelInvite(
+  invitationId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  // RLS handles the admin check — non-admins get a no-op update.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error, data } = await (supabase as any)
+    .from("team_invitations")
+    .update({ status: "revoked" })
+    .eq("id", invitationId)
+    .eq("status", "pending")
+    .select("id");
+
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) {
+    return { error: "Couldn't cancel — invitation may already be accepted." };
+  }
+  revalidatePath("/team/manage");
+  return { ok: true };
+}
+
+/**
+ * Called by the accept-invite page when the signed-in invitee clicks
+ * the Accept button. Delegates to the accept_team_invitation Postgres
+ * RPC, which enforces all the cross-table constraints (email match,
+ * one-team-per-user, status, expiry) atomically.
+ */
+export async function acceptInvite(
+  token: string
+): Promise<{ teamId?: string; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  // RPC isn't in the generated types (database.types only knows the
+  // pre-existing helpers). Cast to any to bypass the union check.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc(
+    "accept_team_invitation",
+    { t: token }
+  );
+
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { teamId: data as string };
 }
 
 export async function createTask(

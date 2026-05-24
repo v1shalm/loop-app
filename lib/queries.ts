@@ -241,6 +241,41 @@ export const getTeamMembersWithRole = cache(
   }
 );
 
+// ── Invitations ──────────────────────────────────────────────────────────────
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: "admin" | "member";
+  token: string;
+  expires_at: string;
+  created_at: string;
+}
+
+/**
+ * Pending invitations for the current user's team. RLS already scopes
+ * the read to admins of the team — non-admins get an empty list.
+ */
+export const getPendingInvitations = cache(
+  async (): Promise<PendingInvitation[]> => {
+    const supabase = await getSupabaseServer();
+    if (!supabase) return [];
+    const team = await getMyTeam();
+    if (!team) return [];
+
+    // team_invitations isn't in the generated database.types yet —
+    // cast supabase to any (same pattern as saved_views, etc.).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("team_invitations")
+      .select("id, email, role, token, expires_at, created_at")
+      .eq("team_id", team.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+    return (data ?? []) as PendingInvitation[];
+  }
+);
+
 // ── Task lists ────────────────────────────────────────────────────────────────
 
 /**

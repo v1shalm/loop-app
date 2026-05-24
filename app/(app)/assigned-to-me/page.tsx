@@ -113,7 +113,7 @@ export default async function AssignedToMePage() {
                 actionLabel="Assign your first task"
                 secondary={{
                   label: "Invite a teammate",
-                  href: "/team",
+                  href: "/team/manage",
                 }}
                 tips={[
                   "Self-assigned tasks land straight here, no inbox step.",

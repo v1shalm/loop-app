@@ -30,6 +30,7 @@ export {
   Circle,
   CircleNotch,
   Clock,
+  Copy,
   Crosshair,
   Desktop,
   DotsSixVertical,

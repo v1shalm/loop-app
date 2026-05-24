@@ -41,7 +41,7 @@ export default async function InboxPage() {
                 actionLabel="Assign your first task"
                 secondary={{
                   label: "Invite a teammate",
-                  href: "/team",
+                  href: "/team/manage",
                 }}
                 tips={[
                   "Tasks someone else assigns to you appear here first.",

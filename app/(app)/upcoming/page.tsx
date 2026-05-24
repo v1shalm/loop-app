@@ -85,7 +85,7 @@ export default async function UpcomingPage({ searchParams }: PageProps) {
                 actionLabel="Add a task"
                 secondary={{
                   label: "Invite a teammate",
-                  href: "/team",
+                  href: "/team/manage",
                 }}
                 tips={[
                   "Tasks due tomorrow through the next two weeks show up grouped here.",

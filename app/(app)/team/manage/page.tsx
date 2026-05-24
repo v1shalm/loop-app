@@ -5,6 +5,7 @@ import { ManageTeamUI } from "@/components/manage-team-ui";
 import {
   getMyTeam,
   getMyTeamRole,
+  getPendingInvitations,
   getTeamMembersWithRole,
 } from "@/lib/queries";
 
@@ -15,10 +16,11 @@ export const metadata = { title: "Manage team · Loop" };
  * Members redirect to /team (read-only list) so they never see the controls.
  */
 export default async function ManageTeamPage() {
-  const [team, role, members] = await Promise.all([
+  const [team, role, members, pendingInvites] = await Promise.all([
     getMyTeam(),
     getMyTeamRole(),
     getTeamMembersWithRole(),
+    getPendingInvitations(),
   ]);
 
   if (role !== "admin") {
@@ -33,7 +35,7 @@ export default async function ManageTeamPage() {
       />
 
       <div className="mx-auto w-full max-w-[760px] px-8 pb-24 pt-8">
-        <ManageTeamUI members={members} />
+        <ManageTeamUI members={members} pendingInvites={pendingInvites} />
       </div>
     </div>
   );
