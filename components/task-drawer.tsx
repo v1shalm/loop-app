@@ -62,7 +62,7 @@ import {
 } from "@/components/mention-input";
 import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
-import { ProjectDot } from "@/components/project-dot";
+import { ProjectDot, projectColor } from "@/components/project-dot";
 import { Button } from "@/components/ui/button";
 
 // Inlined to avoid pulling lib/queries.ts (which imports server-only code)
@@ -1022,16 +1022,33 @@ function Header({
 }) {
   const project = task?.project as Project | null | undefined;
   const label = project?.name ?? "Inbox";
+  // Rounded icon tile — Folder tinted with the project's color when
+  // attached to a project, hash on a primary wash for Inbox. Gives the
+  // header more visual weight than a 9px dot and reads as a real
+  // "container" affordance: the project this task lives in.
+  const tile = project ? (
+    <span
+      aria-hidden
+      className="grid size-7 shrink-0 place-items-center rounded-md"
+      style={{
+        backgroundColor: `color-mix(in oklch, ${projectColor(project)} 18%, transparent)`,
+        color: projectColor(project),
+      }}
+    >
+      <Folder size={14} weight="fill" />
+    </span>
+  ) : (
+    <span
+      aria-hidden
+      className="grid size-7 shrink-0 place-items-center rounded-md bg-primary/12 text-primary"
+    >
+      <Hash size={14} weight="bold" />
+    </span>
+  );
   return (
     <div className="flex items-center gap-2.5 border-b border-border/60 px-4 py-3">
-      {project ? (
-        <ProjectDot project={project} size={9} />
-      ) : (
-        <span className="grid size-7 place-items-center rounded-md bg-primary/10 text-primary">
-          <Hash size={13} weight="bold" />
-        </span>
-      )}
-      <h2 className="min-w-0 truncate text-[13px] font-semibold tracking-tight text-foreground">
+      {tile}
+      <h2 className="min-w-0 truncate text-[13.5px] font-semibold tracking-tight text-foreground">
         {label}
       </h2>
       {pending && (
