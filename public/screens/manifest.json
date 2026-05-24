@@ -17,10 +17,10 @@
   },
   {
     "name": "task-drawer",
-    "label": "Task drawer — floating SHOP-style panel"
+    "label": "Task drawer — floating panel with threaded comments"
   },
   {
     "name": "manage-team",
-    "label": "Manage team (admin-only)"
+    "label": "Manage team (admin only)"
   }
 ]

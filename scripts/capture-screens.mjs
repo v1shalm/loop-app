@@ -1,16 +1,24 @@
-// One-off: log into the deployed app as Alex (Design admin) and capture
-// the screens we embed in the /process case study. Run with:
-//   node scripts/capture-screens.mjs
-// Output goes to public/screens/*.png
+// Capture the case-study screenshots from the deployed app in BOTH
+// light and dark mode. Output:
+//   public/screens/light/<name>.png
+//   public/screens/dark/<name>.png
+//
+// I take screenshots against production so the case study reflects
+// exactly what a reviewer sees. The script logs in as Alex (Design
+// admin), force-sets the theme via localStorage, then walks the same
+// six surfaces twice. Theme is set via Playwright's addInitScript so
+// the .dark class is on the <html> by first paint — no FOUC.
+//
+// Run with: `node scripts/capture-screens.mjs`
 
 import { chromium } from "playwright";
-import { writeFile } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const BASE = process.env.LOOP_URL ?? "https://loop-tist.vercel.app";
 const EMAIL = "alex@loop.app";
 const PASSWORD = "alex-loop-2026";
-const OUT = "public/screens";
+const OUT_ROOT = "public/screens";
 
 const screens = [
   {
@@ -41,79 +49,121 @@ const screens = [
     name: "task-drawer",
     auth: true,
     path: "/assigned-to-me",
-    label: "Task drawer — floating SHOP-style panel",
+    label: "Task drawer — floating panel with threaded comments",
     action: async (page) => {
-      // Click the actual task title text to open the drawer (the profile
-      // trigger also has aria-label^="Open", which is why a generic
-      // selector grabbed the wrong button)
-      await page.locator('text=Review dashboard chart spacing').first().click();
-      await page.waitForURL(/\?task=/, { timeout: 10000 });
-      await page.waitForTimeout(1500);
+      // Open the drawer by clicking the first task-title button. The
+      // selector excludes the profile-menu trigger (aria-label="Open
+      // account menu") and any other generic "Open …" buttons. If the
+      // assigned-to-me list is empty for the demo user, fall through
+      // gracefully and screenshot the page without the drawer.
+      try {
+        const titleButton = page.locator(
+          'button[aria-label^="Open "]:not([aria-label="Open account menu"])'
+        ).first();
+        await titleButton.waitFor({ state: "visible", timeout: 6000 });
+        await titleButton.click();
+        await page.waitForURL(/\?task=/, { timeout: 8000 });
+        await page.waitForTimeout(1800);
+      } catch {
+        console.log(
+          "    (no task to open — capturing the list view instead)"
+        );
+      }
     },
   },
   {
     name: "manage-team",
     auth: true,
     path: "/team/manage",
-    label: "Manage team (admin-only)",
+    label: "Manage team (admin only)",
   },
 ];
 
 async function login(page) {
-  console.log("  signing in as Alex...");
-  await page.goto(`${BASE}/login`);
-  // The demo grid renders 4 buttons; click the one labeled Alex
-  await page.waitForSelector('text="Alex"', { timeout: 15000 });
-  await page.locator('button:has-text("Alex"):has-text("Admin")').first().click();
-  await page.waitForURL(/\/(assigned-to-me|today)/, { timeout: 15000 });
-  // Let the layout settle (right rail mounts after first paint)
+  console.log("    signing in as Alex via email + password…");
+  await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
+  // The login page is a single Google + email/password form; fill the
+  // email field, then password, then submit. Look for the password
+  // input by type to avoid coupling to label text changes.
+  await page.waitForSelector('input[type="email"]', { timeout: 15000 });
+  await page.locator('input[type="email"]').first().fill(EMAIL);
+  await page.locator('input[type="password"]').first().fill(PASSWORD);
+  await page.locator('button[type="submit"]:has-text("Sign in")').first().click();
+  await page.waitForURL(/\/(assigned-to-me|today)/, { timeout: 20000 });
+  // Let the layout settle (right rail mounts after first paint).
   await page.waitForTimeout(2500);
 }
 
-async function main() {
-  const browser = await chromium.launch();
+async function captureMode(browser, mode) {
+  console.log(`\n▼ ${mode.toUpperCase()} MODE`);
   const ctx = await browser.newContext({
     viewport: { width: 1440, height: 880 },
     deviceScaleFactor: 2,
   });
+  // Force the theme before any page script runs. The theme-provider
+  // reads loop:theme from localStorage on first render and applies the
+  // .dark class; setting it here means no light → dark flash.
+  await ctx.addInitScript((m) => {
+    try {
+      window.localStorage.setItem("loop:theme", m);
+    } catch {}
+  }, mode);
+
   const page = await ctx.newPage();
   page.setDefaultTimeout(20000);
 
-  let signedIn = false;
+  const outDir = join(OUT_ROOT, mode);
+  await mkdir(outDir, { recursive: true });
 
+  let signedIn = false;
   for (const s of screens) {
-    console.log(`→ ${s.name}`);
-    if (s.auth && !signedIn) {
-      await login(page);
-      signedIn = true;
-    }
-    if (s.path === "/login") {
-      // /login auto-redirects logged-in users to /assigned-to-me, so sign
-      // out first if we need a clean login shot.
-      if (signedIn) {
-        await ctx.clearCookies();
-        signedIn = false;
+    console.log(`  → ${s.name}`);
+    try {
+      if (s.auth && !signedIn) {
+        await login(page);
+        signedIn = true;
       }
-      await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
-    } else {
-      await page.goto(`${BASE}${s.path}`, { waitUntil: "networkidle" });
+      if (s.path === "/login") {
+        // /login auto-redirects authed users → sign out for a clean shot.
+        if (signedIn) {
+          await ctx.clearCookies();
+          signedIn = false;
+        }
+        await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
+      } else {
+        await page.goto(`${BASE}${s.path}`, { waitUntil: "networkidle" });
+      }
+      await page.waitForTimeout(2000);
+      if (s.action) await s.action(page);
+      const out = join(outDir, `${s.name}.png`);
+      await page.screenshot({ path: out, fullPage: false });
+      console.log(`    wrote ${out}`);
+    } catch (err) {
+      // Don't let one bad screen abort the whole run. Log and continue
+      // so the other mode screens still capture cleanly.
+      console.log(`    ✗ skipped ${s.name}: ${err.message?.split("\n")[0]}`);
     }
-    await page.waitForTimeout(2000);
-    if (s.action) await s.action(page);
-    const out = join(OUT, `${s.name}.png`);
-    await page.screenshot({ path: out, fullPage: false });
-    console.log(`  wrote ${out}`);
   }
 
-  // Manifest so the case study can iterate without hard-coding
+  await ctx.close();
+}
+
+async function main() {
+  const browser = await chromium.launch();
+
+  for (const mode of ["light", "dark"]) {
+    await captureMode(browser, mode);
+  }
+
+  // Manifest carries the screen list once; mode dirs hold the bitmaps.
   const manifest = screens.map((s) => ({ name: s.name, label: s.label }));
   await writeFile(
-    "public/screens/manifest.json",
+    join(OUT_ROOT, "manifest.json"),
     JSON.stringify(manifest, null, 2)
   );
 
   await browser.close();
-  console.log("✓ done");
+  console.log("\n✓ done — screens in public/screens/{light,dark}/");
 }
 
 main().catch((err) => {
