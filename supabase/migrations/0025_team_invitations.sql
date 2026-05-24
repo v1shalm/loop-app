@@ -61,17 +61,24 @@ alter table public.team_invitations enable row level security;
 -- just keeps the surface area minimal). Anyone outside the team is fully
 -- locked out; they can only reach a specific invitation through the
 -- token-keyed RPC below.
+--
+-- `drop policy if exists` before each create so the migration is safe to
+-- re-run after a partial failure (matches the pattern in 0009, 0022).
+drop policy if exists "team_invitations_select_admin" on public.team_invitations;
 create policy "team_invitations_select_admin" on public.team_invitations
   for select using (app_private.is_team_admin(team_id));
 
+drop policy if exists "team_invitations_insert_admin" on public.team_invitations;
 create policy "team_invitations_insert_admin" on public.team_invitations
   for insert with check (app_private.is_team_admin(team_id));
 
+drop policy if exists "team_invitations_update_admin" on public.team_invitations;
 create policy "team_invitations_update_admin" on public.team_invitations
   for update
   using (app_private.is_team_admin(team_id))
   with check (app_private.is_team_admin(team_id));
 
+drop policy if exists "team_invitations_delete_admin" on public.team_invitations;
 create policy "team_invitations_delete_admin" on public.team_invitations
   for delete using (app_private.is_team_admin(team_id));
 
