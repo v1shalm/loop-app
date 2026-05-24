@@ -503,3 +503,59 @@
     inset 0 1px 0 oklch(1 0 0 / 0.04),
     inset -1px 0 0 oklch(0 0 0 / 0.5);
 }
+
+/* =========================================================
+   Sileo toast overrides
+   ---------------------------------------------------------
+   sileo's default stylesheet has light text on light theme
+   and dark text on dark theme for the description line —
+   which makes the secondary copy unreadable. Pin every
+   text + surface to our theme tokens so contrast is right
+   regardless of which `--sileo-state-*` colour is active.
+   ========================================================= */
+
+[data-sileo-toast] {
+  background: var(--popover) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--foreground) !important;
+  border-radius: 0.625rem;
+}
+.dark [data-sileo-toast] {
+  box-shadow:
+    0 12px 28px oklch(0 0 0 / 0.45),
+    0 0 0 1px oklch(1 0 0 / 0.04);
+}
+
+[data-sileo-toast] [data-sileo-title] {
+  color: var(--foreground) !important;
+  font-weight: 600;
+}
+
+/* Description: the line sileo defaults to a 50%-alpha colour. Force it
+   to our muted-foreground token so it stays legible at the right
+   contrast in both themes. */
+[data-sileo-viewport][data-theme="dark"] [data-sileo-description],
+[data-sileo-viewport][data-theme="light"] [data-sileo-description],
+[data-sileo-toast] [data-sileo-description] {
+  color: var(--muted-foreground) !important;
+  opacity: 1 !important;
+}
+
+/* Action button on info/action toasts — match the brand pill style
+   used everywhere else instead of inheriting the state colour. */
+[data-sileo-toast] [data-sileo-button] {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-weight: 600;
+  font-size: 12px;
+  transition: filter 150ms ease;
+}
+[data-sileo-toast] [data-sileo-button]:hover {
+  filter: brightness(1.05);
+}
+
+/* State badges still want to track the state colour (success = green,
+   error = red, etc.) — only the description got inverted in sileo's
+   defaults, so the badge is left alone. */
