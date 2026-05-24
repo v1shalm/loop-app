@@ -42,6 +42,11 @@ export type TaskWithRelations = Task & {
     "id" | "name" | "initials" | "avatar_color" | "avatar_url"
   > | null;
   comments?: { count: number }[];
+  /** All assignees from the task_assignees join table — primary
+   *  (tasks.assignee_id) is in there too. Used to render the avatar
+   *  stack on rows; the popover in the drawer is the authoritative
+   *  editor. */
+  assignees?: { user_id: string }[];
 };
 
 export const TASK_RELATIONS_SELECT = `
@@ -49,7 +54,8 @@ export const TASK_RELATIONS_SELECT = `
   project:projects(id, name, emoji),
   assignee:profiles!tasks_assignee_id_fkey(id, name, initials, avatar_color, avatar_url),
   author:profiles!tasks_author_id_fkey(id, name, initials, avatar_color, avatar_url),
-  comments:task_comments(count)
+  comments:task_comments(count),
+  assignees:task_assignees(user_id)
 `;
 
 /**

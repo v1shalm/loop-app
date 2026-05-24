@@ -122,6 +122,14 @@ export function TaskRow({
   const due = optDueAt ? new Date(optDueAt) : null;
   const overdue = due ? isPast(due) && !isToday(due) && !done : false;
   const commentCount = task.comments?.[0]?.count ?? 0;
+  // Co-assignees beyond the primary. task_assignees includes the
+  // primary too, so the "extras" count subtracts 1 for the primary if
+  // it's present in the array.
+  const totalAssignees = task.assignees?.length ?? 0;
+  const extraAssigneeCount = Math.max(
+    0,
+    totalAssignees - (optAssignee ? 1 : 0)
+  );
   const priority = optPriority;
 
   const undoComplete = () => {
@@ -516,11 +524,20 @@ export function TaskRow({
 
               {/* Assignee — fixed 22px circle. touch-expand bumps the hit
                   area for mobile without changing the visible size, so
-                  the slot width never depends on viewport. */}
+                  the slot width never depends on viewport.
+                  Co-assignees beyond the primary surface as a tiny "+N"
+                  pill overlapping the bottom-right — communicates the
+                  task has additional owners without taking width from
+                  the row. The popover (and the drawer) is where you
+                  edit the list. */}
               <Popover>
                 <PopoverTrigger
-                  aria-label="Assignee"
-                  className="focus-ring touch-expand grid size-[22px] shrink-0 place-items-center rounded-full transition-[filter] hover:brightness-95"
+                  aria-label={
+                    extraAssigneeCount > 0
+                      ? `Assignee and ${extraAssigneeCount} more`
+                      : "Assignee"
+                  }
+                  className="focus-ring touch-expand relative grid size-[22px] shrink-0 place-items-center rounded-full transition-[filter] hover:brightness-95"
                 >
                   {optAssignee ? (
                     <Avatar
@@ -532,6 +549,14 @@ export function TaskRow({
                   ) : (
                     <span className="grid size-[22px] place-items-center rounded-full border border-dashed border-border text-[10px] text-muted-foreground/60">
                       +
+                    </span>
+                  )}
+                  {extraAssigneeCount > 0 && (
+                    <span
+                      aria-hidden
+                      className="absolute -bottom-0.5 -right-1 grid h-[13px] min-w-[13px] place-items-center rounded-full bg-foreground px-0.5 text-[9px] font-semibold leading-none text-background ring-2 ring-card tabular-nums"
+                    >
+                      +{extraAssigneeCount}
                     </span>
                   )}
                 </PopoverTrigger>
