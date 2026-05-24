@@ -20,11 +20,12 @@ export default function ProcessPage() {
         <Hero />
         <Thoughts />
         <Problems />
-        <Decisions />
+        <ClaudeHelped />
+        <Overrides />
         <Screens />
         <SmallCalls />
         <Assumptions />
-        <Tradeoffs />
+        <NextUp />
         <DemoAccounts />
         <Footer />
       </main>
@@ -139,23 +140,52 @@ function Problems() {
   );
 }
 
-// ── Key decisions ──────────────────────────────────────────────────────────
+// ── Where Claude helped ────────────────────────────────────────────────────
 
-const DECISIONS: { title: string; body: React.ReactNode }[] = [
+function ClaudeHelped() {
+  return (
+    <Section title="Where Claude helped">
+      <Prose>
+        <p>
+          I had the kanban structure decided before I asked — one
+          column per project, white nested task cards inside gray
+          columns. First pass came back with flat project cards.
+          One screenshot back, next pass was right.
+        </p>
+        <p>
+          Ten minutes instead of an hour. Claude is a multiplier on
+          decisions I&apos;ve already made, not a substitute for
+          making them. The rest of this case study is the
+          decisions.
+        </p>
+      </Prose>
+    </Section>
+  );
+}
+
+// ── Where I overrode ───────────────────────────────────────────────────────
+//
+// Almost every UI and UX call in Loop is a pushback on the obvious
+// default. Each item below names what Claude (or the convention in
+// the category) defaults to, what I went with instead, and why.
+
+const OVERRIDES: { title: string; body: React.ReactNode }[] = [
   {
     title: "Inbox is reply-first, not accept-first.",
     body: (
       <>
         <p>
-          When a teammate sends me a task, the first thing I want to
-          do is ask &quot;why me?&quot;, not commit. So I made Reply
-          the default action, where Accept usually sits. Accept
-          comes after.
+          The Linear / Asana convention puts <em>Accept</em> as the
+          primary inbox action. That treats every new assignment as
+          agreed work the moment you see it.
         </p>
         <p>
-          Snooze sits next to Reply with explicit wake times
-          (Tomorrow 9am, Next Monday, In a week). No black-hole
-          &quot;remind me later.&quot;
+          I made <span className="font-medium text-foreground">Reply</span>{" "}
+          the default. The first thing I usually want to do with a
+          new task is ask &quot;why me?&quot; or &quot;by
+          when?&quot;, not commit silently. Accept comes after.
+          Snooze sits next to Reply with explicit wake times — no
+          black-hole &quot;remind me later.&quot;
         </p>
       </>
     ),
@@ -163,18 +193,26 @@ const DECISIONS: { title: string; body: React.ReactNode }[] = [
   {
     title: "Workflow status lives on projects, not tasks.",
     body: (
-      <>
-        <p>
-          Putting Draft / In progress / Approved on each task
-          fights the done checkbox and adds a second status
-          indicator next to the title.
-        </p>
-        <p>
-          It belongs at the project level — that&apos;s where
-          &quot;is this work approved to ship&quot; gets decided.
-          Tasks stay binary.
-        </p>
-      </>
+      <p>
+        The default move is to put Draft / In progress / Approved on
+        every task because that&apos;s where the work happens. It
+        fights the done checkbox and adds a second status indicator
+        next to every title. Workflow belongs at the project level
+        — that&apos;s where &quot;is this approved to ship?&quot;
+        gets decided. Tasks stay binary.
+      </p>
+    ),
+  },
+  {
+    title: "Self-assigned tasks skip the inbox.",
+    body: (
+      <p>
+        Every other tracker I&apos;ve used dumps your own
+        self-assigned tasks into the inbox alongside everyone
+        else&apos;s. But triage exists to decide whether to accept
+        someone else&apos;s work — triaging your own is silly.
+        Self-assigned tasks land straight in My Work.
+      </p>
     ),
   },
   {
@@ -183,67 +221,59 @@ const DECISIONS: { title: string; body: React.ReactNode }[] = [
       <>
         <p>
           Loop reads <code>#project @name p1 tomorrow</code> inline
-          in quick add. Stripping the tokens silently and hoping
-          the user trusts it is the easy path. I went the other
-          way: chips appear above the input as each token resolves.
+          in quick add. The easy default is stripping tokens
+          silently and hoping the user trusts it.
         </p>
         <p>
-          The chips double as a tutorial — typing{" "}
-          <code>#brand</code> makes the project chip appear. The
-          product teaches its own syntax. Borrowed from Todoist.
+          I made the parser visible — chips light up above the
+          input as each token resolves. Typing <code>#brand</code>{" "}
+          makes the project chip appear, which teaches the syntax
+          better than a help doc ever could. Borrowed from Todoist.
         </p>
       </>
     ),
   },
   {
+    title: "Task drawer floats. It is not a route.",
+    body: (
+      <p>
+        The instinctive React move is{" "}
+        <code>/tasks/[id]</code> — a new page per task. That
+        breaks your context every time you click a row. The drawer
+        is a panel that slides in over the list. The URL still
+        updates with <code>?task=</code> so a teammate can paste
+        the link into Slack and land on the same view.
+      </p>
+    ),
+  },
+  {
     title: "Comments thread one level deep.",
     body: (
-      <p>
-        Each top-level comment can hold a reply chain, collapsed by
-        default with a &quot;N replies&quot; pill. One level on
-        purpose — nobody wants a 5-deep nested argument in a task
-        tracker.
-      </p>
-    ),
-  },
-  {
-    title: "Self-assigned tasks skip the inbox.",
-    body: (
-      <p>
-        Triage exists to decide whether to accept someone
-        else&apos;s work. Triaging your own work is silly.
-      </p>
-    ),
-  },
-  {
-    title: "No keyboard shortcuts.",
-    body: (
-      <p>
-        ⌘K, Q, and ? were wired early. Then I asked who actually
-        uses Loop — internal team members, not Linear power users. I
-        cut all of them. The visible search box and the Add task
-        button do the same jobs, more discoverably.
-      </p>
-    ),
-  },
-  {
-    title: "Filtered empty states say so.",
-    body: (
-      <p>
-        Filtering inbox by <code>@Priya</code> and seeing &quot;All
-        caught up&quot; is a lie. When a filter is active, the
-        message becomes &quot;No tasks match this filter&quot; with
-        a Clear button.
-      </p>
+      <>
+        <p>
+          The two defaults in the category: flat comments (becomes
+          a wall on a long task) or deeply-nested reply trees
+          (becomes Reddit).
+        </p>
+        <p>
+          One level is the Slack model and it&apos;s right for a
+          task tracker. Each top-level comment can hold a reply
+          chain, collapsed by default with a &quot;N replies&quot;
+          pill. A DB trigger blocks replies-to-replies on purpose
+          — nobody wants a 5-deep argument in their task tracker.
+        </p>
+      </>
     ),
   },
   {
     title: "Search and notifications in the top bar.",
     body: (
       <p>
-        The sidebar header is the obvious spot. But the sidebar
-        collapses, and the moment it does, both disappear. They go
-        in a sticky top bar so they&apos;re always reachable.
+        The obvious spot is the sidebar header — that&apos;s where
+        Linear and Notion put them. But the sidebar collapses, and
+        the moment it does, both disappear. They live in a sticky
+        top bar so they&apos;re always reachable, and the sidebar
+        goes back to being just navigation.
       </p>
     ),
   },
@@ -252,21 +282,22 @@ const DECISIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <p>
         Today, Team Pulse, and Recent Activity are three pieces of
-        the same job — telling you where the team is at. Three
-        separate sidebar sections would crowd the main canvas.
-        Folded into one card on the right rail instead. Two columns
-        of attention, not three.
+        the same job: telling you where the team is at. Three
+        separate sidebar sections crowd the main canvas. Folded
+        them into one card on the right rail. Two columns of
+        attention, not three.
       </p>
     ),
   },
   {
-    title: "Collaborators show as a +N pip.",
+    title: "Collaborators show as a +N pip on the row.",
     body: (
       <p>
-        A task can have one owner and several collaborators.
-        Showing only the owner on the row hides the rest. A small{" "}
-        <code>+N</code> in the corner of the avatar tells you the
-        rest are there. No extra row width spent.
+        A task can have one owner and several collaborators. Every
+        app I tried shows only the owner&apos;s avatar on the row —
+        the rest become invisible until you open the drawer. A
+        small <code>+N</code> in the corner of the avatar makes the
+        truth visible at row level without spending row width.
       </p>
     ),
   },
@@ -274,30 +305,134 @@ const DECISIONS: { title: string; body: React.ReactNode }[] = [
     title: "@mentions in titles render as chips.",
     body: (
       <p>
-        Most apps leave <code>@Priya</code> in a task title as plain
-        text. I parse it against the team and render it as a small
-        pink chip with the matched name. The mention reads as a
-        person, not a string.
+        Most apps leave <code>@Priya</code> in a task title as
+        plain text. The person disappears into the words. Loop
+        parses the title against the team and renders matches as
+        small pink chips. The mention reads as a person, not a
+        string.
       </p>
     ),
   },
   {
-    title: "No widows. Set as a global rule.",
+    title: "Filtered empty states say so.",
+    body: (
+      <p>
+        Default empty-state copy is &quot;All caught up&quot; or
+        &quot;Nothing here.&quot; That&apos;s a lie when the list
+        is actually filter-empty — the inbox isn&apos;t empty,
+        your filter is. When a filter is active, the message
+        becomes &quot;No tasks match this filter&quot; with a
+        Clear button.
+      </p>
+    ),
+  },
+  {
+    title: "No keyboard shortcuts.",
+    body: (
+      <>
+        <p>
+          Claude wired ⌘K, Q, and ? early — the obvious Linear
+          patterns. Then I asked who actually uses Loop: internal
+          team members, not power users who memorise shortcuts.
+        </p>
+        <p>
+          I cut every one. The visible search box and the Add task
+          button do the same jobs without the key-chip litter, and
+          the keyboard-shortcuts dialog went with them.
+        </p>
+      </>
+    ),
+  },
+  {
+    title: "Destructive confirms autofocus Cancel.",
+    body: (
+      <p>
+        Claude defaulted the &quot;Delete this task?&quot; dialog
+        to autofocus the red Delete button — faster to confirm,
+        more accessible. But that means a stray Enter after the
+        dialog opens deletes the task. I flipped it: destructive
+        confirms autofocus Cancel; non-destructive ones still
+        autofocus the primary. Same pattern as macOS.
+      </p>
+    ),
+  },
+  {
+    title: "Toasts that do not say &ldquo;Successfully X&rdquo;.",
+    body: (
+      <p>
+        Default voice for status toasts was the friendly{" "}
+        <em>&quot;Successfully completed your task!&quot;</em>{" "}
+        cadence. Sober tone for an internal tool. Every toast is
+        short and specific: &quot;Task added.&quot; &quot;Updated 3
+        tasks.&quot; &quot;Joined Engineering.&quot; No
+        exclamations, no encouragement.
+      </p>
+    ),
+  },
+  {
+    title: "No colored side-stripe on overdue cards.",
+    body: (
+      <p>
+        I asked for an &quot;urgent&quot; treatment on overdue
+        tasks. Claude reached for the classic AI move: a 3px
+        colored bar on the left edge of every card. Generic, and
+        it doesn&apos;t scale once you have priority colors too. I
+        cut it. Urgency reads through the date text turning rose
+        and the priority flag color. Same signal, no decoration.
+      </p>
+    ),
+  },
+  {
+    title: "No widows. Global rule.",
     body: (
       <p>
         Saw a screenshot with &quot;now.&quot; dangling on its own
-        line. Instead of fixing that paragraph, I made it global.
-        Every prose block in the app self-corrects now.
+        line — a typographic widow. Instead of fixing that one
+        paragraph, I made it a global CSS rule. Every prose block
+        in the app self-corrects now.
+      </p>
+    ),
+  },
+  {
+    title: "Optimistic UI everywhere.",
+    body: (
+      <p>
+        The default React pattern is fire the mutation, wait, then
+        update. The user sees latency. Every mutation in Loop
+        lands instantly on the client; the server reconciles in
+        the background. If it errors, I roll back and surface a
+        toast. Perceived latency under 16ms, regardless of the
+        network.
+      </p>
+    ),
+  },
+  {
+    title: "Onboarding is one form, not a wizard.",
+    body: (
+      <p>
+        Most SaaS apps onboard with a 4-step wizard: welcome,
+        workspace name, invite teammates, choose template. For an
+        internal tool, that&apos;s ceremony. New users land on a
+        single page that asks for a team name. Creating the team
+        makes them its admin. Done.
       </p>
     ),
   },
 ];
 
-function Decisions() {
+function Overrides() {
   return (
-    <Section title="Key decisions">
-      <ol className="mt-2 flex max-w-[820px] flex-col gap-9 list-decimal pl-6 marker:text-[15px] marker:font-semibold marker:text-foreground/40">
-        {DECISIONS.map((d, i) => (
+    <Section title="Where I overrode">
+      <Prose>
+        <p>
+          Almost every UI and UX call in Loop is a pushback on the
+          obvious default — what Claude would have shipped without
+          my direction, or what every other tracker in the category
+          already does. The list below.
+        </p>
+      </Prose>
+      <ol className="mt-7 flex max-w-[820px] flex-col gap-9 list-decimal pl-6 marker:text-[15px] marker:font-semibold marker:text-foreground/40">
+        {OVERRIDES.map((d, i) => (
           <li key={i} className="pl-2">
             <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
               {d.title}
@@ -493,7 +628,7 @@ function Assumptions() {
   );
 }
 
-// ── Trade-offs (AI + what I'd add next) ────────────────────────────────────
+// ── What I'd add next ───────────────────────────────────────────────────────
 
 const NEXT_ITEMS = [
   "List / Board / Calendar toggle per project — same data, three lenses",
@@ -504,118 +639,24 @@ const NEXT_ITEMS = [
   "Hover-preview cards on @mentions and task links",
 ];
 
-function Tradeoffs() {
+function NextUp() {
   return (
-    <Section title="Trade-offs">
-      <div className="mt-2 flex max-w-[820px] flex-col gap-8">
-        <div>
-          <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
-            Where Claude helped.
-          </h3>
-          <div className="mt-2.5 flex flex-col gap-3 text-[16px] leading-relaxed text-muted-foreground">
-            <p>
-              I had the kanban structure decided — one column per
-              project, white nested cards inside gray columns. First
-              pass came back with flat project cards. I sent a quick
-              screenshot. Next pass was right.
-            </p>
-            <p>
-              Ten minutes instead of an hour. Claude is a multiplier
-              on decisions you&apos;ve made, not a substitute for
-              making them.
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
-            Where I overrode.
-          </h3>
-          <div className="mt-2.5 flex flex-col gap-5 text-[16px] leading-relaxed text-muted-foreground">
-            <div>
-              <p className="font-medium text-foreground">
-                The colored-stripe reflex.
-              </p>
-              <p className="mt-1.5">
-                I asked for an &quot;urgent&quot; treatment on
-                overdue tasks. Claude reached for the classic AI
-                move: a 3px colored bar on the left edge of every
-                card. Generic. Doesn&apos;t scale once you have
-                priority colors too. I cut it. Urgency reads through
-                the date text turning rose and the priority flag
-                color.
-              </p>
-            </div>
-
-            <div>
-              <p className="font-medium text-foreground">
-                Keyboard shortcuts wired by default.
-              </p>
-              <p className="mt-1.5">
-                Claude wired up ⌘K, Q, and ? early — the &quot;obvious&quot;
-                Linear patterns. Then I asked who actually uses
-                Loop: internal team members, not power users who
-                memorise shortcuts. I cut every one. The visible
-                search box and Add task button do the same jobs
-                without the key-chip litter, and the
-                keyboard-shortcuts dialog went with them.
-              </p>
-            </div>
-
-            <div>
-              <p className="font-medium text-foreground">
-                The destructive confirm autofocused the destructive
-                button.
-              </p>
-              <p className="mt-1.5">
-                Claude defaulted the &quot;Delete this task?&quot;
-                dialog to autofocus the red Delete button — faster
-                to confirm, more accessible. But that means a
-                stray Enter after the dialog opens deletes the
-                task. I flipped it: destructive confirms autofocus
-                Cancel; non-destructive ones still autofocus the
-                primary. Same pattern as macOS.
-              </p>
-            </div>
-
-            <div>
-              <p className="font-medium text-foreground">
-                Toasts that say &quot;Successfully X&quot;.
-              </p>
-              <p className="mt-1.5">
-                Default toast voice was the friendly{" "}
-                <em>&quot;Successfully completed your task!&quot;</em>
-                . Sober tone for an internal tool. I rewrote every
-                toast to be short and specific: &quot;Task
-                added.&quot; &quot;Updated 3 tasks.&quot; &quot;Joined
-                Engineering.&quot; No exclamations, no
-                encouragement.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
-            What I&apos;d add next.
-          </h3>
-          <ul className="mt-2.5 flex flex-col gap-2">
-            {NEXT_ITEMS.map((item, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-3 text-[16px] leading-relaxed text-muted-foreground"
-              >
-                <CheckCircle
-                  size={15}
-                  weight="fill"
-                  className="mt-1 shrink-0 text-primary/70"
-                />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+    <Section title="What I'd add next">
+      <ul className="mt-2 flex max-w-[820px] flex-col gap-2.5">
+        {NEXT_ITEMS.map((item, i) => (
+          <li
+            key={i}
+            className="flex items-start gap-3 text-[16px] leading-relaxed text-muted-foreground"
+          >
+            <CheckCircle
+              size={15}
+              weight="fill"
+              className="mt-1 shrink-0 text-primary/70"
+            />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
     </Section>
   );
 }
