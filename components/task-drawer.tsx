@@ -423,18 +423,27 @@ function DrawerInner({
   const done = task.status === "done";
   const currentUser = members.find((m) => m.id === currentUserId) ?? null;
 
-  // Chip tone helpers — surface urgency through tinted chips, not hairlines.
+  // Chip tones — flat, borderless. The Details rows read as content
+  // rather than a form, with hover lifting via a slightly brighter
+  // tint instead of a border outline. Urgency cue (rose / amber /
+  // emerald) is kept; the neutral chip drops the border-and-card
+  // outline that was making rows feel form-y.
   const dueChipTone =
     overdue || (due && isToday(due))
-      ? "border-rose-200/70 bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200 dark:border-rose-400/30"
-      : "border-border bg-card text-foreground";
+      ? "bg-rose-500/12 text-rose-700 hover:bg-rose-500/18 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/22"
+      : "bg-accent/40 text-foreground hover:bg-accent/60";
 
   const priorityChipTone: Record<Priority, string> = {
-    1: "border-rose-200/70 bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200 dark:border-rose-400/30",
-    2: "border-amber-200/70 bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200 dark:border-amber-400/30",
-    3: "border-emerald-200/70 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-400/30",
-    4: "border-border bg-card text-foreground",
+    1: "bg-rose-500/12 text-rose-700 hover:bg-rose-500/18 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/22",
+    2: "bg-amber-500/12 text-amber-700 hover:bg-amber-500/18 dark:bg-amber-500/15 dark:text-amber-300 dark:hover:bg-amber-500/22",
+    3: "bg-emerald-500/12 text-emerald-700 hover:bg-emerald-500/18 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/22",
+    4: "bg-accent/40 text-foreground hover:bg-accent/60",
   };
+
+  // Single base class for every Details chip. Color tone composes in
+  // via dueChipTone / priorityChipTone above. No border, no card.
+  const chipBase =
+    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium transition-colors";
 
   return (
     <div className="flex h-full flex-col">
@@ -470,7 +479,9 @@ function DrawerInner({
             <DetailLabel>Project</DetailLabel>
             <dd>
               <Popover>
-                <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[12.5px] font-medium text-foreground transition-colors hover:brightness-[0.97]">
+                <PopoverTrigger
+                  className={cn(chipBase, "bg-accent/40 text-foreground hover:bg-accent/60")}
+                >
                   {task.project ? (
                     <ProjectDot project={task.project as Project} size={9} />
                   ) : (
@@ -516,12 +527,7 @@ function DrawerInner({
             <DetailLabel>Due date</DetailLabel>
             <dd>
               <Popover>
-                <PopoverTrigger
-                  className={cn(
-                    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] font-medium transition-colors hover:brightness-[0.97]",
-                    dueChipTone
-                  )}
-                >
+                <PopoverTrigger className={cn(chipBase, dueChipTone)}>
                   <CalendarBlank size={13} weight="fill" />
                   <span className="tabular-nums">
                     {due ? formatDueShort(due) : "No date"}
@@ -542,10 +548,7 @@ function DrawerInner({
             <dd>
               <Popover>
                 <PopoverTrigger
-                  className={cn(
-                    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12.5px] font-medium transition-colors hover:brightness-[0.97]",
-                    priorityChipTone[task.priority as Priority]
-                  )}
+                  className={cn(chipBase, priorityChipTone[task.priority as Priority])}
                 >
                   <Flag
                     size={13}
@@ -616,9 +619,9 @@ function DrawerInner({
             ref={descRef}
             defaultValue={task.description ?? ""}
             onBlur={saveDescription}
-            placeholder="Add more details (optional)"
+            placeholder="Add a description…"
             minRows={3}
-            className="mt-3 w-full resize-none rounded-lg border border-border bg-card p-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors focus:border-ring/50 placeholder:text-foreground/40"
+            className="focus-ring mt-3 w-full resize-none rounded-md bg-transparent text-[14px] leading-relaxed text-foreground outline-none placeholder:text-foreground/35"
           />
         </section>
 
@@ -661,7 +664,10 @@ function DrawerInner({
 }
 
 function SectionDivider() {
-  return <div className="h-px bg-border/60" />;
+  // Dividers removed — sections separate by whitespace alone now. Kept
+  // as a no-op so existing call sites don't need to disappear; can be
+  // deleted entirely once we audit other surfaces using this drawer.
+  return null;
 }
 
 function SectionHeader({
@@ -874,8 +880,10 @@ function CommentsSection({
         </ul>
       )}
 
-      {/* Composer — avatar + mention-aware textarea + send */}
-      <div className="mt-4 flex items-start gap-2.5">
+      {/* Composer — flat inline area, no nested card. Avatar sits beside
+          the input column; the input column has a single thin bottom
+          border that brightens on focus. */}
+      <div className="mt-4 flex items-start gap-3">
         {currentUser && (
           <span className="mt-1 shrink-0">
             <Avatar
@@ -886,7 +894,7 @@ function CommentsSection({
             />
           </span>
         )}
-        <div className="min-w-0 flex-1 rounded-xl border border-border bg-card transition-colors focus-within:border-ring/50">
+        <div className="group/composer min-w-0 flex-1 border-b border-border transition-colors focus-within:border-foreground/40">
           <MentionInput
             ref={inputRef}
             value={body}
@@ -896,9 +904,9 @@ function CommentsSection({
             placeholder="Add a comment. Type @ to mention a teammate."
             minRows={2}
             ariaLabel="Add a comment"
-            className="rounded-xl px-3 py-2.5 text-[13px]"
+            className="bg-transparent py-1.5 text-[14px]"
           />
-          <div className="flex items-center justify-end gap-2 px-2 pb-2">
+          <div className="flex items-center justify-end gap-2 pb-2">
             <Button
               onClick={submit}
               disabled={!body.trim() || pending}
