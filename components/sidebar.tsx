@@ -33,7 +33,8 @@ import type {
 import { ProfileMenu } from "@/components/profile-menu";
 import { Avatar } from "@/components/avatar";
 import { NotificationsPopover } from "@/components/notifications-popover";
-import { ProjectDot } from "@/components/project-dot";
+import { projectColor } from "@/components/project-dot";
+import { Folder } from "@/components/icons";
 import { AddProjectPopover } from "@/components/add-project-popover";
 import {
   SidebarEmptyCard,
@@ -436,7 +437,7 @@ function NavItem({
         <motion.span
           layoutId={collapsed ? "nav-active-collapsed" : "nav-active"}
           aria-hidden
-          className="absolute inset-0 rounded-md bg-primary/8"
+          className="surface-active absolute inset-0 rounded-md"
           transition={{ type: "spring", duration: 0.32, bounce: 0.18 }}
         />
       )}
@@ -502,21 +503,30 @@ function ProjectRow({
   collapsed: boolean;
   pinned?: boolean;
 }) {
+  const color = projectColor(project);
+
   if (collapsed) {
     const link = (
       <Link
         href={`/projects/${project.id}`}
         prefetch
         className={cn(
-          "focus-ring group/proj-col grid size-9 items-center justify-center rounded-md text-[13.5px] transition-[background-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.94]",
-          active
-            ? "bg-primary/8"
-            : "text-sidebar-foreground/90 hover:bg-accent/40"
+          "group/proj-col relative grid size-9 items-center justify-center rounded-md text-[13.5px] transition-transform duration-150 ease-[var(--ease-out)] focus-visible:outline-none active:scale-[0.94]",
+          !active && "hover:bg-accent/40"
         )}
       >
-        <span className="transition-transform duration-200 ease-[var(--ease-out)] group-hover/proj-col:scale-110">
-          <ProjectDot project={project} size={9} />
-        </span>
+        {active && (
+          <span
+            aria-hidden
+            className="surface-active absolute inset-0 rounded-md"
+          />
+        )}
+        <Folder
+          size={15}
+          weight="fill"
+          style={{ color }}
+          className="relative z-[1] transition-transform duration-200 ease-[var(--ease-out)] group-hover/proj-col:scale-110"
+        />
       </Link>
     );
     return (
@@ -538,18 +548,27 @@ function ProjectRow({
         "group/proj relative flex items-center text-[13.5px] transition-colors duration-150 ease-[var(--ease-out)]",
         "h-8 gap-2.5 rounded-lg px-2.5",
         active
-          ? "bg-primary/8 font-medium text-primary"
+          ? "font-medium text-foreground"
           : "text-sidebar-foreground/90 hover:bg-accent/40 hover:text-foreground"
       )}
     >
+      {active && (
+        <span
+          aria-hidden
+          className="surface-active pointer-events-none absolute inset-0 rounded-lg"
+        />
+      )}
       <Link
         href={`/projects/${project.id}`}
         prefetch
-        className="focus-ring flex min-w-0 flex-1 items-center gap-2.5 rounded outline-none transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
+        className="focus-ring relative z-[1] flex min-w-0 flex-1 items-center gap-2.5 rounded outline-none transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
       >
-        <span className="transition-transform duration-200 ease-[var(--ease-out)] group-hover/proj:scale-110">
-          <ProjectDot project={project} size={9} />
-        </span>
+        <Folder
+          size={14}
+          weight="fill"
+          style={{ color }}
+          className="shrink-0 transition-transform duration-200 ease-[var(--ease-out)] group-hover/proj:scale-110"
+        />
         <span className="truncate">{project.name}</span>
       </Link>
       <PinToggle projectId={project.id} pinned={!!pinned} />

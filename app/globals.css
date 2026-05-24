@@ -118,34 +118,33 @@
 }
 
 :root {
-  /* Cool neutral surface — pure white sidebar/cards on a subtle bluish-gray bg */
-  --background: oklch(0.975 0.004 250);
-  --foreground: oklch(0.18 0.008 250);
+  /* Cool blue-grey neutrals — resume-builder palette */
+  --background: oklch(0.985 0.003 250);
+  --foreground: oklch(0.2 0.008 250);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.008 250);
+  --card-foreground: oklch(0.2 0.008 250);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.008 250);
+  --popover-foreground: oklch(0.2 0.008 250);
 
-  /* Brand: vibrant violet — matches the reference CTA. */
+  /* Brand: vibrant violet — gradient handled by .surface-brand utility. */
   --primary: oklch(0.56 0.22 290);
   --primary-foreground: oklch(0.995 0 0);
 
-  --secondary: oklch(0.965 0.004 250);
+  --secondary: oklch(0.982 0.003 250);
   --secondary-foreground: oklch(0.22 0.008 250);
 
-  --muted: oklch(0.965 0.004 250);
-  --muted-foreground: oklch(0.5 0.012 250);
+  --muted: oklch(0.97 0.004 250);
+  --muted-foreground: oklch(0.48 0.008 250);
 
   --accent: oklch(0.95 0.008 250);
   --accent-foreground: oklch(0.22 0.008 250);
 
-  /* Destructive stays red, separate from brand. */
-  --destructive: oklch(0.62 0.197 27);
+  --destructive: oklch(0.56 0.19 25);
 
-  --border: oklch(0.92 0.005 250);
-  --input: oklch(0.92 0.005 250);
+  --border: oklch(0.895 0.005 250);
+  --input: oklch(0.82 0.006 250);
   --ring: oklch(0.56 0.22 290);
 
   --chart-1: oklch(0.56 0.22 290);
@@ -154,17 +153,16 @@
   --chart-4: oklch(0.65 0.12 150);
   --chart-5: oklch(0.6 0.16 320);
 
-  /* Smaller base radius — tighter, more architectural corners. */
   --radius: 0.375rem;
 
-  /* Sidebar — pure white, slightly cooler border */
-  --sidebar: oklch(1 0 0);
+  /* Sidebar — slightly deeper than bg so it reads as its own surface */
+  --sidebar: oklch(0.97 0.004 250);
   --sidebar-foreground: oklch(0.22 0.008 250);
   --sidebar-primary: oklch(0.56 0.22 290);
   --sidebar-primary-foreground: oklch(0.995 0 0);
-  --sidebar-accent: oklch(0.95 0.008 250);
-  --sidebar-accent-foreground: oklch(0.18 0.008 250);
-  --sidebar-border: oklch(0.92 0.005 250);
+  --sidebar-accent: oklch(0.925 0.005 250);
+  --sidebar-accent-foreground: oklch(0.2 0.008 250);
+  --sidebar-border: oklch(0.895 0.005 250);
   --sidebar-ring: oklch(0.56 0.22 290);
 
   /* Priority — pill colors set inline (rose/amber/emerald) */
@@ -172,39 +170,48 @@
   --priority-2: oklch(0.72 0.16 60);
   --priority-3: oklch(0.65 0.12 150);
   --priority-4: oklch(0.6 0.008 80);
+
+  /* Resume-builder surface treatments — radial body gradient, scrollbar,
+     focus tint, layered card + sidebar surfaces. Endpoints live here so
+     dark mode can override them in one place. */
+  --rb-body-top: oklch(0.995 0.002 250);
+  --rb-body-bot: oklch(0.965 0.004 250);
+  --rb-scrollbar-thumb: oklch(0.8 0.006 250);
+  --rb-scrollbar-thumb-hover: oklch(0.7 0.008 250);
+  --rb-focus: oklch(0.56 0.22 290 / 0.7);
+  --rb-selection-bg: oklch(0.56 0.22 290 / 0.3);
+  --rb-card-top: oklch(1 0 0);
+  --rb-card-bot: oklch(0.975 0.004 250);
+  --rb-sidebar-top: oklch(0.985 0.003 250);
+  --rb-sidebar-bot: oklch(0.955 0.005 250);
 }
 
 .dark {
-  /* Tints every neutral surface ~0.008 chroma toward the violet brand
-     hue (290) so the dark UI reads as one family, not stock-zinc. The
-     primary lifts to L=0.72 and drops chroma to 0.16 — at L<0.6 a
-     vibrant violet looks bruised in dark mode, so we trade a bit of
-     saturation for crispness. */
-  --background: oklch(0.16 0.012 290);
-  --foreground: oklch(0.955 0.003 290);
+  --background: oklch(0.165 0.004 250);
+  --foreground: oklch(0.94 0.004 250);
 
-  --card: oklch(0.205 0.014 290);
-  --card-foreground: oklch(0.955 0.003 290);
+  --card: oklch(0.245 0.006 250);
+  --card-foreground: oklch(0.94 0.004 250);
 
-  --popover: oklch(0.22 0.014 290);
-  --popover-foreground: oklch(0.955 0.003 290);
+  --popover: oklch(0.245 0.006 250);
+  --popover-foreground: oklch(0.94 0.004 250);
 
   --primary: oklch(0.72 0.16 290);
   --primary-foreground: oklch(0.985 0 0);
 
-  --secondary: oklch(0.245 0.012 290);
-  --secondary-foreground: oklch(0.955 0.003 290);
+  --secondary: oklch(0.208 0.005 250);
+  --secondary-foreground: oklch(0.94 0.004 250);
 
-  --muted: oklch(0.22 0.01 290);
-  --muted-foreground: oklch(0.7 0.01 290);
+  --muted: oklch(0.208 0.005 250);
+  --muted-foreground: oklch(0.7 0.006 250);
 
   --accent: oklch(0.27 0.014 290);
   --accent-foreground: oklch(0.955 0.003 290);
 
-  --destructive: oklch(0.68 0.21 27);
+  --destructive: oklch(0.66 0.17 25);
 
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 12%);
+  --border: oklch(0.295 0.007 250);
+  --input: oklch(0.36 0.008 250);
   --ring: oklch(0.72 0.16 290);
 
   --chart-1: oklch(0.72 0.16 290);
@@ -213,13 +220,13 @@
   --chart-4: oklch(0.72 0.13 150);
   --chart-5: oklch(0.68 0.16 320);
 
-  --sidebar: oklch(0.18 0.013 290);
-  --sidebar-foreground: oklch(0.955 0.003 290);
+  --sidebar: oklch(0.18 0.005 250);
+  --sidebar-foreground: oklch(0.94 0.004 250);
   --sidebar-primary: oklch(0.72 0.16 290);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.255 0.014 290);
-  --sidebar-accent-foreground: oklch(0.955 0.003 290);
-  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-accent-foreground: oklch(0.94 0.004 250);
+  --sidebar-border: oklch(0.295 0.007 250);
   --sidebar-ring: oklch(0.72 0.16 290);
 
   /* Soft-shadow recipes need darker ambients so the elevation reads
@@ -233,6 +240,17 @@
     0 24px 60px oklch(0 0 0 / 0.65),
     0 12px 28px oklch(0 0 0 / 0.45),
     0 0 0 1px oklch(1 0 0 / 0.06);
+
+  --rb-body-top: oklch(0.2 0.006 250);
+  --rb-body-bot: oklch(0.165 0.004 250);
+  --rb-scrollbar-thumb: oklch(0.3 0.008 250);
+  --rb-scrollbar-thumb-hover: oklch(0.42 0.008 250);
+  --rb-focus: oklch(0.72 0.16 290 / 0.7);
+  --rb-selection-bg: oklch(0.72 0.16 290 / 0.35);
+  --rb-card-top: oklch(0.255 0.006 250);
+  --rb-card-bot: oklch(0.215 0.005 250);
+  --rb-sidebar-top: oklch(0.195 0.006 250);
+  --rb-sidebar-bot: oklch(0.165 0.005 250);
 }
 
 @layer base {
@@ -241,10 +259,51 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* RB-style radial body bg — subtle wash that catches the top of
+       the viewport and fades into the flat neutral below. */
+    background: radial-gradient(
+      ellipse 80% 60% at 50% 0%,
+      var(--rb-body-top) 0%,
+      var(--rb-body-bot) 60%
+    );
     font-feature-settings: "cv11", "ss01", "ss03";
   }
   html {
     @apply font-sans;
+  }
+
+  ::selection {
+    background: var(--rb-selection-bg);
+    color: var(--primary-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--rb-focus);
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--rb-scrollbar-thumb);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--rb-scrollbar-thumb-hover);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+
+  textarea,
+  input {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Respect prefers-reduced-motion: keep opacity/color transitions
@@ -322,187 +381,65 @@
       0 1px 1.5px oklch(0 0 0 / 0.06),
       0 2px 4px -1px oklch(0 0 0 / 0.05);
   }
+
+  /* Active-row surface — same layered treatment as .bg-card but with a
+     mild lift. Used for active sidebar nav rows so they read as "lifted"
+     against the gradient sidebar instead of a flat tint. */
+  .surface-active {
+    background: linear-gradient(
+      180deg,
+      var(--rb-card-top) 0%,
+      var(--rb-card-bot) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.55),
+      0 1px 0 0 oklch(0 0 0 / 0.08),
+      0 2px 4px -1px oklch(0 0 0 / 0.04);
+  }
+  .dark .surface-active {
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.05),
+      0 1px 0 0 oklch(0 0 0 / 0.4),
+      0 2px 4px -1px oklch(0 0 0 / 0.25);
+  }
 }
 
 /* =========================================================
-   THEME V2 — borrowed from /resume-builder
-   ---------------------------------------------------------
-   Activated by adding `theme-v2` to <html>. Re-maps the
-   shadcn token names (--background, --primary, etc.) to
-   the resume-builder palette so the whole app picks up the
-   new look without touching components. Amber-on-blueish-
-   grey, layered gradients, puffy chip shadows, radial body.
+   Resume-builder layered surfaces — applied at root level.
+   Cards and the sidebar both pick up a gradient fill + puffy
+   shadow stack so they read as elevated surfaces, not flat
+   fills. Endpoint variables (--rb-card-*, --rb-sidebar-*)
+   are defined in :root / .dark above.
    ========================================================= */
 
-.theme-v2 {
-  color-scheme: light;
-
-  /* Core neutrals — cool blue-grey, hue ~250 */
-  --background: oklch(0.985 0.003 250);
-  --foreground: oklch(0.2 0.008 250);
-
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.008 250);
-
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.008 250);
-
-  /* Brand: amber (resume-builder's signature accent) */
-  --primary: oklch(0.855 0.165 85);
-  --primary-foreground: oklch(0.22 0.05 75);
-
-  --secondary: oklch(0.982 0.003 250);
-  --secondary-foreground: oklch(0.22 0.008 250);
-
-  --muted: oklch(0.97 0.004 250);
-  --muted-foreground: oklch(0.48 0.008 250);
-
-  --accent: oklch(0.93 0.04 85);
-  --accent-foreground: oklch(0.22 0.05 75);
-
-  --destructive: oklch(0.56 0.19 25);
-
-  --border: oklch(0.895 0.005 250);
-  --input: oklch(0.82 0.006 250);
-  --ring: oklch(0.855 0.165 85);
-
-  /* Sidebar — slightly deeper than bg so it reads as its own surface */
-  --sidebar: oklch(0.97 0.004 250);
-  --sidebar-foreground: oklch(0.22 0.008 250);
-  --sidebar-primary: oklch(0.855 0.165 85);
-  --sidebar-primary-foreground: oklch(0.22 0.05 75);
-  --sidebar-accent: oklch(0.925 0.005 250);
-  --sidebar-accent-foreground: oklch(0.2 0.008 250);
-  --sidebar-border: oklch(0.895 0.005 250);
-  --sidebar-ring: oklch(0.855 0.165 85);
-
-  /* Refresh derived gradient endpoints so .surface-brand renders the
-     amber gradient instead of caching the violet pair. */
-  --primary-light: color-mix(in oklch, var(--primary) 88%, white);
-  --primary-dark: color-mix(in oklch, var(--primary) 92%, black);
-
-  /* Resume-builder-style extras the layout uses below */
-  --v2-body-top: oklch(0.995 0.002 250);
-  --v2-body-bot: oklch(0.965 0.004 250);
-  --v2-scrollbar-thumb: oklch(0.8 0.006 250);
-  --v2-scrollbar-thumb-hover: oklch(0.7 0.008 250);
-  --v2-focus: oklch(0.855 0.165 85 / 0.7);
-  --v2-selection-bg: oklch(0.855 0.165 85 / 0.35);
-  --v2-card-top: oklch(1 0 0);
-  --v2-card-bot: oklch(0.975 0.004 250);
-}
-
-.theme-v2.dark {
-  color-scheme: dark;
-
-  --background: oklch(0.165 0.004 250);
-  --foreground: oklch(0.94 0.004 250);
-
-  --card: oklch(0.245 0.006 250);
-  --card-foreground: oklch(0.94 0.004 250);
-
-  --popover: oklch(0.245 0.006 250);
-  --popover-foreground: oklch(0.94 0.004 250);
-
-  /* Amber accent — same hue/lightness in both themes per RB spec */
-  --primary: oklch(0.855 0.165 85);
-  --primary-foreground: oklch(0.22 0.05 75);
-
-  --secondary: oklch(0.208 0.005 250);
-  --secondary-foreground: oklch(0.94 0.004 250);
-
-  --muted: oklch(0.208 0.005 250);
-  --muted-foreground: oklch(0.7 0.006 250);
-
-  --accent: oklch(0.285 0.007 250);
-  --accent-foreground: oklch(0.94 0.004 250);
-
-  --destructive: oklch(0.66 0.17 25);
-
-  --border: oklch(0.295 0.007 250);
-  --input: oklch(0.36 0.008 250);
-  --ring: oklch(0.855 0.165 85);
-
-  --sidebar: oklch(0.18 0.005 250);
-  --sidebar-foreground: oklch(0.94 0.004 250);
-  --sidebar-primary: oklch(0.855 0.165 85);
-  --sidebar-primary-foreground: oklch(0.22 0.05 75);
-  --sidebar-accent: oklch(0.255 0.007 250);
-  --sidebar-accent-foreground: oklch(0.94 0.004 250);
-  --sidebar-border: oklch(0.295 0.007 250);
-  --sidebar-ring: oklch(0.855 0.165 85);
-
-  --v2-body-top: oklch(0.2 0.006 250);
-  --v2-body-bot: oklch(0.165 0.004 250);
-  --v2-scrollbar-thumb: oklch(0.3 0.008 250);
-  --v2-scrollbar-thumb-hover: oklch(0.42 0.008 250);
-  --v2-focus: oklch(0.855 0.165 85 / 0.7);
-  --v2-selection-bg: oklch(0.855 0.165 85 / 0.4);
-  --v2-card-top: oklch(0.255 0.006 250);
-  --v2-card-bot: oklch(0.215 0.005 250);
-}
-
-/* V2 global treatments — body, scrollbar, focus, selection, inputs.
-   All scoped to `.theme-v2` so v1 stays untouched. */
-html.theme-v2 body {
-  background: radial-gradient(
-    ellipse 80% 60% at 50% 0%,
-    var(--v2-body-top) 0%,
-    var(--v2-body-bot) 60%
-  );
-  font-feature-settings: "ss01", "cv11";
-}
-
-html.theme-v2 ::selection {
-  background: var(--v2-selection-bg);
-  color: var(--primary-foreground);
-}
-
-html.theme-v2 :focus-visible {
-  outline: 2px solid var(--v2-focus);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
-
-html.theme-v2 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-html.theme-v2 ::-webkit-scrollbar-track {
-  background: transparent;
-}
-html.theme-v2 ::-webkit-scrollbar-thumb {
-  background: var(--v2-scrollbar-thumb);
-  border-radius: 12px;
-  border: 3px solid transparent;
-  background-clip: padding-box;
-}
-html.theme-v2 ::-webkit-scrollbar-thumb:hover {
-  background: var(--v2-scrollbar-thumb-hover);
-  background-clip: padding-box;
-}
-
-html.theme-v2 textarea,
-html.theme-v2 input {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Handpicked components — give cards the resume-builder layered surface.
-   Tailwind's `bg-card` resolves to `background: var(--color-card)` (a
-   flat fill). On v2 we upgrade it to the gradient + puffy shadow stack
-   that gives RB its tactile feel. Scoped to `.theme-v2` only. */
-html.theme-v2 .bg-card {
+.bg-card {
   background: linear-gradient(
     180deg,
-    var(--v2-card-top) 0%,
-    var(--v2-card-bot) 100%
+    var(--rb-card-top) 0%,
+    var(--rb-card-bot) 100%
   );
   box-shadow:
     inset 0 1px 0 oklch(1 0 0 / 0.55),
     0 1px 0 0 oklch(0 0 0 / 0.08);
 }
-html.theme-v2.dark .bg-card {
+.dark .bg-card {
   box-shadow:
     inset 0 1px 0 oklch(1 0 0 / 0.045),
     0 1px 0 0 oklch(0 0 0 / 0.35);
+}
+
+.bg-sidebar {
+  background: linear-gradient(
+    180deg,
+    var(--rb-sidebar-top) 0%,
+    var(--rb-sidebar-bot) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.4),
+    inset -1px 0 0 oklch(0 0 0 / 0.04);
+}
+.dark .bg-sidebar {
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.03),
+    inset -1px 0 0 oklch(0 0 0 / 0.45);
 }

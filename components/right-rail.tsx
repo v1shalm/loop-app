@@ -295,12 +295,13 @@ function ActivitySection({
           Nothing in the last 7 days.
         </p>
       ) : (
-        <ul className="mt-2.5 flex flex-col gap-2.5">
-          {top.map((item) => (
+        <ul className="mt-3 flex flex-col">
+          {top.map((item, i) => (
             <ActivityRow
               key={`${item.kind}-${item.task.id}-${item.at}`}
               item={item}
               currentUserId={currentUserId}
+              divider={i > 0}
             />
           ))}
         </ul>
@@ -309,32 +310,48 @@ function ActivitySection({
   );
 }
 
+/**
+ * Three-line layout — actor + verb, task title, timestamp — so the eye
+ * lands on the task itself (the bit a reviewer actually wants) rather
+ * than scanning sentence by sentence. Hairline divider between items
+ * separates them without taking up vertical space.
+ */
 function ActivityRow({
   item,
   currentUserId,
+  divider,
 }: {
   item: ActivityItem;
   currentUserId: string;
+  divider: boolean;
 }) {
   const { kind, task, at } = item;
 
   if (kind === "i-completed") {
     return (
-      <li className="flex items-start gap-2">
-        <CheckCircle
-          size={14}
-          weight="fill"
-          className="mt-0.5 shrink-0 text-emerald-600"
-        />
+      <li
+        className={cn(
+          "flex items-start gap-2.5 py-2.5",
+          divider && "border-t border-border/50"
+        )}
+      >
+        <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-emerald-500/15">
+          <CheckCircle
+            size={11}
+            weight="fill"
+            className="text-emerald-600 dark:text-emerald-400"
+          />
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[12px] leading-snug text-muted-foreground">
-            <span className="font-medium text-foreground">You</span>{" "}
-            completed{" "}
-            <span className="font-medium text-foreground">{task.title}</span>
+          <p className="text-[11.5px] leading-tight text-muted-foreground">
+            <span className="text-foreground">You</span> completed
+          </p>
+          <p className="mt-1 line-clamp-2 text-[13px] font-medium leading-[1.35] text-foreground">
+            {task.title}
           </p>
           <RelativeTime
             date={at}
-            className="mt-0.5 block text-[11px] text-muted-foreground/70"
+            className="mt-1.5 block text-[10.5px] text-muted-foreground/70"
           />
         </div>
       </li>
@@ -348,32 +365,37 @@ function ActivityRow({
       : author?.name.split(" ")[0] ?? "Someone";
 
   return (
-    <li className="flex items-start gap-2">
+    <li
+      className={cn(
+        "flex items-start gap-2.5 py-2.5",
+        divider && "border-t border-border/50"
+      )}
+    >
       {author ? (
         <span className="mt-0.5 shrink-0">
           <Avatar
             src={author.avatar_url}
             initials={author.initials}
             color={author.avatar_color}
-            size={16}
-            fontSize={8}
+            size={22}
+            fontSize={10}
           />
         </span>
       ) : (
-        <UserPlus
-          size={14}
-          className="mt-0.5 shrink-0 text-muted-foreground"
-        />
+        <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-muted">
+          <UserPlus size={11} className="text-muted-foreground" />
+        </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] leading-snug text-muted-foreground">
-          <span className="font-medium text-foreground">{name}</span>{" "}
-          assigned you{" "}
-          <span className="font-medium text-foreground">{task.title}</span>
+        <p className="text-[11.5px] leading-tight text-muted-foreground">
+          <span className="text-foreground">{name}</span> assigned you
+        </p>
+        <p className="mt-1 line-clamp-2 text-[13px] font-medium leading-[1.35] text-foreground">
+          {task.title}
         </p>
         <RelativeTime
           date={at}
-          className="mt-0.5 block text-[11px] text-muted-foreground/70"
+          className="mt-1.5 block text-[10.5px] text-muted-foreground/70"
         />
       </div>
     </li>
