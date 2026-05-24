@@ -76,14 +76,30 @@
     0 12px 28px oklch(0.25 0.06 265 / 0.1),
     0 0 0 1px oklch(0.25 0.06 265 / 0.05);
 
-  /* Primary CTA — Clerk-style: inset highlight, darker hairline ring,
-     neutral contact + drop shadows. No glow. */
+  /* Primary CTA — RB-style depth stack. Five layers:
+       1. inset top highlight   — light from above hitting the surface
+       2. inset bottom darkening — implied wrap of the bevel
+       3. hairline ring darker than the fill — pixel-crisp edge
+       4. contact shadow        — pressed against the page
+       5. drop shadow           — lifts the button off the page
+     Punchier than v1's recipe so the brand button reads as
+     three-dimensional even without a multi-hue gradient. */
   --shadow-cta:
-    inset 0 1px 0 oklch(1 0 0 / 0.28),
-    inset 0 -1px 0 oklch(0 0 0 / 0.14),
-    0 0 0 1px color-mix(in oklch, var(--primary) 80%, black),
-    0 1px 1px oklch(0 0 0 / 0.1),
-    0 2px 4px -1px oklch(0 0 0 / 0.08);
+    inset 0 1px 0 oklch(1 0 0 / 0.38),
+    inset 0 -1px 0 oklch(0 0 0 / 0.18),
+    0 0 0 1px color-mix(in oklch, var(--primary) 70%, black),
+    0 1px 1.5px oklch(0 0 0 / 0.12),
+    0 3px 6px -1px oklch(0 0 0 / 0.14);
+
+  /* Secondary CTA — same tactile bevel pattern as primary but on a
+     neutral card surface. Use for "Cancel" / "Snooze" / dialog
+     dismissals so the secondary button isn't just a flat outline. */
+  --shadow-cta-secondary:
+    inset 0 1px 0 oklch(1 0 0 / 0.7),
+    inset 0 -1px 0 oklch(0 0 0 / 0.04),
+    0 0 0 1px var(--border),
+    0 1px 1.5px oklch(0 0 0 / 0.06),
+    0 2px 4px -1px oklch(0 0 0 / 0.06);
 
   /* Brand tile (workspace avatar) — same bevel pattern, no glow */
   --shadow-brand-tile:
@@ -136,11 +152,11 @@
   --primary: oklch(0.62 0.24 348);
   --primary-foreground: oklch(0.995 0 0);
 
-  /* Brand gradient endpoints — pink at the top, deep purple-magenta at
-     the bottom. The two-hue sweep is the y2k bit; a single-hue tint
-     would read as another flat SaaS purple. */
-  --primary-light: oklch(0.78 0.2 345);
-  --primary-dark: oklch(0.5 0.24 308);
+  /* Brand gradient endpoints — same hue as primary, varied by lightness
+     only. The depth on CTAs comes from the layered shadow stack
+     (--shadow-cta), not a multi-hue sweep. */
+  --primary-light: oklch(0.7 0.22 348);
+  --primary-dark: oklch(0.55 0.24 348);
 
   --secondary: oklch(0.982 0.003 250);
   --secondary-foreground: oklch(0.22 0.008 250);
@@ -216,8 +232,8 @@
   --primary: oklch(0.72 0.22 348);
   --primary-foreground: oklch(0.18 0.04 348);
 
-  --primary-light: oklch(0.82 0.18 345);
-  --primary-dark: oklch(0.55 0.24 308);
+  --primary-light: oklch(0.78 0.2 348);
+  --primary-dark: oklch(0.62 0.22 348);
 
   --secondary: oklch(0.208 0.005 250);
   --secondary-foreground: oklch(0.94 0.004 250);
@@ -358,9 +374,8 @@
     box-shadow: 0 0 0 1px oklch(0.9 0.008 75 / 0.7);
   }
 
-  /* Brand surface — two-hue gradient that runs hot pink at the top
-     into a deep magenta-purple at the bottom. The multi-hue sweep is
-     deliberate; a same-hue tint reads as another flat SaaS purple. */
+  /* Brand surface — same-hue gradient (light → deeper pink). Depth
+     comes from --shadow-cta, not from a hue sweep. */
   .surface-brand {
     background: linear-gradient(
       180deg,
@@ -368,14 +383,31 @@
       var(--primary-dark)
     );
   }
-  /* Hover lifts both endpoints toward white so the two-hue sweep is
-     preserved — collapsing to single-hue on hover would lose the y2k
-     character we want at exactly the moment the user looks at it. */
   .surface-brand-hover:hover {
     background: linear-gradient(
       180deg,
       color-mix(in oklch, var(--primary-light) 88%, white),
-      color-mix(in oklch, var(--primary-dark) 90%, white)
+      color-mix(in oklch, var(--primary-dark) 92%, white)
+    );
+  }
+
+  /* Secondary CTA surface — neutral card-style fill with the same
+     RB-style bevel stack. Use for "Cancel", "Snooze", "Skip" buttons
+     so they have presence next to a primary CTA without competing on
+     hue. Combine with `text-foreground`. */
+  .surface-secondary {
+    background: linear-gradient(
+      180deg,
+      var(--rb-card-top),
+      var(--rb-card-bot)
+    );
+    box-shadow: var(--shadow-cta-secondary);
+  }
+  .surface-secondary-hover:hover {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--rb-card-top) 92%, var(--foreground) 0%),
+      color-mix(in oklch, var(--rb-card-bot) 92%, var(--foreground) 8%)
     );
   }
 

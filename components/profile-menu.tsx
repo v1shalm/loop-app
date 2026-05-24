@@ -2,11 +2,13 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { sileo } from "sileo";
 import {
   Bell,
+  BellSlash,
   Desktop,
   Gear,
-  Moon,
+  MoonStars,
   Question,
   SignOut,
   SpeakerHigh,
@@ -25,8 +27,11 @@ import {
 import { Avatar } from "@/components/avatar";
 import type { Profile } from "@/lib/queries";
 import { signOut } from "@/app/login/actions";
+import { setMyStatus } from "@/lib/actions";
 import { isMuted, setMuted, playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
+
+const NOTIFICATIONS_PAUSED_KEY = "loop:notifications-paused";
 
 export function ProfileMenu({
   user,
@@ -42,13 +47,19 @@ export function ProfileMenu({
   progressToday?: { done: number; total: number };
 }) {
   const [pending, startTransition] = useTransition();
+  const [statusPending, startStatusTransition] = useTransition();
 
   // Local mirror of the muted state so the toggle row updates instantly
   // while the menu stays open.
   const [mounted, setMounted] = useState(false);
   const [muted, setLocalMuted] = useState(false);
+  const [paused, setLocalPaused] = useState(false);
   useEffect(() => {
     setLocalMuted(isMuted());
+    setLocalPaused(
+      typeof window !== "undefined" &&
+        window.localStorage.getItem(NOTIFICATIONS_PAUSED_KEY) === "1"
+    );
     setMounted(true);
   }, []);
 
@@ -59,13 +70,36 @@ export function ProfileMenu({
     if (!next) playSound("added");
   };
 
+  // Notifications pause is client-only for now — persists to localStorage
+  // so it survives reloads without an extra round-trip to Supabase. Wire
+  // it into the realtime bridge later to actually mute toast popovers.
+  const toggleNotificationsPaused = () => {
+    const next = !paused;
+    setLocalPaused(next);
+    window.localStorage.setItem(NOTIFICATIONS_PAUSED_KEY, next ? "1" : "0");
+  };
+
+  // "Away" maps to the existing `busy` status (the closest equivalent
+  // in the schema — see lib/queries.ts ProfileStatus). Calling with
+  // `null` clears it.
+  const isAway = user.status === "busy";
+  const toggleAway = () => {
+    if (statusPending) return;
+    const next = isAway ? null : "busy";
+    startStatusTransition(async () => {
+      const res = await setMyStatus(next);
+      if (res.error) sileo.error({ title: res.error });
+    });
+  };
+
   const soundsOn = mounted && !muted;
+  const notificationsPaused = mounted && paused;
 
   const { theme, setTheme } = useTheme();
-  const THEMES: { key: "light" | "dark" | "system"; Icon: typeof Sun; label: string }[] = [
-    { key: "light", Icon: Sun, label: "Light" },
-    { key: "dark", Icon: Moon, label: "Dark" },
-    { key: "system", Icon: Desktop, label: "System" },
+  const THEMES: { key: "light" | "dark" | "system"; label: string; Icon: typeof Sun }[] = [
+    { key: "light", label: "Light", Icon: Sun },
+    { key: "dark", label: "Dark", Icon: MoonStars },
+    { key: "system", label: "System", Icon: Desktop },
   ];
 
   return (
@@ -106,9 +140,10 @@ export function ProfileMenu({
         side="top"
         align="start"
         sideOffset={8}
-        className="w-[240px] rounded-lg border border-border/60 bg-popover p-1 shadow-soft-sm ring-0"
+        className="w-[268px] rounded-xl border border-border/60 bg-popover p-1.5 shadow-soft-sm ring-0"
       >
-        <div className="flex items-center gap-2.5 px-2 pb-2 pt-1.5">
+        {/* Header: avatar (or progress ring), name, role / today's progress */}
+        <div className="flex items-center gap-2.5 px-2 pb-2 pt-1">
           {progressToday ? (
             <ProgressRing
               done={progressToday.done}
@@ -133,74 +168,70 @@ export function ProfileMenu({
             </p>
           </div>
         </div>
-        <DropdownMenuSeparator className="bg-border/60" />
+
+        <DropdownMenuSeparator className="my-1 bg-border/60" />
+
+        {/* Presence + notifications — top-level toggles inspired by the
+            Slack profile menu the user referenced. Each one is its own
+            button so the menu stays open on click. */}
+        <MenuRow
+          icon={MoonStars}
+          onClick={toggleAway}
+          aria-pressed={isAway}
+          disabled={statusPending}
+        >
+          {isAway ? (
+            <>
+              You&rsquo;re <strong className="font-semibold">away</strong>
+            </>
+          ) : (
+            <>
+              Set yourself as <strong className="font-semibold">away</strong>
+            </>
+          )}
+        </MenuRow>
+
+        <MenuRow
+          icon={notificationsPaused ? BellSlash : Bell}
+          onClick={toggleNotificationsPaused}
+          aria-pressed={notificationsPaused}
+        >
+          {notificationsPaused ? "Notifications paused" : "Pause notifications"}
+        </MenuRow>
+
+        <DropdownMenuSeparator className="my-1 bg-border/60" />
+
+        {/* Secondary links */}
+        {onOpenHelp && (
+          <DropdownMenuItem
+            onClick={onOpenHelp}
+            className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
+          >
+            <Question size={15} className="text-muted-foreground" />
+            <span className="flex-1">Help</span>
+            <kbd className="chip-3d inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 text-[10.5px] font-semibold text-muted-foreground">
+              ?
+            </kbd>
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuItem
           render={<Link href="/profile" />}
-          className="gap-2 px-2 py-1.5 text-[13px]"
+          className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
         >
-          <Gear size={14} className="text-muted-foreground" />
-          <span>Profile settings</span>
+          <Gear size={15} className="text-muted-foreground" />
+          <span className="flex-1">Settings</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
           render={<Link href="/team" />}
-          className="gap-2 px-2 py-1.5 text-[13px]"
+          className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
         >
-          <UsersThree size={14} className="text-muted-foreground" />
-          <span>Team</span>
+          <UsersThree size={15} className="text-muted-foreground" />
+          <span className="flex-1">Team</span>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          render={<Link href="/notifications" />}
-          className="gap-2 px-2 py-1.5 text-[13px]"
-        >
-          <Bell size={14} className="text-muted-foreground" />
-          <span>Notifications</span>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator className="bg-border/60" />
-
-        {/* Theme — three-way segmented control. Persists to localStorage,
-            applies the .dark class on <html> for token swapping. */}
-        <div className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px]">
-          <Sun size={14} className="text-muted-foreground" />
-          <span className="flex-1">Theme</span>
-          <div
-            role="radiogroup"
-            aria-label="Theme"
-            className="inline-flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5"
-          >
-            {THEMES.map((t) => {
-              const active = theme === t.key;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={t.label}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setTheme(t.key);
-                  }}
-                  className={cn(
-                    "focus-ring grid size-6 place-items-center rounded transition-colors duration-150 ease-[var(--ease-out)]",
-                    active
-                      ? "bg-primary/12 text-primary"
-                      : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
-                  )}
-                >
-                  <t.Icon size={12} weight={active ? "fill" : "regular"} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <DropdownMenuSeparator className="bg-border/60" />
-
-        {/* Sound toggle — plain button so the menu stays open on click. */}
+        {/* Sound toggle */}
         <button
           type="button"
           onClick={(e) => {
@@ -209,12 +240,12 @@ export function ProfileMenu({
           }}
           role="menuitemcheckbox"
           aria-checked={soundsOn}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-foreground transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
+          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
         >
           {soundsOn ? (
-            <SpeakerHigh size={14} className="text-muted-foreground" />
+            <SpeakerHigh size={15} className="text-muted-foreground" />
           ) : (
-            <SpeakerSlash size={14} className="text-muted-foreground" />
+            <SpeakerSlash size={15} className="text-muted-foreground" />
           )}
           <span className="flex-1">Sounds</span>
           <span
@@ -227,32 +258,54 @@ export function ProfileMenu({
           </span>
         </button>
 
-        {onOpenHelp && (
-          <DropdownMenuItem
-            onClick={onOpenHelp}
-            className="gap-2 px-2 py-1.5 text-[13px]"
-          >
-            <Question size={14} className="text-muted-foreground" />
-            <span className="flex-1">Keyboard shortcuts</span>
-            <kbd className="chip-3d inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-border bg-card px-1 text-[10.5px] font-semibold text-muted-foreground">
-              ?
-            </kbd>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuSeparator className="my-1 bg-border/60" />
 
-        <DropdownMenuSeparator className="bg-border/60" />
+        {/* Theme segmented control — text-first, three options, the
+            active one lit on the brand color. Slack-style. */}
+        <div
+          role="radiogroup"
+          aria-label="Theme"
+          className="m-1 grid grid-cols-3 gap-1 rounded-lg border border-border/70 bg-muted/40 p-1"
+        >
+          {THEMES.map((t) => {
+            const active = theme === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setTheme(t.key);
+                }}
+                className={cn(
+                  "focus-ring flex items-center justify-center gap-1.5 rounded-md py-1.5 text-[12px] font-medium transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
+                  active
+                    ? "surface-active text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <t.Icon size={12} weight={active ? "fill" : "regular"} />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <DropdownMenuSeparator className="my-1 bg-border/60" />
 
         <DropdownMenuItem
           variant="destructive"
           disabled={pending}
           onClick={() => startTransition(() => signOut())}
-          className="gap-2 px-2 py-1.5 text-[13px]"
+          className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
         >
-          <SignOut size={14} />
+          <SignOut size={15} />
           <span>{pending ? "Logging out…" : "Log out"}</span>
         </DropdownMenuItem>
 
-        <div className="mt-1 flex items-center justify-between px-2 pt-1.5 pb-0.5 text-[10.5px] text-muted-foreground/70">
+        <div className="mt-1 flex items-center justify-between px-2.5 pt-1.5 pb-0.5 text-[10.5px] text-muted-foreground/70">
           <span className="tabular-nums">v1.0</span>
           <Link
             href="/process"
@@ -263,6 +316,53 @@ export function ProfileMenu({
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/**
+ * One-line button used for the toggleable rows at the top of the menu
+ * (Set yourself as away, Pause notifications). Stays open on click —
+ * the menu shouldn't dismiss when the row's purpose is to flip state.
+ * Pressed state carries forward via aria-pressed for AT users.
+ */
+function MenuRow({
+  icon: Icon,
+  onClick,
+  children,
+  disabled,
+  ...aria
+}: {
+  icon: React.ElementType;
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  "aria-pressed"?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
+      disabled={disabled}
+      aria-pressed={aria["aria-pressed"]}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground transition-colors",
+        "hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none",
+        "disabled:cursor-not-allowed disabled:opacity-60"
+      )}
+    >
+      <Icon
+        size={15}
+        weight={aria["aria-pressed"] ? "fill" : "regular"}
+        className={cn(
+          "shrink-0",
+          aria["aria-pressed"] ? "text-primary" : "text-muted-foreground"
+        )}
+      />
+      <span className="flex-1">{children}</span>
+    </button>
   );
 }
 
