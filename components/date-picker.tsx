@@ -65,9 +65,9 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
   ];
 
   return (
-    <div className={cn("w-[316px] p-3.5", className)}>
+    <div className={cn("w-[284px] p-2.5", className)}>
       {/* Quick chips */}
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      <div className="mb-2 flex flex-wrap items-center gap-1">
         {chips.map((c) => {
           const built = c.build();
           const active = built && value && isSameDay(built, value);
@@ -82,7 +82,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
                 }
               }}
               className={cn(
-                "focus-ring rounded-full border px-3 py-1.5 text-[12px] font-medium transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
+                "focus-ring rounded-full border px-2.5 py-1 text-[11.5px] font-medium transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
                 active
                   ? "border-primary/60 bg-primary/12 text-primary"
                   : "border-border bg-card text-foreground hover:border-border/80 hover:bg-accent/50"
@@ -96,46 +96,41 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
           <button
             onClick={() => onChange(null)}
             aria-label="Clear date"
-            className="focus-ring ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            className="focus-ring ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
           >
-            <X size={12} weight="bold" />
+            <X size={11} weight="bold" />
             Clear
           </button>
         )}
       </div>
 
-      {/* Hairline between quick-pick row and the calendar so the eye knows
-          where the structural sections divide without the chips and grid
-          feeling glued together. */}
-      <div className="mb-2 h-px bg-border/60" />
-
       {/* Month nav */}
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between">
         <button
           onClick={() => setView((v) => subMonths(v, 1))}
           aria-label="Previous month"
-          className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
+          className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
         >
-          <CaretLeft size={14} weight="bold" />
+          <CaretLeft size={13} weight="bold" />
         </button>
-        <span className="text-[13.5px] font-semibold tracking-tight text-foreground">
+        <span className="text-[13px] font-semibold tracking-tight text-foreground">
           {format(view, "MMMM yyyy")}
         </span>
         <button
           onClick={() => setView((v) => addMonths(v, 1))}
           aria-label="Next month"
-          className="focus-ring grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
+          className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
         >
-          <CaretRight size={14} weight="bold" />
+          <CaretRight size={13} weight="bold" />
         </button>
       </div>
 
       {/* Weekday labels */}
-      <div className="mb-1 grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5">
         {WEEKDAYS.map((d, i) => (
           <div
             key={i}
-            className="grid h-7 place-items-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70"
+            className="grid h-6 place-items-center text-[10.5px] font-medium text-muted-foreground/70"
           >
             {d}
           </div>
@@ -143,7 +138,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
       </div>
 
       {/* Day grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5">
         {days.map((d) => {
           const inMonth = isSameMonth(d, view);
           const isSel = value && isSameDay(d, value);
@@ -154,7 +149,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
               onClick={() => select(d)}
               aria-pressed={isSel ? true : undefined}
               className={cn(
-                "focus-ring relative grid size-9 place-items-center rounded-lg text-[13px] tabular-nums transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.94]",
+                "focus-ring relative grid h-8 place-items-center rounded-md text-[12.5px] tabular-nums transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.94]",
                 !inMonth && "text-muted-foreground/35",
                 inMonth && !isSel && "text-foreground hover:bg-accent/50",
                 isSel &&
@@ -163,13 +158,13 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
               )}
             >
               {format(d, "d")}
-              {/* "Today" dot — sits below the number when the day isn't the
-                  selected one. Lighter than a ring, easier to read against
-                  the colored cells. */}
+              {/* "Today" marker — tiny dot tucked under the number, only
+                  visible when this day isn't the selected one (where the
+                  filled cell already announces "now"). */}
               {!isSel && today && (
                 <span
                   aria-hidden
-                  className="absolute bottom-1 size-1 rounded-full bg-primary"
+                  className="absolute bottom-[3px] size-[3px] rounded-full bg-primary"
                 />
               )}
             </button>
