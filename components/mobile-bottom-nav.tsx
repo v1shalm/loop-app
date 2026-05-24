@@ -1,7 +1,9 @@
 "use client";
 
+import { useId } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
 import {
   CalendarDots,
   Crosshair,
@@ -34,6 +36,9 @@ export function MobileBottomNav({
   onOpenSearch,
 }: MobileBottomNavProps) {
   const pathname = usePathname();
+  // Stable layoutId namespace per nav instance — prevents the animated
+  // pill from cross-firing if a second nav ever mounts.
+  const navId = useId();
 
   const isMyWork =
     !menuOpen &&
@@ -55,6 +60,7 @@ export function MobileBottomNav({
         label="My work"
         active={isMyWork}
         badge={myWorkBadge}
+        navId={navId}
       />
       <TabLink
         href="/inbox"
@@ -62,24 +68,28 @@ export function MobileBottomNav({
         label="Inbox"
         active={isInbox}
         badge={inboxBadge}
+        navId={navId}
       />
       <TabButton
         icon={MagnifyingGlass}
         label="Search"
         active={false}
         onClick={onOpenSearch}
+        navId={navId}
       />
       <TabLink
         href="/upcoming"
         icon={CalendarDots}
         label="Upcoming"
         active={isUpcoming}
+        navId={navId}
       />
       <TabButton
         icon={List}
         label="Menu"
         active={menuOpen}
         onClick={onOpenMenu}
+        navId={navId}
       />
     </nav>
   );
@@ -91,12 +101,14 @@ function TabLink({
   label,
   active,
   badge,
+  navId,
 }: {
   href: string;
   icon: React.ElementType;
   label: string;
   active: boolean;
   badge?: number;
+  navId: string;
 }) {
   return (
     <Link
@@ -104,12 +116,13 @@ function TabLink({
       prefetch
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex flex-1 flex-col items-center justify-center gap-0.5 pb-2.5 pt-2 text-[10.5px] font-medium transition-colors active:bg-accent/30",
+        "relative flex flex-1 flex-col items-center justify-center gap-0.5 pb-2.5 pt-2 text-[10.5px] font-medium transition-colors active:bg-accent/30",
         active ? "text-primary" : "text-muted-foreground"
       )}
     >
+      {active && <ActiveTabPill navId={navId} />}
       <TabIcon Icon={Icon} active={active} badge={badge} />
-      <span>{label}</span>
+      <span className="relative">{label}</span>
     </Link>
   );
 }
@@ -119,11 +132,13 @@ function TabButton({
   label,
   active,
   onClick,
+  navId,
 }: {
   icon: React.ElementType;
   label: string;
   active: boolean;
   onClick: () => void;
+  navId: string;
 }) {
   return (
     <button
@@ -131,13 +146,35 @@ function TabButton({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "flex flex-1 flex-col items-center justify-center gap-0.5 pb-2.5 pt-2 text-[10.5px] font-medium transition-colors active:bg-accent/30",
+        "relative flex flex-1 flex-col items-center justify-center gap-0.5 pb-2.5 pt-2 text-[10.5px] font-medium transition-colors active:bg-accent/30",
         active ? "text-primary" : "text-muted-foreground"
       )}
     >
+      {active && <ActiveTabPill navId={navId} />}
       <TabIcon Icon={Icon} active={active} />
-      <span>{label}</span>
+      <span className="relative">{label}</span>
     </button>
+  );
+}
+
+/**
+ * Animated active-tab indicator. Uses motion's layoutId so the pill
+ * slides between tabs when the user navigates instead of snapping.
+ * The `relative` parent on each tab clips the pill to that tab's
+ * footprint; the pill itself is the absolutely-positioned tinted
+ * rectangle behind the icon + label.
+ *
+ * Respects prefers-reduced-motion via the global CSS handling - motion's
+ * transitions degrade to ~0ms automatically when the OS setting is on.
+ */
+function ActiveTabPill({ navId }: { navId: string }) {
+  return (
+    <motion.span
+      layoutId={`mobile-nav-active-${navId}`}
+      aria-hidden
+      className="absolute inset-x-2 inset-y-1 -z-0 rounded-lg bg-primary/8"
+      transition={{ type: "spring", duration: 0.35, bounce: 0.18 }}
+    />
   );
 }
 

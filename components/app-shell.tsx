@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { MotionConfig } from "motion/react";
 import { Sidebar, type SidebarProps } from "@/components/sidebar";
 import { SidebarProvider } from "@/components/sidebar-context";
 import { TeamProvider } from "@/components/team-provider";
@@ -84,6 +85,12 @@ export function AppShell({
   }, []);
 
   return (
+    // reducedMotion="user" makes every motion.* component in the tree
+    // respect the OS prefers-reduced-motion setting: drawer slide-up,
+    // task-row drag, swipe gestures, and the bottom-nav active pill
+    // all degrade to ~instant transitions when the user has the
+    // setting on. Without this they animate the same on every device.
+    <MotionConfig reducedMotion="user">
     <SidebarProvider>
       <TeamProvider
         members={members}
@@ -162,5 +169,6 @@ export function AppShell({
         </QuickAddProvider>
       </TeamProvider>
     </SidebarProvider>
+    </MotionConfig>
   );
 }
