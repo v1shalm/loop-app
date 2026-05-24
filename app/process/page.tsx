@@ -165,14 +165,14 @@ const DECISIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <>
         <p>
-          I shipped it on tasks first. It clashed with the done
-          checkbox and put a second status indicator next to the
-          title.
+          Putting Draft / In progress / Approved on each task
+          fights the done checkbox and adds a second status
+          indicator next to the title.
         </p>
         <p>
-          Moved it to projects, where it answers the actual
-          question: is this work approved to ship. Tasks stay
-          binary.
+          It belongs at the project level — that&apos;s where
+          &quot;is this work approved to ship&quot; gets decided.
+          Tasks stay binary.
         </p>
       </>
     ),
@@ -183,9 +183,9 @@ const DECISIONS: { title: string; body: React.ReactNode }[] = [
       <>
         <p>
           Loop reads <code>#project @name p1 tomorrow</code> inline
-          in quick add. First version just stripped the tokens
-          silently. Now the chips appear above the input as each
-          token resolves.
+          in quick add. Stripping the tokens silently and hoping
+          the user trusts it is the easy path. I went the other
+          way: chips appear above the input as each token resolves.
         </p>
         <p>
           The chips double as a tutorial — typing{" "}
@@ -241,9 +241,9 @@ const DECISIONS: { title: string; body: React.ReactNode }[] = [
     title: "Search and notifications in the top bar.",
     body: (
       <p>
-        They lived in the sidebar header at first. Sidebar
-        collapsed, both disappeared. Moved them up to a sticky top
-        bar so they&apos;re always reachable.
+        The sidebar header is the obvious spot. But the sidebar
+        collapses, and the moment it does, both disappear. They go
+        in a sticky top bar so they&apos;re always reachable.
       </p>
     ),
   },
@@ -251,10 +251,11 @@ const DECISIONS: { title: string; body: React.ReactNode }[] = [
     title: "One right rail, not three sidebar widgets.",
     body: (
       <p>
-        Today, Team Pulse, and Recent Activity were three separate
-        sidebar sections at first, all competing for the same
-        column. Folded them into one card on the right rail. Same
-        information, two columns of attention instead of three.
+        Today, Team Pulse, and Recent Activity are three pieces of
+        the same job — telling you where the team is at. Three
+        separate sidebar sections would crowd the main canvas.
+        Folded into one card on the right rail instead. Two columns
+        of attention, not three.
       </p>
     ),
   },
@@ -262,10 +263,10 @@ const DECISIONS: { title: string; body: React.ReactNode }[] = [
     title: "Collaborators show as a +N pip.",
     body: (
       <p>
-        A task can have one owner and several collaborators. The
-        row only showed the owner. A small <code>+N</code> in the
-        corner of the avatar tells you the rest are there. No extra
-        row width spent.
+        A task can have one owner and several collaborators.
+        Showing only the owner on the row hides the rest. A small{" "}
+        <code>+N</code> in the corner of the avatar tells you the
+        rest are there. No extra row width spent.
       </p>
     ),
   },
@@ -530,19 +531,67 @@ function Tradeoffs() {
           <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
             Where I overrode.
           </h3>
-          <div className="mt-2.5 flex flex-col gap-3 text-[16px] leading-relaxed text-muted-foreground">
-            <p>
-              I asked for an &quot;urgent&quot; treatment on overdue
-              tasks. Claude reached for the classic AI move: a 3px
-              colored bar on the left edge of every card. Generic.
-              Doesn&apos;t scale once you have priority colors too.
-            </p>
-            <p>
-              I cut it. Urgency reads through the date text turning
-              rose and the priority flag color. Same signal, no
-              decoration. This kind of pullback happened a handful
-              of times across the two days.
-            </p>
+          <div className="mt-2.5 flex flex-col gap-5 text-[16px] leading-relaxed text-muted-foreground">
+            <div>
+              <p className="font-medium text-foreground">
+                The colored-stripe reflex.
+              </p>
+              <p className="mt-1.5">
+                I asked for an &quot;urgent&quot; treatment on
+                overdue tasks. Claude reached for the classic AI
+                move: a 3px colored bar on the left edge of every
+                card. Generic. Doesn&apos;t scale once you have
+                priority colors too. I cut it. Urgency reads through
+                the date text turning rose and the priority flag
+                color.
+              </p>
+            </div>
+
+            <div>
+              <p className="font-medium text-foreground">
+                Keyboard shortcuts wired by default.
+              </p>
+              <p className="mt-1.5">
+                Claude wired up ⌘K, Q, and ? early — the &quot;obvious&quot;
+                Linear patterns. Then I asked who actually uses
+                Loop: internal team members, not power users who
+                memorise shortcuts. I cut every one. The visible
+                search box and Add task button do the same jobs
+                without the key-chip litter, and the
+                keyboard-shortcuts dialog went with them.
+              </p>
+            </div>
+
+            <div>
+              <p className="font-medium text-foreground">
+                The destructive confirm autofocused the destructive
+                button.
+              </p>
+              <p className="mt-1.5">
+                Claude defaulted the &quot;Delete this task?&quot;
+                dialog to autofocus the red Delete button — faster
+                to confirm, more accessible. But that means a
+                stray Enter after the dialog opens deletes the
+                task. I flipped it: destructive confirms autofocus
+                Cancel; non-destructive ones still autofocus the
+                primary. Same pattern as macOS.
+              </p>
+            </div>
+
+            <div>
+              <p className="font-medium text-foreground">
+                Toasts that say &quot;Successfully X&quot;.
+              </p>
+              <p className="mt-1.5">
+                Default toast voice was the friendly{" "}
+                <em>&quot;Successfully completed your task!&quot;</em>
+                . Sober tone for an internal tool. I rewrote every
+                toast to be short and specific: &quot;Task
+                added.&quot; &quot;Updated 3 tasks.&quot; &quot;Joined
+                Engineering.&quot; No exclamations, no
+                encouragement.
+              </p>
+            </div>
           </div>
         </div>
 
