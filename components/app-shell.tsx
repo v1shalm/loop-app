@@ -122,6 +122,7 @@ export function AppShell({
               inboxBadge={counts.inbox || undefined}
               menuOpen={mobileMenuOpen}
               onOpenMenu={() => setMobileMenuOpen(true)}
+              onOpenSearch={() => setSearchOpen(true)}
             />
             <MobileFab onClick={() => setQuickOpen(true)} />
             <MobileMenuSheet

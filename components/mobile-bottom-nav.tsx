@@ -6,6 +6,7 @@ import {
   CalendarDots,
   Crosshair,
   List,
+  MagnifyingGlass,
   Tray,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ interface MobileBottomNavProps {
   myWorkBadge?: number;
   menuOpen: boolean;
   onOpenMenu: () => void;
+  onOpenSearch: () => void;
 }
 
 /**
@@ -29,6 +31,7 @@ export function MobileBottomNav({
   myWorkBadge,
   menuOpen,
   onOpenMenu,
+  onOpenSearch,
 }: MobileBottomNavProps) {
   const pathname = usePathname();
 
@@ -59,6 +62,12 @@ export function MobileBottomNav({
         label="Inbox"
         active={isInbox}
         badge={inboxBadge}
+      />
+      <TabButton
+        icon={MagnifyingGlass}
+        label="Search"
+        active={false}
+        onClick={onOpenSearch}
       />
       <TabLink
         href="/upcoming"
