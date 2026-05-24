@@ -34,15 +34,7 @@ export default async function ProjectsBoardPage() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <PageHeader
-        icon={<Folder size={16} />}
-        title="Projects"
-        subtitle={
-          columns.length === 0
-            ? "Nothing yet"
-            : `${columns.length} ${columns.length === 1 ? "project" : "projects"}`
-        }
-      />
+      <PageHeader icon={<Folder size={16} />} title="Projects" />
 
       {columns.length === 0 ? (
         <div className="mx-auto w-full max-w-[760px] px-8 pt-8">

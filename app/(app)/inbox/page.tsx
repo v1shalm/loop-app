@@ -28,15 +28,7 @@ export default async function InboxPage() {
 
   return (
     <div className="min-h-full">
-      <PageHeader
-        icon={<Tray size={16} />}
-        title="Inbox"
-        subtitle={
-          tasks.length === 0
-            ? "Nothing waiting"
-            : `${tasks.length} new ${tasks.length === 1 ? "assignment" : "assignments"}`
-        }
-      />
+      <PageHeader icon={<Tray size={16} />} title="Inbox" />
 
       <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">

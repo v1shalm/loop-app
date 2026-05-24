@@ -30,11 +30,6 @@ export default async function ManageTeamPage() {
       <PageHeader
         icon={<UsersThree size={16} />}
         title={team ? `Manage ${team.name}` : "Manage team"}
-        subtitle={
-          members.length === 0
-            ? "No members yet"
-            : `${members.length} ${members.length === 1 ? "member" : "members"}`
-        }
       />
 
       <div className="mx-auto w-full max-w-[760px] px-8 pb-24 pt-8">

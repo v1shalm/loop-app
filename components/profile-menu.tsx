@@ -304,16 +304,6 @@ export function ProfileMenu({
           <SignOut size={15} />
           <span>{pending ? "Logging out…" : "Log out"}</span>
         </DropdownMenuItem>
-
-        <div className="mt-1 flex items-center justify-between px-2.5 pt-1.5 pb-0.5 text-[10.5px] text-muted-foreground/70">
-          <span className="tabular-nums">v1.0</span>
-          <Link
-            href="/process"
-            className="focus-ring rounded px-1 py-0.5 transition-colors hover:bg-accent/40 hover:text-foreground"
-          >
-            What&rsquo;s new
-          </Link>
-        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

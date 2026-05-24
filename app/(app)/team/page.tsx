@@ -21,13 +21,7 @@ export default async function TeamPage() {
 
   return (
     <div className="min-h-full">
-      <PageHeader
-        icon={<UsersThree size={16} />}
-        title="Team"
-        subtitle={`${members.length} ${
-          members.length === 1 ? "teammate" : "teammates"
-        }`}
-      />
+      <PageHeader icon={<UsersThree size={16} />} title="Team" />
 
       <div className="mx-auto w-full max-w-[960px] px-8 pb-24 pt-8">
         {role === "admin" && (

@@ -89,11 +89,6 @@ export default async function AssignedToMePage() {
       <PageHeader
         icon={<Crosshair size={16} />}
         title="My work"
-        subtitle={
-          activeCount === 0
-            ? "All clear"
-            : `${activeCount} ${activeCount === 1 ? "task" : "tasks"}`
-        }
         right={<BulkSelectToggle />}
       />
 

@@ -17,15 +17,7 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-full">
-      <PageHeader
-        icon={<Bell size={16} />}
-        title="Notifications"
-        subtitle={
-          all.length === 0
-            ? "Nothing new"
-            : `${all.length} from the past week`
-        }
-      />
+      <PageHeader icon={<Bell size={16} />} title="Notifications" />
 
       <div className="mx-auto w-full max-w-[760px] px-8 pb-24 pt-8">
         <NotificationsList items={all} activeTab={activeTab} />
