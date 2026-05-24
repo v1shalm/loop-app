@@ -464,23 +464,55 @@ export function TaskRow({
               </div>
             </div>
 
-            {/* Right cluster */}
-            <div className="flex shrink-0 items-center gap-1">
-              {/* Assignee */}
+            {/* Right cluster — fixed-width slot reservation so the
+                title + meta on the left never reflow when the comment
+                count appears or disappears. The three slots render in a
+                fixed left-to-right order: comment count → assignee →
+                dots menu. Every slot is always in the DOM; visibility
+                is gated via opacity so the width budget is constant. */}
+            <div className="flex w-[72px] shrink-0 items-center justify-end gap-2">
+              {/* Comment count — always rendered. When there are zero
+                  comments we hide it with opacity-0 + pointer-events-none
+                  rather than `{n > 0 && …}` so the slot keeps its width
+                  and the avatar to the right doesn't shift. */}
+              <button
+                type="button"
+                onClick={openDrawer}
+                aria-label={
+                  commentCount > 0
+                    ? `${commentCount} ${commentCount === 1 ? "comment" : "comments"}`
+                    : undefined
+                }
+                aria-hidden={commentCount === 0 || undefined}
+                tabIndex={commentCount === 0 ? -1 : undefined}
+                className={cn(
+                  "focus-ring inline-flex items-center gap-0.5 text-[12px] text-muted-foreground transition-opacity hover:text-foreground",
+                  commentCount > 0
+                    ? "opacity-100"
+                    : "pointer-events-none opacity-0"
+                )}
+              >
+                <ChatCircle size={12} />
+                <span className="tabular-nums">{commentCount || 0}</span>
+              </button>
+
+              {/* Assignee — fixed 22px circle. touch-expand bumps the hit
+                  area for mobile without changing the visible size, so
+                  the slot width never depends on viewport. */}
               <Popover>
                 <PopoverTrigger
                   aria-label="Assignee"
-                  className="focus-ring touch-expand grid size-7 place-items-center rounded-full transition-colors hover:bg-accent/40 max-md:size-9"
+                  className="focus-ring touch-expand grid size-[22px] shrink-0 place-items-center rounded-full transition-[filter] hover:brightness-95"
                 >
                   {optAssignee ? (
                     <Avatar
                       src={optAssignee.avatar_url}
                       initials={optAssignee.initials}
                       color={optAssignee.avatar_color}
-                      size={24}
+                      size={22}
                     />
                   ) : (
-                    <span className="grid size-6 place-items-center rounded-full border border-dashed border-border text-[10px] text-muted-foreground/60">
+                    <span className="grid size-[22px] place-items-center rounded-full border border-dashed border-border text-[10px] text-muted-foreground/60">
                       +
                     </span>
                   )}
@@ -513,26 +545,17 @@ export function TaskRow({
                 </PopoverContent>
               </Popover>
 
-              {/* Comment count — only when there are comments */}
-              {commentCount > 0 && (
-                <button
-                  onClick={openDrawer}
-                  aria-label={`${commentCount} ${commentCount === 1 ? "comment" : "comments"}`}
-                  className="focus-ring touch-expand inline-flex items-center gap-0.5 rounded-md px-1.5 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground max-md:min-h-9 max-md:px-2"
-                >
-                  <ChatCircle size={13} />
-                  <span className="tabular-nums">{commentCount}</span>
-                </button>
-              )}
-
-              {/* More menu — hides until the row is hovered or focused on
-                  desktop. Mobile has no hover, so it stays visible there. */}
+              {/* Dots menu — always rendered. On desktop, hidden by
+                  default and fades in on row hover (or when the popover
+                  is open / the trigger is keyboard-focused). On mobile
+                  there's no hover, so it stays visible. Width is
+                  always allocated either way. */}
               <Popover>
                 <PopoverTrigger
                   aria-label="More actions"
-                  className="focus-ring touch-expand grid size-7 place-items-center rounded-md text-muted-foreground transition-[opacity,background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground focus-visible:opacity-100 data-[popup-open]:opacity-100 md:opacity-0 md:group-hover:opacity-100 max-md:size-9"
+                  className="focus-ring touch-expand grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-[opacity,background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground focus-visible:opacity-100 data-[popup-open]:opacity-100 md:opacity-0 md:group-hover:opacity-100"
                 >
-                  <DotsThree size={16} weight="bold" />
+                  <DotsThree size={14} weight="bold" />
                 </PopoverTrigger>
                 <PopoverContent className="w-[180px] gap-0 p-1" align="end">
                   <PopoverItem onSelect={openDrawer}>
