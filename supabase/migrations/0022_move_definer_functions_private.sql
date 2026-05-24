@@ -18,9 +18,10 @@
 -- `handle_new_user` is a trigger function — it doesn't need to be
 -- callable as RPC at all. Same private-schema move.
 --
--- Whole thing is wrapped in a transaction so there's never a moment
--- where a policy is dropped but its replacement hasn't been created
--- (which would default-deny under RLS).
+-- Each policy section is wrapped in a `DO $$ … END $$` that no-ops
+-- when the target table is missing. That keeps the migration safe to
+-- run against databases that don't have every prior migration applied,
+-- and harmless to re-run after a partial failure.
 
 begin;
 
@@ -85,161 +86,216 @@ grant execute on function app_private.is_team_admin(uuid)
 
 -- ============================================================
 -- 3) Rewire every RLS policy that referenced the public helpers
+--    Each block no-ops when its table doesn't exist.
 -- ============================================================
 
 -- workspaces
-drop policy if exists "workspaces_select_members" on public.workspaces;
-create policy "workspaces_select_members" on public.workspaces
-  for select using (app_private.is_workspace_member(id));
+do $do$
+begin
+  if to_regclass('public.workspaces') is not null then
+    drop policy if exists "workspaces_select_members" on public.workspaces;
+    create policy "workspaces_select_members" on public.workspaces
+      for select using (app_private.is_workspace_member(id));
+  end if;
+end
+$do$;
 
 -- workspace_members
-drop policy if exists "members_select_same_ws" on public.workspace_members;
-create policy "members_select_same_ws" on public.workspace_members
-  for select using (app_private.is_workspace_member(workspace_id));
+do $do$
+begin
+  if to_regclass('public.workspace_members') is not null then
+    drop policy if exists "members_select_same_ws" on public.workspace_members;
+    create policy "members_select_same_ws" on public.workspace_members
+      for select using (app_private.is_workspace_member(workspace_id));
+  end if;
+end
+$do$;
 
 -- task_comments
-drop policy if exists "comments_all_members" on public.task_comments;
-create policy "comments_all_members" on public.task_comments
-  for all
-  using (
-    exists (
-      select 1 from public.tasks t
-      where t.id = task_id
-        and app_private.is_workspace_member(t.workspace_id)
-    )
-  )
-  with check (
-    exists (
-      select 1 from public.tasks t
-      where t.id = task_id
-        and app_private.is_workspace_member(t.workspace_id)
-    )
-  );
+do $do$
+begin
+  if to_regclass('public.task_comments') is not null then
+    drop policy if exists "comments_all_members" on public.task_comments;
+    create policy "comments_all_members" on public.task_comments
+      for all
+      using (
+        exists (
+          select 1 from public.tasks t
+          where t.id = task_id
+            and app_private.is_workspace_member(t.workspace_id)
+        )
+      )
+      with check (
+        exists (
+          select 1 from public.tasks t
+          where t.id = task_id
+            and app_private.is_workspace_member(t.workspace_id)
+        )
+      );
+  end if;
+end
+$do$;
 
 -- comment_reactions
-drop policy if exists "comment_reactions_select_all" on public.comment_reactions;
-create policy "comment_reactions_select_all" on public.comment_reactions
-  for select using (
-    exists (
-      select 1 from public.task_comments c
-      join public.tasks t on t.id = c.task_id
-      where c.id = comment_id
-        and app_private.is_workspace_member(t.workspace_id)
-    )
-  );
+do $do$
+begin
+  if to_regclass('public.comment_reactions') is not null then
+    drop policy if exists "comment_reactions_select_all" on public.comment_reactions;
+    create policy "comment_reactions_select_all" on public.comment_reactions
+      for select using (
+        exists (
+          select 1 from public.task_comments c
+          join public.tasks t on t.id = c.task_id
+          where c.id = comment_id
+            and app_private.is_workspace_member(t.workspace_id)
+        )
+      );
+  end if;
+end
+$do$;
 
 -- task_assignees
-drop policy if exists "task_assignees_select_all" on public.task_assignees;
-create policy "task_assignees_select_all" on public.task_assignees
-  for select using (
-    exists (
-      select 1 from public.tasks t
-      where t.id = task_id
-        and app_private.is_workspace_member(t.workspace_id)
-    )
-  );
+do $do$
+begin
+  if to_regclass('public.task_assignees') is not null then
+    drop policy if exists "task_assignees_select_all" on public.task_assignees;
+    create policy "task_assignees_select_all" on public.task_assignees
+      for select using (
+        exists (
+          select 1 from public.tasks t
+          where t.id = task_id
+            and app_private.is_workspace_member(t.workspace_id)
+        )
+      );
 
-drop policy if exists "task_assignees_modify_members" on public.task_assignees;
-create policy "task_assignees_modify_members" on public.task_assignees
-  for all
-  using (
-    exists (
-      select 1 from public.tasks t
-      where t.id = task_id
-        and app_private.is_workspace_member(t.workspace_id)
-    )
-  )
-  with check (
-    exists (
-      select 1 from public.tasks t
-      where t.id = task_id
-        and app_private.is_workspace_member(t.workspace_id)
-    )
-  );
+    drop policy if exists "task_assignees_modify_members" on public.task_assignees;
+    create policy "task_assignees_modify_members" on public.task_assignees
+      for all
+      using (
+        exists (
+          select 1 from public.tasks t
+          where t.id = task_id
+            and app_private.is_workspace_member(t.workspace_id)
+        )
+      )
+      with check (
+        exists (
+          select 1 from public.tasks t
+          where t.id = task_id
+            and app_private.is_workspace_member(t.workspace_id)
+        )
+      );
+  end if;
+end
+$do$;
 
 -- task_activity_logs
-drop policy if exists "task_activity_logs_select" on public.task_activity_logs;
-create policy "task_activity_logs_select" on public.task_activity_logs
-  for select using (
-    exists (
-      select 1 from public.tasks
-      where id = task_activity_logs.task_id
-        and (team_id is null or team_id = app_private.my_team_id())
-    )
-  );
+do $do$
+begin
+  if to_regclass('public.task_activity_logs') is not null then
+    drop policy if exists "task_activity_logs_select" on public.task_activity_logs;
+    create policy "task_activity_logs_select" on public.task_activity_logs
+      for select using (
+        exists (
+          select 1 from public.tasks
+          where id = task_activity_logs.task_id
+            and (team_id is null or team_id = app_private.my_team_id())
+        )
+      );
+  end if;
+end
+$do$;
 
--- projects (team-scoped quartet from 0021)
-drop policy if exists "projects_team_scope_select" on public.projects;
-create policy "projects_team_scope_select" on public.projects
-  for select using (
-    team_id is null or team_id = app_private.my_team_id()
-  );
+-- projects
+do $do$
+begin
+  if to_regclass('public.projects') is not null then
+    drop policy if exists "projects_team_scope_select" on public.projects;
+    create policy "projects_team_scope_select" on public.projects
+      for select using (
+        team_id is null or team_id = app_private.my_team_id()
+      );
 
-drop policy if exists "projects_team_scope_insert" on public.projects;
-create policy "projects_team_scope_insert" on public.projects
-  for insert
-  with check (team_id is null or team_id = app_private.my_team_id());
+    drop policy if exists "projects_team_scope_insert" on public.projects;
+    create policy "projects_team_scope_insert" on public.projects
+      for insert
+      with check (team_id is null or team_id = app_private.my_team_id());
 
-drop policy if exists "projects_team_scope_update" on public.projects;
-create policy "projects_team_scope_update" on public.projects
-  for update
-  using (team_id is null or team_id = app_private.my_team_id())
-  with check (team_id is null or team_id = app_private.my_team_id());
+    drop policy if exists "projects_team_scope_update" on public.projects;
+    create policy "projects_team_scope_update" on public.projects
+      for update
+      using (team_id is null or team_id = app_private.my_team_id())
+      with check (team_id is null or team_id = app_private.my_team_id());
 
-drop policy if exists "projects_team_scope_delete" on public.projects;
-create policy "projects_team_scope_delete" on public.projects
-  for delete
-  using (team_id is null or team_id = app_private.my_team_id());
+    drop policy if exists "projects_team_scope_delete" on public.projects;
+    create policy "projects_team_scope_delete" on public.projects
+      for delete
+      using (team_id is null or team_id = app_private.my_team_id());
+  end if;
+end
+$do$;
 
--- tasks (team-scoped quartet from 0021)
-drop policy if exists "tasks_team_scope_select" on public.tasks;
-create policy "tasks_team_scope_select" on public.tasks
-  for select using (
-    team_id is null or team_id = app_private.my_team_id()
-  );
+-- tasks
+do $do$
+begin
+  if to_regclass('public.tasks') is not null then
+    drop policy if exists "tasks_team_scope_select" on public.tasks;
+    create policy "tasks_team_scope_select" on public.tasks
+      for select using (
+        team_id is null or team_id = app_private.my_team_id()
+      );
 
-drop policy if exists "tasks_team_scope_insert" on public.tasks;
-create policy "tasks_team_scope_insert" on public.tasks
-  for insert
-  with check (team_id is null or team_id = app_private.my_team_id());
+    drop policy if exists "tasks_team_scope_insert" on public.tasks;
+    create policy "tasks_team_scope_insert" on public.tasks
+      for insert
+      with check (team_id is null or team_id = app_private.my_team_id());
 
-drop policy if exists "tasks_team_scope_update" on public.tasks;
-create policy "tasks_team_scope_update" on public.tasks
-  for update
-  using (team_id is null or team_id = app_private.my_team_id())
-  with check (team_id is null or team_id = app_private.my_team_id());
+    drop policy if exists "tasks_team_scope_update" on public.tasks;
+    create policy "tasks_team_scope_update" on public.tasks
+      for update
+      using (team_id is null or team_id = app_private.my_team_id())
+      with check (team_id is null or team_id = app_private.my_team_id());
 
-drop policy if exists "tasks_team_scope_delete" on public.tasks;
-create policy "tasks_team_scope_delete" on public.tasks
-  for delete
-  using (team_id is null or team_id = app_private.my_team_id());
+    drop policy if exists "tasks_team_scope_delete" on public.tasks;
+    create policy "tasks_team_scope_delete" on public.tasks
+      for delete
+      using (team_id is null or team_id = app_private.my_team_id());
+  end if;
+end
+$do$;
 
--- team_members (insert / update / delete from 0021)
-drop policy if exists "team_members_insert" on public.team_members;
-create policy "team_members_insert" on public.team_members
-  for insert
-  with check (
-    app_private.is_team_admin(team_id)
-    or (
-      user_id = (select auth.uid())
-      and role = 'admin'
-      and not exists (
-        select 1 from public.team_members existing
-        where existing.team_id = team_members.team_id
-      )
-    )
-  );
+-- team_members
+do $do$
+begin
+  if to_regclass('public.team_members') is not null then
+    drop policy if exists "team_members_insert" on public.team_members;
+    create policy "team_members_insert" on public.team_members
+      for insert
+      with check (
+        app_private.is_team_admin(team_id)
+        or (
+          user_id = (select auth.uid())
+          and role = 'admin'
+          and not exists (
+            select 1 from public.team_members existing
+            where existing.team_id = team_members.team_id
+          )
+        )
+      );
 
-drop policy if exists "team_members_update" on public.team_members;
-create policy "team_members_update" on public.team_members
-  for update
-  using (app_private.is_team_admin(team_id))
-  with check (app_private.is_team_admin(team_id));
+    drop policy if exists "team_members_update" on public.team_members;
+    create policy "team_members_update" on public.team_members
+      for update
+      using (app_private.is_team_admin(team_id))
+      with check (app_private.is_team_admin(team_id));
 
-drop policy if exists "team_members_delete" on public.team_members;
-create policy "team_members_delete" on public.team_members
-  for delete
-  using (app_private.is_team_admin(team_id));
+    drop policy if exists "team_members_delete" on public.team_members;
+    create policy "team_members_delete" on public.team_members
+      for delete
+      using (app_private.is_team_admin(team_id));
+  end if;
+end
+$do$;
 
 -- ============================================================
 -- 4) Drop the public helpers — nothing references them anymore
