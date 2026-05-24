@@ -41,6 +41,7 @@ import type { TaskWithRelations } from "@/lib/queries";
 import { useTeamContext } from "@/components/team-provider";
 import { Avatar } from "@/components/avatar";
 import { useBulkSelection } from "@/components/bulk-selection";
+import { useOptimisticDeletes } from "@/components/optimistic-deletes";
 
 type Priority = 1 | 2 | 3 | 4;
 
@@ -99,6 +100,11 @@ export function TaskRow({
   const rescheduleOpacity = useTransform(dragX, [-100, -60, 0], [1, 0.7, 0]);
   const { mode: selectionMode, ids: selectedIds, toggle: toggleSelection } =
     useBulkSelection();
+  // Shared optimistic-delete store. Lets the drawer's "Delete task"
+  // also hide this row instantly (without the drawer, the row would
+  // hang around until the server revalidation lands).
+  const optimisticDeletes = useOptimisticDeletes();
+  const isOptimisticallyDeleted = optimisticDeletes.isHidden(task.id);
   const selected = selectedIds.has(task.id);
 
   const [optPriority, setOptPriority] = useState<Priority>(
@@ -204,10 +210,19 @@ export function TaskRow({
   };
 
   const remove = () => {
+    // Optimistic: hide the row immediately so the user sees an instant
+    // response, then run the server delete in a transition. The
+    // AnimatePresence exit animation runs during the server round-trip
+    // so the row is already off-screen by the time revalidation lands.
+    // On error, un-hide and surface the failure.
+    optimisticDeletes.hide(task.id);
     playSound("deleted");
     startTransition(async () => {
       const res = await deleteTask(task.id);
-      if (res.error) sileo.error({ title: res.error });
+      if (res.error) {
+        sileo.error({ title: res.error });
+        optimisticDeletes.unhide(task.id);
+      }
     });
   };
 
@@ -266,7 +281,7 @@ export function TaskRow({
 
   return (
     <AnimatePresence initial={false}>
-      {!done && (
+      {!done && !isOptimisticallyDeleted && (
         <motion.div
           layout
           initial={{ opacity: 0, y: -4 }}

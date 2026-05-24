@@ -61,6 +61,7 @@ import {
 import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useOptimisticDeletes } from "@/components/optimistic-deletes";
 import { ProjectDot } from "@/components/project-dot";
 import { Button } from "@/components/ui/button";
 
@@ -235,6 +236,10 @@ function DrawerInner({
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [pending, startTransition] = useTransition();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  // Shared optimistic-delete store. Lets the drawer's delete hide the
+  // underlying row in the list immediately instead of waiting for
+  // server revalidation to remove it.
+  const optimisticDeletes = useOptimisticDeletes();
   // Multi-assignee state — co-assignees on top of the primary
   // tasks.assignee_id. Source: task_assignees join table.
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
@@ -413,14 +418,23 @@ function DrawerInner({
   };
   const actuallyDelete = () => {
     if (!task) return;
-    // Close the drawer immediately so the row animates out; the server
-    // action runs in a transition behind the scenes.
+    const id = task.id;
+    // Optimistic on every layer: close the drawer immediately, hide
+    // the row in the list immediately (via the shared store), then
+    // run the server delete in a transition. On error, un-hide the
+    // row and surface the failure — the user can re-try without
+    // losing the task.
+    optimisticDeletes.hide(id);
     onClose();
     playSound("deleted");
     startTransition(async () => {
-      const res = await deleteTask(task.id);
-      if (res.error) sileo.error({ title: res.error });
-      else sileo.success({ title: "Task deleted" });
+      const res = await deleteTask(id);
+      if (res.error) {
+        sileo.error({ title: res.error });
+        optimisticDeletes.unhide(id);
+      } else {
+        sileo.success({ title: "Task deleted" });
+      }
     });
   };
 

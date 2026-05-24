@@ -9,6 +9,7 @@ import { TeamProvider } from "@/components/team-provider";
 import { QuickAddProvider } from "@/components/quick-add-context";
 import { BulkSelectionProvider } from "@/components/bulk-selection";
 import { BulkActionBar } from "@/components/bulk-action-bar";
+import { OptimisticDeletesProvider } from "@/components/optimistic-deletes";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileFab } from "@/components/mobile-fab";
 import { MobileMenuSheet } from "@/components/mobile-menu-sheet";
@@ -123,6 +124,7 @@ export function AppShell({
       >
         <QuickAddProvider open={() => setQuickOpen(true)}>
          <BulkSelectionProvider>
+          <OptimisticDeletesProvider>
           <div className="flex h-dvh w-full overflow-hidden bg-background">
             {/* Desktop sidebar — `contents` keeps it as a direct flex child
                 so the desktop layout is byte-for-byte unchanged. On mobile
@@ -189,6 +191,7 @@ export function AppShell({
             )}
             <BulkActionBar members={members} />
           </div>
+          </OptimisticDeletesProvider>
          </BulkSelectionProvider>
         </QuickAddProvider>
       </TeamProvider>

@@ -26,6 +26,7 @@ import {
 } from "@/lib/actions";
 import type { Profile } from "@/lib/queries";
 import { playSound } from "@/lib/sounds";
+import { useOptimisticDeletes } from "@/components/optimistic-deletes";
 import { cn } from "@/lib/utils";
 
 /**
@@ -41,6 +42,7 @@ export function BulkActionBar({ members }: { members: Profile[] }) {
   const { ids, mode, clear, setMode } = useBulkSelection();
   const [pending, startTransition] = useTransition();
   const count = ids.size;
+  const optimisticDeletes = useOptimisticDeletes();
 
   const run = (fn: () => Promise<{ error?: string }>) =>
     startTransition(async () => {
@@ -55,8 +57,24 @@ export function BulkActionBar({ members }: { members: Profile[] }) {
   const onComplete = () =>
     run(() => bulkSetTaskStatus([...ids], "done"));
   const onDelete = () => {
+    // Optimistic batch hide so every selected row disappears in one
+    // render cycle. The server delete runs in the transition; on
+    // failure the rows un-hide and the toast carries the error.
+    const idArray = [...ids];
+    optimisticDeletes.hideMany(idArray);
     playSound("deleted");
-    return run(() => bulkDeleteTasks([...ids]));
+    startTransition(async () => {
+      const res = await bulkDeleteTasks(idArray);
+      if (res.error) {
+        sileo.error({ title: res.error });
+        for (const id of idArray) optimisticDeletes.unhide(id);
+      } else {
+        sileo.success({
+          title: `Deleted ${count} ${count === 1 ? "task" : "tasks"}`,
+        });
+        setMode(false);
+      }
+    });
   };
   const onAssign = (userId: string) =>
     run(() => bulkSetTaskAssignee([...ids], userId));
