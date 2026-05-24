@@ -286,7 +286,7 @@ export function QuickAddDialog({
           )}
           <input
             autoFocus
-            placeholder="What needs to get done? Try #project @name tomorrow p1"
+            placeholder="What needs to get done?"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -309,7 +309,7 @@ export function QuickAddDialog({
             </p>
           )}
           <textarea
-            placeholder="Add context, a link, or @mention a teammate..."
+            placeholder="Add a description or a link"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}

@@ -71,6 +71,11 @@ export function ConfirmDialog({
             type="button"
             onClick={() => onOpenChange(false)}
             disabled={pending}
+            // Destructive confirms autofocus Cancel — pressing Enter
+            // after the dialog opens then dismisses safely instead of
+            // executing the irreversible action. Non-destructive
+            // dialogs autofocus the primary button instead.
+            autoFocus={variant === "destructive"}
             className="focus-ring inline-flex h-9 items-center rounded-md px-3.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent/60 disabled:opacity-60"
           >
             {cancelLabel}
@@ -79,7 +84,7 @@ export function ConfirmDialog({
             type="button"
             onClick={handleConfirm}
             disabled={pending}
-            autoFocus
+            autoFocus={variant !== "destructive"}
             className={cn(
               "focus-ring inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-[13px] font-semibold transition-[background-color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100",
               variant === "destructive"
@@ -88,7 +93,7 @@ export function ConfirmDialog({
             )}
           >
             {pending && <CircleNotch size={13} className="animate-spin" />}
-            {pending ? "Working…" : confirmLabel}
+            {pending ? "Saving…" : confirmLabel}
           </button>
         </div>
       </DialogContent>

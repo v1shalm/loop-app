@@ -1716,6 +1716,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
                 setAdding(false);
               }
             }}
+            aria-label="New subtask"
             placeholder="Subtask name"
             className="focus-ring h-7 flex-1 rounded-md bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
           />

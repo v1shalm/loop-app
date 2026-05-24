@@ -113,6 +113,7 @@ export function MobileMenuSheet({
               close();
               onOpenSearch();
             }}
+            aria-label="Search tasks, projects, teammates"
             className="flex w-full items-center gap-2 rounded-xl border border-border/70 bg-card/60 px-3 py-3 text-left text-[14px] text-muted-foreground transition-colors active:bg-card"
           >
             <MagnifyingGlass size={15} />

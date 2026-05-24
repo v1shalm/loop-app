@@ -763,6 +763,7 @@ function SavedViewsChip({
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
+              aria-label="Name for saved view"
               placeholder="View name"
               maxLength={40}
               className="focus-ring h-7 flex-1 rounded-md border border-border bg-background px-2 text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/60"

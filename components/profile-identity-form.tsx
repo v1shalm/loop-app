@@ -127,15 +127,19 @@ function Field({
   hint?: string;
   children: React.ReactNode;
 }) {
+  // Wrapping the input in a <label> binds them implicitly without
+  // having to thread a generated id through the children — the
+  // browser treats the wrapped form control as labelled by its
+  // ancestor label automatically.
   return (
-    <div>
-      <label className="mb-1 block text-[12px] font-medium text-foreground">
+    <label className="block">
+      <span className="mb-1 block text-[12px] font-medium text-foreground">
         {label}
-      </label>
+      </span>
       {children}
       {hint && (
-        <p className="mt-1 text-[11.5px] text-muted-foreground">{hint}</p>
+        <span className="mt-1 block text-[11.5px] text-muted-foreground">{hint}</span>
       )}
-    </div>
+    </label>
   );
 }

@@ -169,7 +169,10 @@ export function InviteTeammateDialog({
                 Role
               </span>
               <Popover>
-                <PopoverTrigger className="focus-ring inline-flex h-9 items-center justify-between gap-1.5 rounded-md border border-border bg-card px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40">
+                <PopoverTrigger
+                  disabled={pending}
+                  className="focus-ring inline-flex h-9 items-center justify-between gap-1.5 rounded-md border border-border bg-card px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-60"
+                >
                   <span>{role === "admin" ? "Admin" : "Member"}</span>
                   <CaretDown size={10} weight="bold" className="opacity-60" />
                 </PopoverTrigger>
