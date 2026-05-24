@@ -48,9 +48,8 @@ function Hero() {
         Loop
       </h1>
       <p className="mt-4 max-w-[640px] text-[16px] leading-relaxed text-muted-foreground sm:text-[17px]">
-        Two days, built end-to-end. I made the product calls.
-        Claude Code wrote most of the code under my direction. This
-        page is how I thought about each decision.
+        A team task tracker, two days. I made the product calls.
+        Claude Code wrote most of the code under my direction.
       </p>
 
       <div className="mt-7 flex flex-wrap items-center gap-2.5">
@@ -464,10 +463,11 @@ function UXDecisions() {
 
         <Decision title="Three sidebar widgets → one right rail.">
           <p>
-            Today, Team Pulse, and Recent Activity sat as three
-            sidebar sections at first. The canvas felt cramped. One
-            consolidated card on the right freed the canvas and gave
-            them a clearer relationship.
+            Today, Team Pulse, and Recent Activity were three
+            separate sidebar sections at first, all competing for
+            the same column and squeezing the main canvas. Folded
+            them into one card on the right rail. Same information,
+            two columns instead of three.
           </p>
         </Decision>
 
@@ -560,10 +560,9 @@ function ArchitectureDecisions() {
       <div className="mt-2 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Decision title="Next.js + Supabase + Tailwind.">
           <p>
-            Supabase removes a day of auth and DB plumbing. The brief
-            ranks UX first, so I picked the stack that ships features
-            fast and saves the polish budget for the surfaces a
-            reviewer actually touches.
+            Supabase removes a day of auth and DB plumbing. The
+            brief ranks UX first, so I picked a stack that puts that
+            day back into polish on the surfaces a reviewer sees.
           </p>
         </Decision>
 
@@ -827,7 +826,7 @@ const NEXT_ITEMS = [
   "Inline title editing on rows so renaming doesn't require opening the drawer",
   "Trash with 30-day restore — delete with confidence, recover with one click",
   "Filters live in the URL so a filtered inbox view is shareable in Slack",
-  "Project covers + emoji icons — Notion's secret weapon for scanability",
+  "Project covers + emoji icons so projects look distinct in the sidebar",
   "Hover-preview cards on @mentions and task links",
   "Recently visited in the sidebar — top 5 surfaces you just opened",
 ];
