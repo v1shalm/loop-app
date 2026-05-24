@@ -94,7 +94,7 @@ export default async function ProjectPage({ params }: PageProps) {
         <section className="mb-10">
           {openTasks.length === 0 ? (
             <EmptyState
-              icon={<Hash size={22} />}
+              icon={<Hash size={32} weight="fill" />}
               title="This project is empty"
               hint="Add the first task and tag it to this project."
             />

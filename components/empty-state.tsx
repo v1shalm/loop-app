@@ -58,26 +58,111 @@ export function EmptyState({
   return (
     <div className="w-full rounded-2xl border border-border/60 bg-card px-8 py-12 shadow-soft-xs sm:px-12">
       <div className="mx-auto flex max-w-[520px] flex-col items-center text-center">
-        <div className="relative grid place-items-center">
-          {/* Soft violet halo behind the tile — the "purple hint" */}
+        {/* Pedestal — pink metallic 3D illustration in place of the
+            previous flat tile. The depth comes from layering, not from
+            a 3D render: a soft halo behind, a contact shadow below,
+            a multi-stop gradient face, inset highlights for the
+            specular "shine" at the top, a darker bottom-inset for
+            material weight, and a tinted outer shadow that grounds the
+            pedestal in the surface. */}
+        <div className="relative grid place-items-center pb-3">
+          {/* Soft pink halo behind the pedestal — the brand glow. */}
           <div
             aria-hidden
-            className="absolute inset-0 -m-6 rounded-full bg-[radial-gradient(closest-side,oklch(0.62_0.22_295/0.28),oklch(0.62_0.22_295/0.08)_55%,transparent_75%)] blur-md"
+            className="absolute inset-0 -m-10 rounded-full bg-[radial-gradient(closest-side,oklch(0.78_0.18_348/0.4),oklch(0.62_0.24_348/0.15)_50%,transparent_75%)] blur-xl"
           />
-          {/* The tile itself — gradient bed + inner highlight + layered shadow */}
+
+          {/* Contact shadow — a soft pink ellipse below the pedestal
+              that visually anchors it to the surface. Pink rather than
+              neutral black so the shadow reads as "in the same color
+              world" as the pedestal, not a black blob underneath. */}
           <div
-            className="relative grid size-16 place-items-center rounded-2xl border border-border/60 bg-[linear-gradient(140deg,var(--card)_0%,var(--card)_55%,oklch(0.62_0.22_295/0.08)_100%)] text-primary"
+            aria-hidden
+            className="absolute bottom-0 left-1/2 h-3 w-16 -translate-x-1/2 translate-y-1 rounded-full bg-[radial-gradient(closest-side,oklch(0.55_0.22_348/0.45),transparent_70%)] blur-[6px]"
+          />
+
+          {/* The pedestal itself. The big visual moves here:
+                - A 4-stop metallic gradient (light top → mid → deep
+                  bottom → subtle warm shift) so the face reads as a
+                  reflective surface, not a flat fill.
+                - Two inset highlights: bright white top (specular
+                  shine) + dark bottom (material edge).
+                - Three drop shadows: a tight hard shadow for
+                  geometry, a medium colored shadow for the pink
+                  glow, and a long soft shadow for depth.
+                - rotate-[-2deg] on the icon side hints at the
+                  "floating object photographed from slightly above"
+                  feel of the reference image without breaking the
+                  centered layout. */}
+          <div
+            className="relative grid size-20 place-items-center rounded-[22px] text-white sm:size-24"
             style={{
-              boxShadow:
-                "inset 0 1px 0 0 rgba(255,255,255,0.75), 0 1px 2px 0 rgba(15,23,42,0.04), 0 8px 24px -10px oklch(0.62 0.22 295 / 0.35), 0 2px 6px -2px rgba(15,23,42,0.08)",
+              background: `
+                linear-gradient(
+                  160deg,
+                  oklch(0.88 0.10 348) 0%,
+                  oklch(0.74 0.20 348) 32%,
+                  oklch(0.58 0.24 348) 68%,
+                  oklch(0.62 0.22 348) 100%
+                )
+              `,
+              boxShadow: [
+                // Top-edge bright specular highlight (chrome shine).
+                "inset 0 1.5px 0 0 oklch(1 0 0 / 0.7)",
+                // Top-left soft glow inside the surface.
+                "inset 4px 6px 12px 0 oklch(1 0 0 / 0.18)",
+                // Bottom-inner darkening — gives the face material weight.
+                "inset 0 -2px 4px 0 oklch(0.3 0.18 348 / 0.35)",
+                // Tight contact shadow underneath the pedestal.
+                "0 2px 4px 0 oklch(0.35 0.20 348 / 0.35)",
+                // Coloured mid-distance shadow — the pink "lift".
+                "0 12px 28px -6px oklch(0.62 0.24 348 / 0.5)",
+                // Long soft ambient shadow for depth.
+                "0 28px 56px -12px oklch(0.4 0.18 348 / 0.35)",
+              ].join(", "),
             }}
           >
-            {/* Inner subtle inner ring for extra depth */}
+            {/* Specular sheen — a thin bright stripe near the top edge
+                that mimics the highlight reflection on metal. Sits
+                inside the radius and clips with overflow on the parent. */}
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-[3px] rounded-[14px] ring-1 ring-inset ring-white/40"
+              className="pointer-events-none absolute left-3 right-3 top-1 h-2 rounded-full bg-gradient-to-b from-white/55 to-white/0 blur-[1.5px]"
             />
-            <span className="relative">{icon}</span>
+
+            {/* Side-light wash — a soft diagonal sweep that catches the
+                "top-right" of the face, suggesting an off-screen
+                light source consistent with the reference image. */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-[2px] rounded-[20px]"
+              style={{
+                background:
+                  "linear-gradient(155deg, oklch(1 0 0 / 0.18) 0%, oklch(1 0 0 / 0) 35%, oklch(1 0 0 / 0) 80%, oklch(0 0 0 / 0.06) 100%)",
+              }}
+            />
+
+            {/* Inner subtle ring for crisp edge definition (concentric
+                with the outer radius — pedestal radius is 22px, inner
+                inset is 3px, so inner radius is 19px). */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-[3px] rounded-[19px] ring-1 ring-inset ring-white/35"
+            />
+
+            {/* Icon — sits forward of the surface with a soft inner
+                shadow so it looks "embossed" into the pedestal rather
+                than stuck on top. text-white means the per-page icon
+                takes the brand pink-on-white treatment automatically. */}
+            <span
+              className="relative text-white"
+              style={{
+                filter:
+                  "drop-shadow(0 1px 0 oklch(0.35 0.20 348 / 0.45)) drop-shadow(0 2px 3px oklch(0 0 0 / 0.18))",
+              }}
+            >
+              {icon}
+            </span>
           </div>
         </div>
         <h3 className="mt-5 text-[18px] font-semibold tracking-tight text-foreground">

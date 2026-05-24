@@ -80,7 +80,7 @@ export default async function UpcomingPage({ searchParams }: PageProps) {
               <UpcomingCalendar tasks={rangeTasks} />
             ) : total === 0 ? (
               <EmptyState
-                icon={<CalendarDots size={22} />}
+                icon={<CalendarDots size={32} weight="fill" />}
                 title="Nothing scheduled"
                 hint="Schedule something for later this week or pass work to a teammate."
                 actionLabel="Add a task"
