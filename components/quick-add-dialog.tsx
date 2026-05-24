@@ -74,7 +74,8 @@ const PRIORITY_OPTIONS: {
   },
 ];
 
-const sectionLabel = "text-[11px] font-medium text-muted-foreground";
+const sectionLabel =
+  "text-[11.5px] font-medium uppercase tracking-[0.06em] text-muted-foreground/80";
 
 export function QuickAddDialog({
   open,
@@ -162,10 +163,10 @@ export function QuickAddDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[600px] gap-0 p-0 shadow-soft-md sm:rounded-xl"
+        className="max-w-[680px] gap-0 p-0 shadow-soft-md sm:rounded-xl"
       >
         {/* Header — project picker inline with "New task in" */}
-        <div className="flex items-center gap-2 border-b border-border/60 px-5 py-3.5">
+        <div className="flex items-center gap-2 border-b border-border/60 px-6 py-4">
           <span className="text-[13.5px] text-muted-foreground">New task in</span>
           <Popover>
             <PopoverTrigger className="focus-ring flex h-7 items-center gap-1.5 rounded-md px-2 text-[13.5px] font-medium text-foreground transition-colors hover:bg-accent/40">
@@ -207,7 +208,7 @@ export function QuickAddDialog({
         </div>
 
         {/* Title + description */}
-        <div className="px-5 pt-5">
+        <div className="px-6 pb-2 pt-6">
           <input
             autoFocus
             placeholder="What needs to get done?"
@@ -219,21 +220,21 @@ export function QuickAddDialog({
                 submit();
               }
             }}
-            className="w-full bg-transparent text-[17px] font-medium leading-tight text-foreground outline-none placeholder:text-muted-foreground/70"
+            className="w-full bg-transparent text-[19px] font-medium leading-[1.25] tracking-[-0.005em] text-foreground outline-none placeholder:text-muted-foreground/65"
           />
           <textarea
             placeholder="Add context, a link, or @mention a teammate..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="mt-2.5 w-full resize-none bg-transparent text-[14px] text-muted-foreground outline-none placeholder:text-muted-foreground/60"
+            className="mt-3 w-full resize-none bg-transparent text-[14.5px] leading-snug text-muted-foreground outline-none placeholder:text-muted-foreground/55"
           />
         </div>
 
         {/* Due date — inline chips, no popover for quick choices */}
-        <div className="border-t border-border/60 px-5 py-3.5">
+        <div className="border-t border-border/60 px-6 py-4">
           <p className={sectionLabel}>Due date</p>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <QuickDateChip
               label="Today"
               active={due ? isSameDay(due, today()) : false}
@@ -284,9 +285,9 @@ export function QuickAddDialog({
         </div>
 
         {/* Priority — all four visible at once */}
-        <div className="border-t border-border/60 px-5 py-3.5">
+        <div className="border-t border-border/60 px-6 py-4">
           <p className={sectionLabel}>Priority</p>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {PRIORITY_OPTIONS.map((o) => {
               const active = priority === o.p;
               return (
@@ -313,9 +314,9 @@ export function QuickAddDialog({
         </div>
 
         {/* Assign to — avatar stack, click to select, + opens picker */}
-        <div className="border-t border-border/60 px-5 py-3.5">
+        <div className="border-t border-border/60 px-6 py-4">
           <p className={sectionLabel}>Assign to</p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2">
             <div className="flex -space-x-1.5">
               {inlineMembers.map((m) => {
                 const isSelected = m.id === assigneeId;
@@ -386,7 +387,7 @@ export function QuickAddDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-2 border-t border-border/60 px-5 py-3.5">
+        <div className="flex items-center justify-between gap-2 border-t border-border/60 px-6 py-4">
           <button
             onClick={() => onOpenChange(false)}
             className="focus-ring rounded-md px-3 py-2 text-[13.5px] font-medium text-foreground transition-colors hover:bg-accent/40"
@@ -396,7 +397,7 @@ export function QuickAddDialog({
           <button
             onClick={submit}
             disabled={pending || !title.trim()}
-            className="focus-ring surface-brand surface-brand-hover inline-flex h-9 items-center gap-1.5 rounded-md px-4 text-[13.5px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
+            className="focus-ring surface-brand surface-brand-hover inline-flex h-10 items-center gap-1.5 rounded-md px-5 text-[13.5px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
           >
             {pending ? (
               <CircleNotch size={14} className="animate-spin" />
