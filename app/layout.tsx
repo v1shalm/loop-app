@@ -6,8 +6,32 @@ import "sileo/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://loop-tist.vercel.app"),
   title: "Loop. Share work across your team.",
   description: "A simple, joyful place to assign and finish work together.",
+  openGraph: {
+    title: "Loop. Share work across your team.",
+    description:
+      "A simple, joyful place to assign and finish work together.",
+    url: "https://loop-tist.vercel.app",
+    siteName: "Loop",
+    images: [
+      {
+        url: "/screens/dark/my-work.png",
+        width: 1440,
+        height: 880,
+        alt: "Loop My Work screen showing tasks grouped by when they're due",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Loop. Share work across your team.",
+    description:
+      "A simple, joyful place to assign and finish work together.",
+    images: ["/screens/dark/my-work.png"],
+  },
 };
 
 // `viewport-fit=cover` lets `env(safe-area-inset-*)` resolve to real values

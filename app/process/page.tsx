@@ -10,6 +10,28 @@ export const metadata = {
   title: "Process · Loop",
   description:
     "How I thought through Loop, the task tracker I built in two days for the Tist take-home.",
+  openGraph: {
+    title: "Process · Loop",
+    description:
+      "How I thought through Loop, the task tracker I built in two days for the Tist take-home.",
+    url: "https://loop-tist.vercel.app/process",
+    images: [
+      {
+        url: "/screens/dark/task-drawer.png",
+        width: 1440,
+        height: 880,
+        alt: "Loop task drawer slides over the list with threaded comments and reactions",
+      },
+    ],
+    type: "article",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Process · Loop",
+    description:
+      "How I thought through Loop, the task tracker I built in two days for the Tist take-home.",
+    images: ["/screens/dark/task-drawer.png"],
+  },
 };
 
 export default function ProcessPage() {
@@ -23,9 +45,9 @@ export default function ProcessPage() {
         <Problems />
         <ClaudeHelped />
         <Overrides />
+        <LookAndFeel />
         <Screens />
         <SmallCalls />
-        <Assumptions />
         <NextUp />
         <DemoAccounts />
         <Footer />
@@ -81,18 +103,25 @@ function Thoughts() {
     <Section title="Thought process">
       <Prose>
         <p>
-          The brief said: build a task tracker for a mid-sized
-          organisation with multiple teams, in two days, any stack,
-          AI tools encouraged.
+          Every task tracker eventually becomes a junk drawer of
+          forgotten assignments and noise. With two days to build
+          one, the biggest risk is shipping{" "}
+          <span className="font-medium text-foreground">
+            a soulless clone of Todoist
+          </span>
+          .
         </p>
         <p>
-          It also said evaluation ranks{" "}
-          <span className="font-medium text-foreground">
-            UX and design judgment first
-          </span>
-          , then architecture, then how I communicate the decisions.
+          I wanted Loop to have a clear point of view: a tool for the
+          person doing the work, not the manager tracking it.
         </p>
-        <p>That told me where to spend the budget.</p>
+        <p>
+          Supabase handled the backend. Claude Code wrote the code.
+          That left time for the calls that actually matter: when a
+          task becomes yours, how the team stays in the loop without
+          drowning in notifications, and where the interface gets out
+          of the way.
+        </p>
       </Prose>
     </Section>
   );
@@ -137,11 +166,9 @@ function Problems() {
     <Section title="Problems I spotted">
       <Prose>
         <p>
-          With that person in mind, I opened Asana, Linear, and
-          Todoist back-to-back and wrote down what gets in the way of
-          that job. I didn&apos;t run interviews; two days didn&apos;t
-          leave room. This is what I noticed from using these apps
-          daily and putting them side by side.
+          With that person in mind, I pulled flows from Linear,
+          Notion, and Todoist on Mobbin and walked through them side
+          by side. I wrote down what gets in the way of that job.
         </p>
       </Prose>
       <ul className="mt-6 flex max-w-[820px] flex-col gap-3.5">
@@ -158,9 +185,6 @@ function Problems() {
           </li>
         ))}
       </ul>
-      <p className="mt-6 text-[16px] leading-relaxed text-muted-foreground">
-        That was the start of the decision list.
-      </p>
     </Section>
   );
 }
@@ -174,9 +198,9 @@ function ClaudeHelped() {
         <p>
           I&apos;m a product designer with enough coding background to
           read code and spot when something&apos;s wrong. Not enough
-          to write it. Backend especially: schema design, SQL, RLS
-          policies. Any of those would have stopped this project on
-          day one.
+          to write it. Backend especially: database design, queries,
+          access permissions. Any of that would have stopped this
+          project on day one.
         </p>
         <p>
           Claude Code did all of it. I described what I needed, read
@@ -195,29 +219,79 @@ function ClaudeHelped() {
   );
 }
 
-// ── Where I overrode ───────────────────────────────────────────────────────
+// ── Where I pushed back ────────────────────────────────────────────────────
+
+const OVERRIDES: Array<{ title: string; body: string }> = [
+  {
+    title: "Inbox, not your day.",
+    body: "New tasks land in an inbox until you accept them.",
+  },
+  {
+    title: "Drawer, not a route.",
+    body: "The task drawer slides over the list instead of loading a new page. The URL still updates, so a teammate can paste a link to land back on the same task.",
+  },
+  {
+    title: "Notifications in place.",
+    body: "Collapsed from a full page into a popover in the top bar. One list, one Mark all read, no detour.",
+  },
+  {
+    title: "Empty states that don't lie.",
+    body: "When you filter a list and nothing matches, the screen names the filter that's hiding the work, instead of saying \"All caught up.\"",
+  },
+];
 
 function Overrides() {
   return (
-    <Section title="Where I overrode">
+    <Section title="Where I pushed back">
       <Prose>
         <p>
-          Most of the work in Loop sits in this section. Claude&apos;s
+          This is where the product calls happened. Claude&apos;s
           first pass kept reaching for the standard task-tracker
-          patterns. I replaced them.
+          patterns. Here&apos;s what I replaced them with:
+        </p>
+      </Prose>
+      <ul className="mt-7 flex max-w-[820px] flex-col gap-7">
+        {OVERRIDES.map((o, i) => (
+          <li key={i}>
+            <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
+              {o.title}
+            </h3>
+            <p className="mt-1.5 text-[16px] leading-relaxed text-muted-foreground">
+              {o.body}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
+// ── Look, feel, and sound ──────────────────────────────────────────────────
+
+function LookAndFeel() {
+  return (
+    <Section title="Look, feel, and sound">
+      <Prose>
+        <p>
+          I wanted Loop to feel good to sit in front of all day.
         </p>
         <p>
-          New tasks land in an inbox, not your day, so accepting work
-          is a choice. The task drawer slides over the list instead of
-          opening a new route, with the URL still updating so a
-          teammate can paste a link. @mentions render as clickable
-          chips. Comments thread one level deep and take reactions.
-          Notifications collapsed from a full page into a popover in
-          the top bar. Workflow status moved off project cards because
-          it was duplicating the done checkbox. Filtered empty states
-          name the filter that&apos;s hiding the work, instead of
-          claiming everything is done.
+          The look: thin borders, quiet shadows, and a brand pink
+          that stands apart from Linear&apos;s purple, Notion&apos;s
+          monochrome, and Todoist&apos;s red.
         </p>
+        <p>
+          Look is only half of it. The other half is how it feels to
+          use.
+        </p>
+        <p>
+          Every action plays a short sound through{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 text-[14px] font-medium text-foreground">
+            @web-kits/audio
+          </code>
+          . Completing a task plays a chime pitched by priority.
+        </p>
+        <p>Small things, but they make the app feel tactile.</p>
       </Prose>
     </Section>
   );
@@ -248,7 +322,7 @@ const SCREENS: Array<{ name: string; alt: string; caption: string }> = [
     name: "task-drawer",
     alt: "Floating task drawer with title, chips, description, metadata, threaded comments",
     caption:
-      "Opening a task slides this drawer in instead of taking you to a new page. The URL still updates with ?task= so a teammate can paste a link.",
+      "Opening a task slides this drawer in instead of taking you to a new page. The URL still updates, so a teammate can paste a link to land back on the same task.",
   },
   {
     name: "manage-team",
@@ -300,8 +374,8 @@ function SmallCalls() {
     <Section title="Small calls">
       <Prose>
         <p>
-          The moments a list-view tour skips: a dialog open, a popover,
-          a comment with a reaction.
+          The smaller moments the main screens skip: a dialog open, a
+          popover, a comment with a reaction.
         </p>
       </Prose>
       <div className="mt-6 ml-[calc(50%-50vw+8px)] mr-[calc(50%-50vw+8px)] max-w-none sm:ml-[calc(50%-50vw+16px)] sm:mr-[calc(50%-50vw+16px)]">
@@ -345,73 +419,15 @@ function ScreenFrame({
   );
 }
 
-// ── Assumptions (ambiguities the brief left to me) ─────────────────────────
-
-function Assumptions() {
-  return (
-    <Section title="Assumptions">
-      <Prose>
-        <p>
-          The brief left three things ambiguous on purpose. Here&apos;s
-          what I picked, and what it cost.
-        </p>
-      </Prose>
-
-      <ol className="mt-6 flex max-w-[820px] flex-col gap-8 list-decimal pl-6 marker:text-[15px] marker:font-semibold marker:text-foreground/40">
-        <li className="pl-2">
-          <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
-            One team per user.
-          </h3>
-          <div className="mt-2.5 flex flex-col gap-3 text-[16px] leading-relaxed text-muted-foreground">
-            <p>
-              Enforced at the database level. No team switcher in the
-              header, no &quot;which team am I looking at right
-              now?&quot; question.
-            </p>
-            <p>
-              Multi-team would have meant a switcher, a sticky current
-              team, and questions like &quot;what does Inbox mean
-              across three teams?&quot;. Not worth it for a 2-day
-              build.
-            </p>
-          </div>
-        </li>
-
-        <li className="pl-2">
-          <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
-            Supabase for everything.
-          </h3>
-          <p className="mt-2.5 text-[16px] leading-relaxed text-muted-foreground">
-            Postgres + RLS + magic link + Google OAuth +
-            email/password + realtime, all in one. Removed a full
-            day of plumbing. That day went into the product instead.
-          </p>
-        </li>
-
-        <li className="pl-2">
-          <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
-            Real auth, not a fake password gate.
-          </h3>
-          <p className="mt-2.5 text-[16px] leading-relaxed text-muted-foreground">
-            Four demo accounts are seeded: one admin and one member on
-            each team. Credentials are in the table at the bottom of
-            this page, so you can sign in as any role without setup.
-          </p>
-        </li>
-      </ol>
-    </Section>
-  );
-}
-
 // ── What I'd add next ───────────────────────────────────────────────────────
 
 const NEXT_ITEMS = [
   "List / Board / Calendar toggle per project. Same tasks, three views.",
-  "Inline title editing on rows so renaming doesn't need the drawer",
+  "Rename a task in the list without opening the drawer",
   "Trash with 30-day restore",
   "Filters live in the URL so a filtered view is shareable in Slack",
   "Project covers + emoji icons so projects look distinct in the sidebar",
-  "Hover-preview cards on @mentions and task links",
+  "Hover a name or task link to see a preview without leaving the page",
 ];
 
 function NextUp() {
@@ -475,7 +491,7 @@ function DemoAccounts() {
       <Prose>
         <p>
           Sign in as an admin to see the full app. Sign in as a member
-          to see what role gating hides.
+          to see what&apos;s hidden from non-admins.
         </p>
       </Prose>
 

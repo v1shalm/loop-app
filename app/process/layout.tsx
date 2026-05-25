@@ -1,11 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Loop · Case study",
-  description:
-    "How I built a team task tracker for the Tist take-home. Two days, full-stack, with notes on every product decision and where AI helped vs. where I had to override it.",
-};
-
 export default function ProcessLayout({
   children,
 }: {
