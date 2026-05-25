@@ -239,8 +239,8 @@ export function NotificationsPopover({
 
       <PopoverContent
         align="end"
-        sideOffset={6}
-        className="w-[380px] gap-0 p-0 shadow-soft-md"
+        sideOffset={8}
+        className="w-[400px] gap-0 overflow-hidden rounded-xl border border-border/60 bg-popover p-0 shadow-[var(--shadow-soft-lg)] ring-0"
       >
         {body}
       </PopoverContent>
@@ -269,15 +269,23 @@ function NotificationsBody({
 }) {
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border/60 px-4 pt-3 max-md:pt-2">
-        <h3 className="text-[13px] font-semibold tracking-tight text-foreground max-md:text-[15px]">
-          Notifications
-        </h3>
+      <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-gradient-to-b from-card to-popover px-4 pb-3 pt-3.5 max-md:pt-2">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+            Notifications
+          </h3>
+          {hasAnyUnread && (
+            <span className="inline-flex h-[18px] items-center rounded-full bg-primary/12 px-1.5 text-[10.5px] font-semibold tabular-nums text-primary dark:bg-primary/18">
+              {items.filter((it) => new Date(it.at).getTime() > seenAt).length}{" "}
+              new
+            </span>
+          )}
+        </div>
         <button
           type="button"
           onClick={onMarkAllRead}
           disabled={!hasAnyUnread}
-          className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 max-md:text-[13px]"
+          className="focus-ring rounded-md px-1.5 py-0.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent max-md:text-[13px]"
         >
           Mark all read
         </button>
@@ -290,7 +298,7 @@ function NotificationsBody({
             className={cn(
               "focus-ring -mb-px border-b-2 px-2.5 py-2 text-[12.5px] transition-[color,border-color] duration-150 ease-[var(--ease-out)] max-md:min-h-[44px] max-md:px-4 max-md:text-[14px]",
               tab === t
-                ? "border-foreground font-medium text-foreground"
+                ? "border-primary font-medium text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
@@ -300,23 +308,23 @@ function NotificationsBody({
       </nav>
       <div className="max-h-[460px] overflow-y-auto max-md:max-h-none max-md:flex-1">
         {loading ? (
-          <div className="grid place-items-center py-10 text-muted-foreground">
-            <CircleNotch size={16} className="animate-spin" />
+          <div className="grid place-items-center py-12 text-muted-foreground">
+            <CircleNotch size={18} className="animate-spin" />
           </div>
         ) : items.length === 0 ? (
-          <div className="grid place-items-center px-4 py-10 text-center">
-            <span className="grid size-9 place-items-center rounded-full bg-muted text-muted-foreground">
-              <Bell size={16} />
+          <div className="grid place-items-center px-4 py-12 text-center">
+            <span className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground/80 shadow-[var(--shadow-soft-xs)]">
+              <Bell size={18} />
             </span>
-            <p className="mt-2.5 text-[13px] font-medium text-foreground">
+            <p className="mt-3 text-[13.5px] font-semibold tracking-tight text-foreground">
               All caught up
             </p>
-            <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+            <p className="mt-1 text-[11.5px] text-muted-foreground">
               New assignments will show up here.
             </p>
           </div>
         ) : (
-          <ul className="flex flex-col py-1">
+          <ul className="flex flex-col py-1.5">
             {items.map((item) => {
               const isNew = new Date(item.at).getTime() > seenAt;
               return (
@@ -349,33 +357,44 @@ function NotificationRow({
     ? `/projects/${item.project_id}?task=${item.task_id}`
     : `/assigned-to-me?task=${item.task_id}`;
 
+  const completed = item.kind === "i-completed";
+
   return (
     <Link
       href={href}
       onClick={onClose}
-      className="focus-ring relative flex items-start gap-2.5 px-4 py-2.5 transition-[background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 max-md:py-3.5"
+      className="focus-ring relative flex items-start gap-3 px-4 py-3 transition-[background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 max-md:py-3.5"
     >
-      {/* Unread indicator — a tiny brand-pink dot at the left edge */}
+      {/* Unread indicator — brand-pink dot at the left edge, matching the
+          task-row treatment so the bell content speaks the same dialect. */}
       {isNew && (
         <span
           aria-hidden
-          className="absolute left-1.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-primary"
+          className="absolute left-1.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-primary shadow-[0_0_0_3px_oklch(from_var(--primary)_l_c_h_/_0.18)]"
         />
       )}
-      <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-muted">
-        {item.kind === "i-completed" ? (
-          <CheckCircle
-            size={12}
-            weight="fill"
-            className="text-emerald-600"
-          />
+      {/* Status disc — same depth recipe as the Avatar token (inset
+          highlight + soft drop), so the chip reads as a physical surface
+          like the rest of the app's small affordances. Emerald for
+          completion (matches the drawer's Mark-complete CTA), brand-pink
+          tint for incoming assignments. */}
+      <span
+        className={cn(
+          "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full shadow-[var(--shadow-avatar)]",
+          completed
+            ? "bg-emerald-500/12 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+            : "bg-primary/10 text-primary"
+        )}
+      >
+        {completed ? (
+          <CheckCircle size={14} weight="fill" />
         ) : (
-          <Tray size={11} className="text-muted-foreground" />
+          <Tray size={13} weight="fill" />
         )}
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[12.5px] leading-snug text-muted-foreground">
-          {item.kind === "i-completed" ? (
+          {completed ? (
             <>
               <span className="font-medium text-foreground">You</span>{" "}
               completed{" "}
@@ -393,7 +412,7 @@ function NotificationRow({
         </p>
         <RelativeTime
           date={item.at}
-          className="mt-0.5 block text-[11px] text-muted-foreground/70"
+          className="mt-1 block text-[11px] text-muted-foreground/70"
         />
       </div>
     </Link>
