@@ -877,7 +877,7 @@ function DrawerFooter({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 border-t border-border/60 bg-popover px-5 py-3 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div className="flex items-center gap-2 border-t border-border/60 bg-popover px-5 py-3 max-md:pb-[max(env(safe-area-inset-bottom),3.5rem)]">
       {/* Primary action — full-width emerald pill when the task is open,
           softer ghost when it's already done (so re-opening reads as a
           recovery move, not the headline action). */}

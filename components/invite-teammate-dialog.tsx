@@ -99,7 +99,7 @@ export function InviteTeammateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[440px] gap-0 overflow-visible p-0"
+        className="max-w-[440px] gap-0 p-0"
       >
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-border/60 px-5 py-3.5">
