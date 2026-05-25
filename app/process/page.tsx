@@ -215,9 +215,9 @@ function Overrides() {
     <Section title="Where I pushed back">
       <Prose>
         <p>
-          This is where the product calls happened. Claude&apos;s
-          first pass kept reaching for the standard task-tracker
-          patterns. Here&apos;s what I replaced them with:
+          Claude&apos;s first pass kept reaching for standard
+          task-tracker patterns. Here&apos;s what I replaced them
+          with:
         </p>
       </Prose>
       <ul className="mt-7 flex max-w-[820px] flex-col gap-7">
@@ -243,25 +243,19 @@ function LookAndFeel() {
     <Section title="Look, feel, and sound">
       <Prose>
         <p>
-          I wanted Loop to feel good to sit in front of all day.
-        </p>
-        <p>
-          The look: thin borders, quiet shadows, and a brand pink
-          that stands apart from Linear&apos;s purple, Notion&apos;s
-          monochrome, and Todoist&apos;s red.
-        </p>
-        <p>
-          Look is only half of it. The other half is how it feels to
-          use.
+          I wanted Loop to feel good to sit in front of all day. Thin
+          borders, quiet shadows, and a brand pink that stands apart
+          from Linear&apos;s purple, Notion&apos;s monochrome, and
+          Todoist&apos;s red.
         </p>
         <p>
           Every action plays a short sound through{" "}
           <code className="rounded bg-muted px-1.5 py-0.5 text-[14px] font-medium text-foreground">
             @web-kits/audio
           </code>
-          . Completing a task plays a chime pitched by priority.
+          . Completing a task plays a chime pitched by priority. Small
+          things, but they make the app feel tactile.
         </p>
-        <p>Small things, but they make the app feel tactile.</p>
       </Prose>
     </Section>
   );
@@ -342,13 +336,7 @@ const SMALL_CALLS: Array<{ name: string; alt: string; caption: string }> = [
 function SmallCalls() {
   return (
     <Section title="Small calls">
-      <Prose>
-        <p>
-          The smaller moments the main screens skip: a dialog open, a
-          popover, a comment with a reaction.
-        </p>
-      </Prose>
-      <div className="mt-6 ml-[calc(50%-50vw+8px)] mr-[calc(50%-50vw+8px)] max-w-none sm:ml-[calc(50%-50vw+16px)] sm:mr-[calc(50%-50vw+16px)]">
+      <div className="mt-2 ml-[calc(50%-50vw+8px)] mr-[calc(50%-50vw+8px)] max-w-none sm:ml-[calc(50%-50vw+16px)] sm:mr-[calc(50%-50vw+16px)]">
         <div className="mx-auto flex max-w-[1280px] flex-col gap-10 px-2 sm:px-4">
           {SMALL_CALLS.map((s) => (
             <ScreenFrame key={s.name} {...s} />

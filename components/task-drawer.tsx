@@ -836,14 +836,13 @@ function SectionHeader({
   trailing?: React.ReactNode;
 }) {
   // icon prop is accepted for backwards compatibility but no longer
-  // rendered — section labels are now pure typographic chrome
-  // (uppercase + tracked, like the quick-add modal's section labels)
-  // so DESCRIPTION / SUBTASKS / COMMENTS read as structural headings
-  // rather than competing with the body for visual weight.
+  // rendered. Section labels are sentence-case headings at full
+  // foreground contrast so Details / Description / Subtasks /
+  // Comments read as structural headings under the 22px task title.
   void _icon;
   return (
     <div className="flex items-baseline gap-2">
-      <h3 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-foreground/70">
+      <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
         {label}
       </h3>
       {trailing && <div className="ml-auto">{trailing}</div>}
