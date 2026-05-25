@@ -477,6 +477,24 @@ export async function getUpcomingBuckets(): Promise<UpcomingBuckets> {
 }
 
 /**
+ * All completed tasks assigned to me, newest first. Used by the
+ * /completed page so the user has a single surface for "what I've
+ * already shipped" beyond the today-only chip on My Day.
+ */
+export async function getCompletedAssignedToMe(): Promise<TaskWithRelations[]> {
+  const profile = await getCurrentProfile();
+  if (!profile) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return fetchTasks((q: any) =>
+    q
+      .eq("assignee_id", profile.id)
+      .eq("status", "done")
+      .order("completed_at", { ascending: false, nullsFirst: false })
+      .limit(200)
+  );
+}
+
+/**
  * Wider range than getUpcomingBuckets — used by the calendar view on
  * /upcoming so the month grid has data. Fetches all open tasks assigned
  * to me with a due_at between `start` and `end`, sorted ascending.

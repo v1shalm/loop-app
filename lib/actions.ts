@@ -335,7 +335,7 @@ export async function createTeam(input: {
       {
         title: "Welcome to Loop. Take a quick look around.",
         description:
-          "My work is your daily list. Inbox is anything teammates send you. Upcoming covers the next two weeks.",
+          "My Day is your daily list. Inbox is anything teammates send you. Upcoming covers the next two weeks.",
         priority: 3,
         due_at: day(0),
       },

@@ -57,7 +57,7 @@ export function MobileBottomNav({
       <TabLink
         href="/assigned-to-me"
         icon={Crosshair}
-        label="My work"
+        label="My Day"
         active={isMyWork}
         badge={myWorkBadge}
         navId={navId}

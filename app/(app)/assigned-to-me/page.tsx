@@ -8,7 +8,6 @@ import { CompletedSection } from "@/components/completed-section";
 import { EmptyState } from "@/components/empty-state";
 import { InviteCTA } from "@/components/invite-cta";
 import { SectionCount } from "@/components/section-count";
-import { BulkSelectToggle } from "@/components/bulk-select-toggle";
 import { RightRail } from "@/components/right-rail";
 import {
   getAssignedToMe,
@@ -18,7 +17,7 @@ import {
   type TaskWithRelations,
 } from "@/lib/queries";
 
-export const metadata = { title: "My work · Loop" };
+export const metadata = { title: "My Day · Loop" };
 
 function greeting() {
   const h = new Date().getHours();
@@ -79,20 +78,30 @@ export default async function AssignedToMePage() {
   }
   const lastIdx = sections.length - 1;
 
+  // Two-line greeting strip: line 1 is the time-of-day welcome, line 2
+  // is the action-relevant breakdown (due today · completed today). The
+  // breakdown reads as discrete facts rather than a sentence so the
+  // eye can pick up the number it cares about without re-scanning.
+  const dueTodayCount = overdue.length + today.length;
+  const breakdownParts: string[] = [];
+  if (dueTodayCount > 0) {
+    breakdownParts.push(
+      `${dueTodayCount} ${dueTodayCount === 1 ? "task" : "tasks"} due today`
+    );
+  }
+  if (completedToday.length > 0) {
+    breakdownParts.push(
+      `${completedToday.length} completed today`
+    );
+  }
   const greetingHint =
-    activeCount === 0
-      ? completedToday.length > 0
-        ? `${completedToday.length} done today. Nothing else queued.`
-        : "Nothing queued for today."
-      : `${activeCount} ${activeCount === 1 ? "task" : "tasks"} on you today.`;
+    breakdownParts.length === 0
+      ? "Nothing queued for today."
+      : breakdownParts.join(" · ");
 
   return (
     <div className="min-h-full">
-      <PageHeader
-        icon={<Crosshair size={16} />}
-        title="My work"
-        right={<BulkSelectToggle />}
-      />
+      <PageHeader icon={<Crosshair size={16} />} title="My Day" />
 
       <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-10">
         {/* Greeting */}

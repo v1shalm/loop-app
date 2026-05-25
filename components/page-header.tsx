@@ -1,8 +1,9 @@
 "use client";
 
-import { MagnifyingGlass } from "@/components/icons";
+import { MagnifyingGlass, Plus } from "@/components/icons";
 import { NotificationsPopover } from "@/components/notifications-popover";
 import { useAppControls } from "@/components/app-controls-context";
+import { useQuickAdd } from "@/components/quick-add-context";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,6 +31,7 @@ export function PageHeader({
   className?: string;
 }) {
   const controls = useAppControls();
+  const quickAdd = useQuickAdd();
 
   return (
     <header
@@ -70,6 +72,7 @@ export function PageHeader({
                 className="mx-1 h-4 w-px shrink-0 bg-border/70 max-md:hidden"
               />
             )}
+            <QuickAddTrigger onClick={quickAdd.open} />
             <SearchTrigger onClick={controls.openSearch} />
             <NotificationsPopover currentUserId={controls.currentUserId} />
           </>
@@ -93,6 +96,27 @@ function SearchTrigger({ onClick }: { onClick: () => void }) {
     >
       <MagnifyingGlass size={13} className="text-muted-foreground/70" />
       <span className="flex-1 truncate">Search or jump to…</span>
+    </button>
+  );
+}
+
+/**
+ * Desktop-only Quick Add trigger. The sidebar still owns the brand CTA
+ * and mobile has the FAB; this is a second, closer-to-hand entry point
+ * for users whose attention is on a list rather than the sidebar.
+ * Uses the secondary CTA shadow recipe so it reads as an action
+ * without competing with the sidebar's primary pink button.
+ */
+function QuickAddTrigger({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Quick add task"
+      className="focus-ring hidden h-8 items-center gap-1.5 rounded-md border border-border/70 bg-card px-2.5 text-[12.5px] font-medium text-foreground shadow-[var(--shadow-cta-secondary)] transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 active:scale-[0.985] md:inline-flex"
+    >
+      <Plus size={13} weight="bold" className="text-muted-foreground" />
+      <span>Quick add</span>
     </button>
   );
 }

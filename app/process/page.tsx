@@ -266,9 +266,9 @@ function LookAndFeel() {
 const SCREENS: Array<{ name: string; alt: string; caption: string }> = [
   {
     name: "my-work",
-    alt: "My work page with greeting, today's tasks, and right rail",
+    alt: "My Day page with greeting, today's tasks, and right rail",
     caption:
-      "My Work is the first screen after sign-in. Tasks are grouped by when they're due, not piled into one list.",
+      "My Day is the first screen after sign-in. Tasks are grouped by when they're due, not piled into one list.",
   },
   {
     name: "inbox",

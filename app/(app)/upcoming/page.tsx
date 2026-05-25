@@ -9,7 +9,6 @@ import { SectionCount } from "@/components/section-count";
 import { RightRail } from "@/components/right-rail";
 import { UpcomingCalendar } from "@/components/upcoming-calendar";
 import { UpcomingViewToggle } from "@/components/upcoming-view-toggle";
-import { BulkSelectToggle } from "@/components/bulk-select-toggle";
 import {
   getCurrentProfile,
   getMembersWithPulse,
@@ -66,12 +65,7 @@ export default async function UpcomingPage({ searchParams }: PageProps) {
         icon={<CalendarDots size={16} />}
         title="Upcoming"
         subtitle="Next two weeks"
-        right={
-          <>
-            {mode === "list" && <BulkSelectToggle />}
-            <UpcomingViewToggle current={mode} />
-          </>
-        }
+        right={<UpcomingViewToggle current={mode} />}
       />
 
       <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-8">

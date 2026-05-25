@@ -8,6 +8,7 @@ import { motion } from "motion/react";
 import {
   CalendarDots,
   CaretDown,
+  Check,
   Crosshair,
   Plus,
   PushPin,
@@ -89,7 +90,7 @@ export function Sidebar({
     {
       href: "/assigned-to-me",
       icon: Crosshair,
-      label: "My work",
+      label: "My Day",
       badge: counts.today || undefined,
       active:
         pathname === "/assigned-to-me" ||
@@ -109,6 +110,13 @@ export function Sidebar({
       label: "Upcoming",
       badge: undefined as string | number | undefined,
       active: pathname === "/upcoming",
+    },
+    {
+      href: "/completed",
+      icon: Check,
+      label: "Completed",
+      badge: undefined as string | number | undefined,
+      active: pathname === "/completed",
     },
   ];
 
@@ -155,11 +163,22 @@ export function Sidebar({
         </div>
       )}
 
-      {/* ── Flat primary nav with sliding active pill ──────────── */}
+      {/* ── Primary nav under a quiet "Work" label ─────────────
+          Label sits at the same indent and weight as the Pinned /
+          Projects section titles below it, but without the caret
+          since the primary nav is always available — collapsing
+          the four things a user can land on is not a feature. */}
+      {!collapsed && (
+        <div className="mt-3 flex h-7 items-center px-4">
+          <span className="text-[11.5px] font-semibold tracking-tight text-muted-foreground/80">
+            Work
+          </span>
+        </div>
+      )}
       <nav
         className={cn(
-          "relative pt-3",
-          collapsed ? "flex flex-col items-center gap-0.5 px-2" : "px-2"
+          "relative",
+          collapsed ? "flex flex-col items-center gap-0.5 px-2 pt-3" : "px-2 pt-0.5"
         )}
       >
         {navItems.map((it) => (

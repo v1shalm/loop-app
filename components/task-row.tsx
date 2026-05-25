@@ -99,8 +99,12 @@ export function TaskRow({
   const dragX = useMotionValue(0);
   const completeOpacity = useTransform(dragX, [0, 60, 100], [0, 0.7, 1]);
   const rescheduleOpacity = useTransform(dragX, [-100, -60, 0], [1, 0.7, 0]);
-  const { mode: selectionMode, ids: selectedIds, toggle: toggleSelection } =
-    useBulkSelection();
+  const {
+    mode: selectionMode,
+    ids: selectedIds,
+    toggle: toggleSelection,
+    setMode: setSelectionMode,
+  } = useBulkSelection();
   // Shared optimistic-delete store. Lets the drawer's "Delete task"
   // also hide this row instantly (without the drawer, the row would
   // hang around until the server revalidation lands).
@@ -603,6 +607,18 @@ export function TaskRow({
                 <PopoverContent className="w-[180px] gap-0 p-1" align="end">
                   <PopoverItem onSelect={openDrawer}>
                     <span>Open details</span>
+                  </PopoverItem>
+                  <PopoverItem
+                    onSelect={() => {
+                      // Enter bulk-select mode and pre-select this row so
+                      // the user is one click away from the next pick or
+                      // a bulk action. Removes the need for an extra
+                      // top-bar "Select" toggle.
+                      setSelectionMode(true);
+                      toggleSelection(task.id);
+                    }}
+                  >
+                    <span>Select tasks</span>
                   </PopoverItem>
                   <PopoverItem onSelect={remove} destructive>
                     <span>Delete task</span>
