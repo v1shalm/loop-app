@@ -596,7 +596,7 @@ export function TaskRow({
               <Popover>
                 <PopoverTrigger
                   aria-label="More actions"
-                  className="focus-ring touch-expand grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-[opacity,background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground focus-visible:opacity-100 data-[popup-open]:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                  className="focus-ring touch-expand grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-[background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground"
                 >
                   <DotsThree size={14} weight="bold" />
                 </PopoverTrigger>
