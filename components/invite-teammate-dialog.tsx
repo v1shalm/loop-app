@@ -205,7 +205,7 @@ export function InviteTeammateDialog({
             onClick={() => onOpenChange(false)}
             className="focus-ring rounded-md px-1 py-0.5 text-[11.5px] text-muted-foreground transition-colors hover:text-foreground"
           >
-            Manage all invites →
+            Manage all invites
           </Link>
           {generated ? (
             <Button
@@ -255,7 +255,7 @@ function Success({
     <div className="flex flex-col gap-3 px-5 py-4">
       <div className="rounded-md border border-emerald-200/60 bg-emerald-50 px-3 py-2 text-[12.5px] text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-200">
         <span className="font-medium">Link ready.</span> Send it to{" "}
-        <span className="font-medium">{email}</span> — they&apos;ll join as{" "}
+        <span className="font-medium">{email}</span>. They&apos;ll join as{" "}
         {role === "admin" ? "an admin" : "a member"} once they sign in.
       </div>
       <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5">

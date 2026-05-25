@@ -220,7 +220,7 @@ function PendingInviteRow({
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      sileo.error({ title: "Couldn't copy — select the link and copy it manually." });
+      sileo.error({ title: "Couldn't copy. Select the link and copy it manually." });
     }
   };
 

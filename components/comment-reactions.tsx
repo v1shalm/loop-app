@@ -141,8 +141,8 @@ function ReactionChip({
       type="button"
       onClick={onToggle}
       aria-pressed={group.byMe}
-      aria-label={`${group.emoji} (${group.count}) — ${
-        group.byMe ? "you reacted, click to remove" : "click to react"
+      aria-label={`${group.emoji} (${group.count}). ${
+        group.byMe ? "You reacted, click to remove" : "Click to react"
       }`}
       layout
       initial={{ scale: 0.7, opacity: 0 }}
