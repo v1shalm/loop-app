@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { format } from "date-fns";
-import { Crosshair, Check } from "@/components/icons";
+import {
+  Crosshair,
+  Check,
+  Sun,
+  MoonStars,
+  CalendarDots,
+  CheckCircle,
+} from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { TaskTable } from "@/components/task-table";
 import { SortableTaskList } from "@/components/sortable-task-list";
@@ -26,6 +33,20 @@ function greeting() {
   if (h < 17) return "Good afternoon";
   if (h < 22) return "Good evening";
   return "Working late";
+}
+
+function GreetingIcon() {
+  // Daylight hours show the sun, dusk through dawn show the moon.
+  // Wrapped in a server-component-safe call: the hour is sampled at
+  // render time on the server, which is fine for a greeting that
+  // doesn't need to track minute-by-minute viewer-clock changes.
+  const h = new Date().getHours();
+  const isNight = h < 6 || h >= 19;
+  return isNight ? (
+    <MoonStars size={20} weight="fill" />
+  ) : (
+    <Sun size={20} weight="fill" />
+  );
 }
 
 export default async function AssignedToMePage() {
@@ -78,40 +99,60 @@ export default async function AssignedToMePage() {
   }
   const lastIdx = sections.length - 1;
 
-  // Two-line greeting strip: line 1 is the time-of-day welcome, line 2
-  // is the action-relevant breakdown (due today · completed today). The
-  // breakdown reads as discrete facts rather than a sentence so the
-  // eye can pick up the number it cares about without re-scanning.
+  // Breakdown stats — kept as separate counts so the greeting card can
+  // render them as discrete chips instead of a single sentence. The eye
+  // picks up "2 due today" without reading "you have 2 tasks due..."
   const dueTodayCount = overdue.length + today.length;
-  const breakdownParts: string[] = [];
-  if (dueTodayCount > 0) {
-    breakdownParts.push(
-      `${dueTodayCount} ${dueTodayCount === 1 ? "task" : "tasks"} due today`
-    );
-  }
-  if (completedToday.length > 0) {
-    breakdownParts.push(
-      `${completedToday.length} completed today`
-    );
-  }
-  const greetingHint =
-    breakdownParts.length === 0
-      ? "Nothing queued for today."
-      : breakdownParts.join(" · ");
+  const completedTodayCount = completedToday.length;
+  const hasAnyStats = dueTodayCount > 0 || completedTodayCount > 0;
 
   return (
     <div className="min-h-full">
       <PageHeader icon={<Crosshair size={16} />} title="My Day" />
 
       <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-10">
-        {/* Greeting */}
-        <header className="mb-10">
-          <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.01em] text-foreground">
-            {greeting()}, {firstName}
-          </h1>
-          <p className="mt-1.5 text-[14px] text-muted-foreground">
-            {greetingHint}
-          </p>
+        {/* Greeting card — same chrome recipe as the task cards
+            (rounded-xl border, bg-card, soft shadow) so the page reads
+            as a stack of surfaces of one visual language. Time-of-day
+            icon on the left, name + stat chips on the right. Stats
+            stand out as filled pills instead of muted prose. */}
+        <header className="mb-10 overflow-hidden rounded-2xl border border-border/60 bg-card px-6 py-5 shadow-soft-xs">
+          <div className="flex items-center gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary shadow-[var(--shadow-soft-xs)]">
+              <GreetingIcon />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[24px] font-semibold leading-[1.15] tracking-[-0.01em] text-foreground">
+                {greeting()}, {firstName}
+              </h1>
+              {hasAnyStats ? (
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                  {dueTodayCount > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[12px] font-medium text-primary shadow-[inset_0_0_0_1px_oklch(from_var(--primary)_l_c_h_/_0.12)] dark:bg-primary/15">
+                      <CalendarDots size={12} weight="fill" />
+                      <span className="tabular-nums">{dueTodayCount}</span>
+                      <span>
+                        {dueTodayCount === 1 ? "task" : "tasks"} due today
+                      </span>
+                    </span>
+                  )}
+                  {completedTodayCount > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-2.5 py-1 text-[12px] font-medium text-emerald-700 shadow-[inset_0_0_0_1px_oklch(0.7_0.13_158_/_0.18)] dark:bg-emerald-500/15 dark:text-emerald-300">
+                      <CheckCircle size={12} weight="fill" />
+                      <span className="tabular-nums">
+                        {completedTodayCount}
+                      </span>
+                      <span>completed today</span>
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-1.5 text-[13.5px] text-muted-foreground">
+                  Nothing queued for today.
+                </p>
+              )}
+            </div>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
