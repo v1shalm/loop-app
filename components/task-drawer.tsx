@@ -39,6 +39,7 @@ import {
   X,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/use-is-mobile";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import {
   addComment,
@@ -237,6 +238,7 @@ function DrawerInner({
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [pending, startTransition] = useTransition();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const isMobile = useIsMobile();
   // Shared optimistic-delete store. Lets the drawer's delete hide the
   // underlying row in the list immediately instead of waiting for
   // server revalidation to remove it.
@@ -406,8 +408,14 @@ function DrawerInner({
         duration: 6000,
       });
     } else {
+      playSound("uncomplete");
       setStatus("todo");
+      sileo.success({ title: "Reopened", description: task.title });
     }
+    // Mobile: dismiss the sheet so the user lands back on the list with
+    // the new state visible. Desktop keeps the side panel open since it
+    // sits alongside the list, not over it.
+    if (isMobile) onClose();
   };
 
   // Delete flow: clicking the menu item opens the in-app ConfirmDialog
