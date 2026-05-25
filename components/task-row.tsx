@@ -496,7 +496,7 @@ export function TaskRow({
                 fixed left-to-right order: comment count → assignee →
                 dots menu. Every slot is always in the DOM; visibility
                 is gated via opacity so the width budget is constant. */}
-            <div className="flex w-[72px] shrink-0 items-center justify-end gap-2">
+            <div className="flex w-[72px] shrink-0 items-center justify-end gap-2 self-center">
               {/* Comment count — always rendered. When there are zero
                   comments we hide it with opacity-0 + pointer-events-none
                   rather than `{n > 0 && …}` so the slot keeps its width
