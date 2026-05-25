@@ -72,14 +72,6 @@ function Hero() {
         >
           Try the app
         </Link>
-        <a
-          href="https://github.com/v1shalm/loop-app"
-          target="_blank"
-          rel="noreferrer"
-          className="focus-ring inline-flex h-11 items-center gap-1.5 rounded-md border border-border bg-card px-5 text-[14.5px] font-medium text-foreground transition-colors hover:bg-accent/40"
-        >
-          Source
-        </a>
       </div>
     </section>
   );
@@ -331,7 +323,7 @@ const SMALL_CALLS: Array<{ name: string; alt: string; caption: string }> = [
     name: "quick-add-chips",
     alt: "Quick add dialog with parser chips lit up above the input",
     caption:
-      "Type a task. Chips above the field light up as the tool recognises a project, person, date, or priority. You learn the patterns by using them.",
+      "Type a task. Chips above the field light up as Loop recognises a project, person, date, or priority. You learn the patterns by using them.",
   },
   {
     name: "notifications-popover",
@@ -343,7 +335,7 @@ const SMALL_CALLS: Array<{ name: string; alt: string; caption: string }> = [
     name: "thread-expanded",
     alt: "Task drawer comment with a reaction and a Reply affordance",
     caption:
-      "Comments take reactions and one level of threaded replies. Enough for a back-and-forth, not enough to fork the conversation.",
+      "Comments take reactions and one level of threaded replies. Enough for a back-and-forth, not enough to lose the thread.",
   },
 ];
 
