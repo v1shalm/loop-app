@@ -65,11 +65,7 @@ function Hero() {
         Loop
       </h1>
       <p className="mt-6 text-[19px] leading-relaxed text-muted-foreground sm:text-[20px]">
-        A team task tracker. Built in two days for the Tist round-two
-        take-home.
-      </p>
-      <p className="mt-3 text-[18px] leading-relaxed text-muted-foreground sm:text-[19px]">
-        I made the product calls. Claude Code wrote the code.
+        A team task tracker.
       </p>
 
       <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -111,13 +107,6 @@ function Thoughts() {
         <p>
           I wanted Loop to have a clear point of view: a tool for the
           person doing the work, not the manager tracking it.
-        </p>
-        <p>
-          Supabase handled the backend. Claude Code wrote the code.
-          That left time for the calls that actually matter: when a
-          task becomes yours, how the team stays in the loop without
-          drowning in notifications, and where the interface gets out
-          of the way.
         </p>
       </Prose>
     </Section>
@@ -230,10 +219,6 @@ const OVERRIDES: Array<{ title: string; body: string }> = [
   {
     title: "Notifications in place.",
     body: "Collapsed from a full page into a popover in the top bar. One list, one Mark all read, no detour.",
-  },
-  {
-    title: "Empty states that don't lie.",
-    body: "When you filter a list and nothing matches, the screen names the filter that's hiding the work, instead of saying \"All caught up.\"",
   },
 ];
 
