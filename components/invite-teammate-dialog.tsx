@@ -99,7 +99,7 @@ export function InviteTeammateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-full max-w-[calc(100%-2rem)] gap-0 p-0 sm:max-w-[440px]"
+        className="block w-full max-w-[calc(100%-2rem)] gap-0 overflow-hidden p-0 sm:max-w-[440px]"
       >
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-border/60 px-5 py-3.5">
@@ -258,15 +258,15 @@ function Success({
         <span className="font-medium">{email}</span>. They&apos;ll join as{" "}
         {role === "admin" ? "an admin" : "a member"} once they sign in.
       </div>
-      <div className="flex min-w-0 items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5">
-        <code className="min-w-0 flex-1 truncate text-[11.5px] text-muted-foreground">
+      <div className="relative rounded-md border border-border/60 bg-muted/40">
+        <code className="block w-full truncate py-1.5 pl-2.5 pr-[88px] text-[11.5px] text-muted-foreground">
           {inviteUrl}
         </code>
         <button
           type="button"
           onClick={onCopy}
           className={cn(
-            "focus-ring inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-[11.5px] font-medium transition-colors",
+            "focus-ring absolute right-1 top-1/2 inline-flex h-7 -translate-y-1/2 items-center gap-1.5 rounded-md px-2 text-[11.5px] font-medium transition-colors",
             copied
               ? "bg-emerald-500/12 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
               : "bg-card text-foreground hover:bg-accent/40"
