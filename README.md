@@ -4,7 +4,7 @@ Team task tracker, built in two days for the Tist take-home assignment.
 Two teams, four users, role-gated admin tools, realtime sync.
 
 - **Live**: <https://loop-tist.vercel.app>
-- **Case study**: <https://loop-tist.vercel.app/process>
+- **Process notes**: <https://loop-tist.vercel.app/process>
 - **Source**: <https://github.com/v1shalm/loop-app>
 
 ## Demo accounts
@@ -16,7 +16,7 @@ Two teams, four users, role-gated admin tools, realtime sync.
 | Ravi Kumar | Engineering | Admin | `ravi@loop.app` | `ravi-loop-2026` |
 | Priya Shah | Engineering | Member | `priya@loop.app` | `priya-loop-2026` |
 
-RLS enforces team isolation — a Design member cannot see Engineering
+RLS enforces team isolation. A Design member cannot see Engineering
 tasks even by guessing IDs.
 
 ## Stack

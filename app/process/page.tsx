@@ -9,7 +9,7 @@ import { ForceLightTheme } from "./force-light";
 export const metadata = {
   title: "Process · Loop",
   description:
-    "Notes on the calls I made building Loop in two days for the Tist take-home.",
+    "How I thought through Loop, the task tracker I built in two days for the Tist take-home.",
 };
 
 export default function ProcessPage() {
@@ -19,6 +19,7 @@ export default function ProcessPage() {
       <main className="mx-auto w-full max-w-[1040px] px-6 pb-32 pt-16 sm:px-10 sm:pt-24 lg:px-14">
         <Hero />
         <Thoughts />
+        <WhoItsFor />
         <Problems />
         <ClaudeHelped />
         <Overrides />
@@ -97,16 +98,38 @@ function Thoughts() {
   );
 }
 
+// ── Who it's for ───────────────────────────────────────────────────────────
+
+function WhoItsFor() {
+  return (
+    <Section title="Who it's for">
+      <Prose>
+        <p>
+          A teammate on a 5 to 50 person team that uses a shared task
+          tracker every day. The job: see what&apos;s on my plate
+          today, decide what to do with new requests as they come in,
+          and get on with the work.
+        </p>
+        <p>
+          The frustration with existing tools: they assume you&apos;ve
+          accepted every task the moment it&apos;s assigned, hide
+          updates on a notifications page nobody opens, and show two
+          different &quot;is this finished?&quot; states on the same
+          task.
+        </p>
+      </Prose>
+    </Section>
+  );
+}
+
 // ── Problems I spotted ─────────────────────────────────────────────────────
 
 const PROBLEMS = [
-  "Most task apps push a new assignment straight into your day. Accept-first design treats every incoming task as agreed work.",
-  "Workflow status (Draft, In progress, Approved) usually sits on tasks AND projects. It fights with the done checkbox and adds a second status in the header.",
-  "@mentions in task titles stay as plain text. The person disappears into the words.",
-  "Long comment threads turn into walls because nothing is threaded.",
-  "Filtered empty states say \"All caught up.\" That's a lie when the list isn't empty — the filter is.",
-  "Notifications get their own page, but nobody visits it. A popover would do.",
-  "Keyboard shortcuts crowd the UI with key-chip hints for users who'll never memorise them.",
+  "Most tools auto-accept assignments for you. Someone drops a task on you and it's on your list for today, whether you agreed to it or not.",
+  "The same task often shows two different \"is this finished?\" answers at once. People stop knowing which one to trust.",
+  "Comments on a task pile up as one long list. Replies don't sit under what they're replying to, so any real back-and-forth becomes hard to follow.",
+  "When you filter a list and nothing matches, most tools say \"All caught up.\" You're not. The filter is hiding the work.",
+  "Notifications live on their own page. Nobody opens it, so updates pile up there and the team misses them.",
 ];
 
 function Problems() {
@@ -114,9 +137,11 @@ function Problems() {
     <Section title="Problems I spotted">
       <Prose>
         <p>
-          First thing I did: opened Asana, Linear, and Todoist
-          back-to-back. Wrote down what felt wrong before I touched
-          a single screen.
+          With that person in mind, I opened Asana, Linear, and
+          Todoist back-to-back and wrote down what gets in the way of
+          that job. I didn&apos;t run interviews; two days didn&apos;t
+          leave room. This is what I noticed from using these apps
+          daily and putting them side by side.
         </p>
       </Prose>
       <ul className="mt-6 flex max-w-[820px] flex-col gap-3.5">
@@ -147,14 +172,23 @@ function ClaudeHelped() {
     <Section title="Where Claude helped">
       <Prose>
         <p>
-          I had the kanban structure decided before I asked — one
-          column per project, task cards stacked inside. First pass
-          came back with flat project cards instead of nested ones.
-          One screenshot back, next pass was right.
+          I&apos;m a product designer with enough coding background to
+          read code and spot when something&apos;s wrong. Not enough
+          to write it. Backend especially: schema design, SQL, RLS
+          policies. Any of those would have stopped this project on
+          day one.
         </p>
         <p>
-          Ten minutes instead of an hour. Claude was fast because
-          the design call was already made.
+          Claude Code did all of it. I described what I needed, read
+          what came back, and pushed back where it was wrong. Same on
+          the frontend. The first kanban pass had flat cards instead
+          of nested ones, and one screenshot fixed it.
+        </p>
+        <p>
+          What I noticed: it moved fast when I already had the
+          decision and just needed it built. When I was vague, the
+          output was generic. The thinking still had to happen on my
+          side.
         </p>
       </Prose>
     </Section>
@@ -168,19 +202,21 @@ function Overrides() {
     <Section title="Where I overrode">
       <Prose>
         <p>
-          Most of the UI in Loop is a pushback on the obvious
-          default. Where the category convention pushes new tasks
-          straight into your day, Loop holds them in an inbox until
-          you decide. Where Claude&apos;s first pass reached for the
-          familiar patterns — full-page routes, generic confirm
-          dialogs, friendly &quot;Successfully X&quot; toasts — I
-          pulled the chrome out and made each call quieter.
+          Most of the work in Loop sits in this section. Claude&apos;s
+          first pass kept reaching for the standard task-tracker
+          patterns. I replaced them.
         </p>
         <p>
-          The pattern repeats across the app: take the obvious move
-          the convention or the AI would have shipped, then make
-          the deliberate version instead. The screens below are
-          the result.
+          New tasks land in an inbox, not your day, so accepting work
+          is a choice. The task drawer slides over the list instead of
+          opening a new route, with the URL still updating so a
+          teammate can paste a link. @mentions render as clickable
+          chips. Comments thread one level deep and take reactions.
+          Notifications collapsed from a full page into a popover in
+          the top bar. Workflow status moved off project cards because
+          it was duplicating the done checkbox. Filtered empty states
+          name the filter that&apos;s hiding the work, instead of
+          claiming everything is done.
         </p>
       </Prose>
     </Section>
@@ -194,31 +230,31 @@ const SCREENS: Array<{ name: string; alt: string; caption: string }> = [
     name: "my-work",
     alt: "My work page with greeting, today's tasks, and right rail",
     caption:
-      "My Work, the first screen after sign-in. Tasks grouped by urgency, not stacked into one list.",
+      "My Work is the first screen after sign-in. Tasks are grouped by when they're due, not piled into one list.",
   },
   {
     name: "inbox",
     alt: "Empty inbox with the metallic pedestal illustration",
     caption:
-      "Empty inbox. CTA, secondary, three orientation tips. Empty states earn their canvas.",
+      "Empty inbox with one clear action, a fallback, and three quick tips. It's the first thing a new user sees, so it gets real layout instead of a placeholder.",
   },
   {
     name: "projects-board",
     alt: "Kanban-style project board with gray columns and white task cards",
     caption:
-      "Projects side by side as columns. Easier to scan across when you're planning a week than a flat list of project pages.",
+      "Projects as columns side by side. Easier to scan across when you're planning a week than clicking through a list of project pages.",
   },
   {
     name: "task-drawer",
     alt: "Floating task drawer with title, chips, description, metadata, threaded comments",
     caption:
-      "Opening a task slides this drawer in instead of taking you to a new page. The URL still updates with ?task= so the view stays shareable.",
+      "Opening a task slides this drawer in instead of taking you to a new page. The URL still updates with ?task= so a teammate can paste a link.",
   },
   {
     name: "manage-team",
     alt: "Admin-only manage team page with invite form and member list",
     caption:
-      "Admin-only. Members can't reach this page at all, so they never see options they can't use.",
+      "Admin-only. Members can't reach this page, so they never see options they can't use.",
   },
 ];
 
@@ -242,17 +278,20 @@ const SMALL_CALLS: Array<{ name: string; alt: string; caption: string }> = [
   {
     name: "quick-add-chips",
     alt: "Quick add dialog with parser chips lit up above the input",
-    caption: "Type tokens, chips appear. The product teaches its own syntax.",
+    caption:
+      "Type a task. Chips above the field light up as the tool recognises a project, person, date, or priority. You learn the patterns by using them.",
   },
   {
     name: "notifications-popover",
     alt: "Notifications popover open from the top bar with Mark all read",
-    caption: "One notifications surface, one Mark all read.",
+    caption:
+      "Notifications open in place from the top bar. One list, one Mark all read, no detour.",
   },
   {
     name: "thread-expanded",
     alt: "Task drawer comment with a reaction and a Reply affordance",
-    caption: "Comments take reactions and threaded replies.",
+    caption:
+      "Comments take reactions and one level of threaded replies. Enough for a back-and-forth, not enough to fork the conversation.",
   },
 ];
 
@@ -261,8 +300,8 @@ function SmallCalls() {
     <Section title="Small calls">
       <Prose>
         <p>
-          The moments you don&apos;t see in a list-view tour: a
-          dialog open, a popover, a comment with a reaction.
+          The moments a list-view tour skips: a dialog open, a popover,
+          a comment with a reaction.
         </p>
       </Prose>
       <div className="mt-6 ml-[calc(50%-50vw+8px)] mr-[calc(50%-50vw+8px)] max-w-none sm:ml-[calc(50%-50vw+16px)] sm:mr-[calc(50%-50vw+16px)]">
@@ -325,18 +364,15 @@ function Assumptions() {
           </h3>
           <div className="mt-2.5 flex flex-col gap-3 text-[16px] leading-relaxed text-muted-foreground">
             <p>
-              Enforced with a unique constraint on{" "}
-              <code className="rounded bg-muted px-1.5 py-0.5 text-[14px] font-medium text-foreground">
-                team_members(user_id)
-              </code>
-              . No team switcher in the header, no &quot;which team
-              is this in?&quot; ambiguity.
+              Enforced at the database level. No team switcher in the
+              header, no &quot;which team am I looking at right
+              now?&quot; question.
             </p>
             <p>
-              Multi-team would have meant a switcher, current-team
-              context, and edge cases like &quot;what does Inbox
-              mean across three teams?&quot;. Not worth it for a
-              2-day build.
+              Multi-team would have meant a switcher, a sticky current
+              team, and questions like &quot;what does Inbox mean
+              across three teams?&quot;. Not worth it for a 2-day
+              build.
             </p>
           </div>
         </li>
@@ -348,8 +384,7 @@ function Assumptions() {
           <p className="mt-2.5 text-[16px] leading-relaxed text-muted-foreground">
             Postgres + RLS + magic link + Google OAuth +
             email/password + realtime, all in one. Removed a full
-            day of plumbing. The day went into the surfaces a
-            reviewer touches.
+            day of plumbing. That day went into the product instead.
           </p>
         </li>
 
@@ -358,9 +393,9 @@ function Assumptions() {
             Real auth, not a fake password gate.
           </h3>
           <p className="mt-2.5 text-[16px] leading-relaxed text-muted-foreground">
-            Four demo accounts seeded (admin and member per team).
-            Credentials are in the table at the bottom of this page.
-            A reviewer signs in as any role in seconds.
+            Four demo accounts are seeded: one admin and one member on
+            each team. Credentials are in the table at the bottom of
+            this page, so you can sign in as any role without setup.
           </p>
         </li>
       </ol>
@@ -371,7 +406,7 @@ function Assumptions() {
 // ── What I'd add next ───────────────────────────────────────────────────────
 
 const NEXT_ITEMS = [
-  "List / Board / Calendar toggle per project — same data, three lenses",
+  "List / Board / Calendar toggle per project. Same tasks, three views.",
   "Inline title editing on rows so renaming doesn't need the drawer",
   "Trash with 30-day restore",
   "Filters live in the URL so a filtered view is shareable in Slack",
@@ -439,8 +474,8 @@ function DemoAccounts() {
     <Section title="Demo accounts">
       <Prose>
         <p>
-          Sign in as an admin to see the full surface, or a member
-          to feel the role gating.
+          Sign in as an admin to see the full app. Sign in as a member
+          to see what role gating hides.
         </p>
       </Prose>
 
