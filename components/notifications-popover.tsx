@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { RelativeTime } from "@/components/relative-time";
+import { Avatar } from "@/components/avatar";
 import {
   Bell,
-  CheckCircle,
+  Check,
   CircleNotch,
-  Tray,
 } from "@/components/icons";
 import {
   Popover,
@@ -26,6 +26,13 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 
 type Tab = "all" | "tasks";
 
+interface ActorProfile {
+  name: string;
+  initials: string;
+  avatar_color: string;
+  avatar_url: string | null;
+}
+
 interface Item {
   id: string;
   kind: "i-completed" | "assigned-to-me";
@@ -33,7 +40,7 @@ interface Item {
   title: string;
   at: string;
   project_id: string | null;
-  author_name: string | null;
+  author: ActorProfile | null;
 }
 
 /**
@@ -80,12 +87,32 @@ export function NotificationsPopover({
   const [loading, setLoading] = useState(false);
   const [seenAt, setSeenAt] = useState<number>(0);
   const [mounted, setMounted] = useState(false);
+  const [me, setMe] = useState<ActorProfile | null>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     setMounted(true);
     setSeenAt(loadSeenAt());
   }, []);
+
+  // Current user's profile — needed to render the "You completed X"
+  // row with the same Avatar treatment as everywhere else. Fetched
+  // once; if the user's avatar/initials change mid-session the bell
+  // still shows the cached version, which is fine.
+  useEffect(() => {
+    const supabase = getSupabaseBrowser();
+    if (!supabase) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase
+      .from("profiles")
+      .select("name, initials, avatar_color, avatar_url")
+      .eq("id", currentUserId)
+      .maybeSingle() as any).then(
+      (res: { data: ActorProfile | null }) => {
+        if (res.data) setMe(res.data);
+      }
+    );
+  }, [currentUserId]);
 
   useEffect(() => {
     if (!open) return;
@@ -101,7 +128,7 @@ export function NotificationsPopover({
     (supabase
       .from("tasks")
       .select(
-        "id, title, status, created_at, completed_at, project_id, assignee_id, author_id, author:profiles!tasks_author_id_fkey(name)"
+        "id, title, status, created_at, completed_at, project_id, assignee_id, author_id, author:profiles!tasks_author_id_fkey(name, initials, avatar_color, avatar_url)"
       )
       .or(
         `and(assignee_id.eq.${currentUserId},author_id.neq.${currentUserId},created_at.gte.${sinceIso}),and(assignee_id.eq.${currentUserId},status.eq.done,completed_at.gte.${sinceIso})`
@@ -115,7 +142,7 @@ export function NotificationsPopover({
         created_at: string;
         completed_at: string | null;
         project_id: string | null;
-        author: { name: string } | null;
+        author: ActorProfile | null;
       };
       const rows = (res.data ?? []) as Row[];
       const mapped: Item[] = rows.map((r) => {
@@ -127,7 +154,7 @@ export function NotificationsPopover({
           title: r.title,
           at: completed ? r.completed_at! : r.created_at,
           project_id: r.project_id,
-          author_name: r.author?.name ?? null,
+          author: r.author ?? null,
         };
       });
       setItems(mapped.sort((a, b) => b.at.localeCompare(a.at)));
@@ -162,6 +189,7 @@ export function NotificationsPopover({
       onMarkAllRead={markAllRead}
       hasAnyUnread={hasAnyUnread}
       seenAt={seenAt}
+      me={me}
     />
   );
 
@@ -257,6 +285,7 @@ function NotificationsBody({
   onMarkAllRead,
   hasAnyUnread,
   seenAt,
+  me,
 }: {
   loading: boolean;
   items: Item[];
@@ -266,6 +295,7 @@ function NotificationsBody({
   onMarkAllRead: () => void;
   hasAnyUnread: boolean;
   seenAt: number;
+  me: ActorProfile | null;
 }) {
   return (
     <>
@@ -333,6 +363,7 @@ function NotificationsBody({
                     item={item}
                     onClose={onItemClick}
                     isNew={isNew}
+                    me={me}
                   />
                 </li>
               );
@@ -348,16 +379,22 @@ function NotificationRow({
   item,
   onClose,
   isNew,
+  me,
 }: {
   item: Item;
   onClose: () => void;
   isNew: boolean;
+  me: ActorProfile | null;
 }) {
   const href = item.project_id
     ? `/projects/${item.project_id}?task=${item.task_id}`
     : `/assigned-to-me?task=${item.task_id}`;
 
   const completed = item.kind === "i-completed";
+  // Actor = who did the thing this notification is announcing.
+  //   - "You completed X" → actor is the current user
+  //   - "Y assigned you X" → actor is the task's author
+  const actor: ActorProfile | null = completed ? me : item.author;
 
   return (
     <Link
@@ -373,24 +410,39 @@ function NotificationRow({
           className="absolute left-1.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-primary shadow-[0_0_0_3px_oklch(from_var(--primary)_l_c_h_/_0.18)]"
         />
       )}
-      {/* Status disc — same depth recipe as the Avatar token (inset
-          highlight + soft drop), so the chip reads as a physical surface
-          like the rest of the app's small affordances. Emerald for
-          completion (matches the drawer's Mark-complete CTA), brand-pink
-          tint for incoming assignments. */}
-      <span
-        className={cn(
-          "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full shadow-[var(--shadow-avatar)]",
-          completed
-            ? "bg-emerald-500/12 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
-            : "bg-primary/10 text-primary"
-        )}
-      >
-        {completed ? (
-          <CheckCircle size={14} weight="fill" />
+      {/* Actor avatar with a small status pip — the avatar carries
+          identity (same pattern as comments in the task drawer), the
+          pip carries kind. Emerald check pip for completion, brand
+          pink "+" pip for incoming assignments. Pip uses ring-popover
+          so it punches a clean cut through the avatar edge. */}
+      <span className="relative mt-0.5 shrink-0">
+        {actor ? (
+          <Avatar
+            src={actor.avatar_url}
+            initials={actor.initials}
+            color={actor.avatar_color}
+            size={28}
+          />
         ) : (
-          <Tray size={13} weight="fill" />
+          <span className="grid size-7 place-items-center rounded-full bg-muted text-[10.5px] font-semibold text-muted-foreground">
+            ?
+          </span>
         )}
+        <span
+          aria-hidden
+          className={cn(
+            "absolute -bottom-0.5 -right-0.5 grid size-[14px] place-items-center rounded-full ring-2 ring-popover",
+            completed
+              ? "bg-emerald-600 text-white dark:bg-emerald-500"
+              : "bg-primary text-primary-foreground"
+          )}
+        >
+          {completed ? (
+            <Check size={8} weight="bold" />
+          ) : (
+            <span className="text-[10px] font-bold leading-none">+</span>
+          )}
+        </span>
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[12.5px] leading-snug text-muted-foreground">
@@ -403,7 +455,7 @@ function NotificationRow({
           ) : (
             <>
               <span className="font-medium text-foreground">
-                {item.author_name ?? "Someone"}
+                {actor?.name ?? "Someone"}
               </span>{" "}
               assigned you{" "}
               <span className="font-medium text-foreground">{item.title}</span>
