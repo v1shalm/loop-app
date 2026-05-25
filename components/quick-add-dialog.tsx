@@ -73,7 +73,9 @@ const PRIORITY_OPTIONS: {
     p: 4,
     label: "Low",
     flagClass: "text-muted-foreground/50",
-    activeClass: "border-border bg-muted/60 text-foreground",
+    activeClass:
+      "border-foreground/40 bg-muted/60 text-foreground ring-1 ring-foreground/20 " +
+      "dark:border-foreground/30 dark:bg-foreground/[0.08] dark:ring-foreground/15",
   },
 ];
 
