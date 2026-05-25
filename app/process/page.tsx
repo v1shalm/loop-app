@@ -61,10 +61,7 @@ export default function ProcessPage() {
 function Hero() {
   return (
     <section className="mb-20">
-      <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        Take-home · Tist · 2 days
-      </p>
-      <h1 className="mt-4 text-[56px] font-semibold leading-[1.04] tracking-[-0.02em] text-foreground sm:text-[72px]">
+      <h1 className="text-[56px] font-semibold leading-[1.04] tracking-[-0.02em] text-foreground sm:text-[72px]">
         Loop
       </h1>
       <p className="mt-6 text-[19px] leading-relaxed text-muted-foreground sm:text-[20px]">
@@ -578,7 +575,7 @@ function Section({
 }) {
   return (
     <section className="mt-20 scroll-mt-8" id={id}>
-      <h2 className="text-[14px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <h2 className="text-[26px] font-semibold tracking-tight text-foreground sm:text-[28px]">
         {title}
       </h2>
       <div className="mt-6">{children}</div>
