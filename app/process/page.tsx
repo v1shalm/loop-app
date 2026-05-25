@@ -1,9 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowUp,
-  CheckCircle,
-} from "@/components/icons";
+import { CheckCircle } from "@/components/icons";
 import { ForceLightTheme } from "./force-light";
 
 export const metadata = {
@@ -71,10 +68,9 @@ function Hero() {
       <div className="mt-9 flex flex-wrap items-center gap-3">
         <Link
           href="/login"
-          className="focus-ring surface-brand surface-brand-hover inline-flex h-11 items-center gap-1.5 rounded-md px-5 text-[14.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
+          className="focus-ring surface-brand surface-brand-hover inline-flex h-11 items-center rounded-md px-5 text-[14.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
         >
           Try the app
-          <ArrowUp size={14} weight="bold" className="rotate-45" />
         </Link>
         <a
           href="https://github.com/v1shalm/loop-app"
@@ -533,16 +529,13 @@ function DemoAccounts() {
 
 function Footer() {
   return (
-    <footer className="mt-24 border-t border-border/60 pt-10 text-[14px] text-muted-foreground">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <p>Built in two days for the Tist round-two take-home.</p>
-        <Link
-          href="/login"
-          className="text-foreground transition-colors hover:text-primary"
-        >
-          Try the app →
-        </Link>
-      </div>
+    <footer className="mt-24 border-t border-border/60 pt-10 text-center text-[14px] text-muted-foreground">
+      <Link
+        href="/login"
+        className="text-foreground transition-colors hover:text-primary"
+      >
+        Try the app
+      </Link>
     </footer>
   );
 }
