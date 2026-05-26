@@ -12,7 +12,6 @@ import { QuickAddProvider } from "@/components/quick-add-context";
 import { OptimisticDeletesProvider } from "@/components/optimistic-deletes";
 import { AppControlsProvider } from "@/components/app-controls-context";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { MobileFab } from "@/components/mobile-fab";
 import { MobileMenuSheet } from "@/components/mobile-menu-sheet";
 import { BottomAddTaskBar } from "@/components/bottom-add-task-bar";
 
@@ -136,7 +135,6 @@ export function AppShell({
               onOpenMenu={() => setMobileMenuOpen(true)}
               onOpenSearch={() => setSearchOpen(true)}
             />
-            <MobileFab onClick={() => setQuickOpen(true)} />
             <MobileMenuSheet
               open={mobileMenuOpen}
               onOpenChange={setMobileMenuOpen}

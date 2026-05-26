@@ -86,12 +86,13 @@ export function PageHeader({
 }
 
 /**
- * Desktop-only Add task CTA. The sidebar used to own the brand
- * pink button at the bottom of the rail; it now lives here so the
- * primary affordance sits next to the page context the user is
- * actually looking at. Mobile keeps the FAB. Uses the full
- * --shadow-cta recipe so it reads as the page's most prominent
- * action rather than a soft secondary button.
+ * Add task CTA. Lives in the topbar next to the bell on every route,
+ * so the primary affordance sits next to the page context the user
+ * is looking at. Same button for both breakpoints — on mobile the
+ * text label collapses and the button becomes a compact "+" icon
+ * (replaces the previous floating FAB), on desktop it expands to a
+ * full "+ Add task" pill. Uses --shadow-cta so it reads as the
+ * page's most prominent action.
  */
 function AddTaskTrigger({ onClick }: { onClick: () => void }) {
   return (
@@ -99,10 +100,10 @@ function AddTaskTrigger({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label="Add task"
-      className="focus-ring surface-brand surface-brand-hover hidden h-8 items-center gap-1.5 rounded-md px-3 text-[12.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] md:inline-flex"
+      className="focus-ring surface-brand surface-brand-hover inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] md:px-3"
     >
-      <Plus size={13} weight="bold" />
-      <span>Add task</span>
+      <Plus size={14} weight="bold" />
+      <span className="max-md:hidden">Add task</span>
     </button>
   );
 }
