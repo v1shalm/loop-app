@@ -482,27 +482,28 @@ function DrawerInner({
   const done = task.status === "done";
   const currentUser = members.find((m) => m.id === currentUserId) ?? null;
 
-  // Chip tones — flat, borderless. The Details rows read as content
-  // rather than a form, with hover lifting via a slightly brighter
-  // tint instead of a border outline. Urgency cue (rose / amber /
-  // emerald) is kept; the neutral chip drops the border-and-card
-  // outline that was making rows feel form-y.
+  // Chip tones — semantic colour + tactile bevel. Date and priority
+  // both use the rose/amber/emerald scale so urgency reads at a glance.
+  // The chip-3d class adds an inset top highlight + soft drop so the
+  // chips sit on the page with the same depth language as the rest of
+  // the app's small affordances, not as flat tints.
   const dueChipTone =
     overdue || (due && isToday(due))
-      ? "bg-rose-500/12 text-rose-700 hover:bg-rose-500/18 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/22"
-      : "bg-accent/40 text-foreground hover:bg-accent/60";
+      ? "bg-rose-500/14 text-rose-700 ring-1 ring-inset ring-rose-500/25 hover:bg-rose-500/20 dark:bg-rose-500/18 dark:text-rose-200 dark:ring-rose-400/30 dark:hover:bg-rose-500/24"
+      : "bg-accent/50 text-foreground ring-1 ring-inset ring-border/70 hover:bg-accent/70";
 
   const priorityChipTone: Record<Priority, string> = {
-    1: "bg-rose-500/12 text-rose-700 hover:bg-rose-500/18 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/22",
-    2: "bg-amber-500/12 text-amber-700 hover:bg-amber-500/18 dark:bg-amber-500/15 dark:text-amber-300 dark:hover:bg-amber-500/22",
-    3: "bg-emerald-500/12 text-emerald-700 hover:bg-emerald-500/18 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/22",
-    4: "bg-accent/40 text-foreground hover:bg-accent/60",
+    1: "bg-rose-500/14 text-rose-700 ring-1 ring-inset ring-rose-500/25 hover:bg-rose-500/20 dark:bg-rose-500/18 dark:text-rose-200 dark:ring-rose-400/30 dark:hover:bg-rose-500/24",
+    2: "bg-amber-500/14 text-amber-700 ring-1 ring-inset ring-amber-500/30 hover:bg-amber-500/20 dark:bg-amber-500/18 dark:text-amber-200 dark:ring-amber-400/30 dark:hover:bg-amber-500/24",
+    3: "bg-emerald-500/14 text-emerald-700 ring-1 ring-inset ring-emerald-500/25 hover:bg-emerald-500/20 dark:bg-emerald-500/18 dark:text-emerald-200 dark:ring-emerald-400/30 dark:hover:bg-emerald-500/24",
+    4: "bg-accent/50 text-foreground ring-1 ring-inset ring-border/70 hover:bg-accent/70",
   };
 
-  // Single base class for every Details chip. Color tone composes in
-  // via dueChipTone / priorityChipTone above. No border, no card.
+  // Tactile chips — semantic background + hairline ring + chip-3d
+  // shadow stack (inset top highlight + soft drop). The .chip-3d
+  // utility composes on top of any tone via the shared chipBase.
   const chipBase =
-    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium transition-colors";
+    "focus-ring chip-3d inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium transition-colors";
 
   return (
     <div className="flex h-full flex-col">
@@ -538,8 +539,13 @@ function DrawerInner({
             <DetailLabel>Project</DetailLabel>
             <dd>
               <Popover>
+                {/* Project is plain text by default — the colour dot
+                    already carries identity, so wrapping it in a
+                    chip-shaped block added redundant visual weight.
+                    Hover lifts a soft background so the affordance
+                    is still discoverable, no resting block. */}
                 <PopoverTrigger
-                  className={cn(chipBase, "bg-accent/40 text-foreground hover:bg-accent/60")}
+                  className="focus-ring -mx-1.5 inline-flex h-7 items-center gap-2 rounded-md px-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40"
                 >
                   {task.project ? (
                     <ProjectDot project={task.project as Project} size={9} />
@@ -1809,7 +1815,7 @@ function AssigneeStackPicker({
 
   return (
     <Popover>
-      <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-1.5 pr-2.5 text-[12px] font-medium text-foreground transition-colors hover:brightness-[0.97]">
+      <PopoverTrigger className="focus-ring chip-3d inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-1.5 pr-2.5 text-[12px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40">
         {sorted.length === 0 ? (
           <>
             <UserPlus size={13} className="text-muted-foreground" />
@@ -1846,12 +1852,12 @@ function AssigneeStackPicker({
         )}
       </PopoverTrigger>
       <PopoverContent className="w-[240px] gap-0 p-1" align="start">
-        <div className="px-2 pb-1 pt-1.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Owner + collaborators
+        <div className="px-2 pb-1.5 pt-2">
+          <p className="text-[12.5px] font-semibold tracking-tight text-foreground">
+            Assigned to
           </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground/70">
-            First pick is the owner — they see it in My Work.
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            First pick gets it on their My Day.
           </p>
         </div>
         {members.map((m) => {
