@@ -356,60 +356,69 @@ export function TaskRow({
               });
             }}
             className={cn(
-              "group transition-shadow duration-150 ease-[var(--ease-out)]",
+              "group transition-[box-shadow,border-color,background-color] duration-150 ease-[var(--ease-out)]",
               flat
                 ? "bg-transparent px-4 py-3"
                 : "rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs hover:shadow-soft-sm",
+              // Selected state: tinted background + primary border so
+              // the row is visibly "in the set" without messing with
+              // the completion checkbox.
+              selectionMode && selected && !flat && "border-primary/50 bg-primary/[0.04]",
               isMobile && "cursor-grab active:cursor-grabbing"
             )}
           >
           <div className="flex items-start gap-3">
-            {/* Checkbox — toggles completion by default, toggles bulk
-                selection when the page has entered selection mode. */}
+            {/* Completion checkbox — single responsibility. Always
+                marks the task complete, regardless of bulk-selection
+                state. Conflating "complete" and "select" into one
+                control was confusing: the checkbox glyph reads as
+                completion everywhere else in the app, so we keep it
+                meaning that one thing here too. Selection toggles
+                from the title body instead (see below). */}
             <button
-              onClick={() => {
-                if (selectionMode) {
-                  toggleSelection(task.id);
-                } else {
-                  toggle();
-                }
-              }}
+              onClick={toggle}
               disabled={pending}
-              aria-label={
-                selectionMode
-                  ? selected
-                    ? `Deselect ${task.title}`
-                    : `Select ${task.title}`
-                  : `Mark "${task.title}" complete`
-              }
-              aria-pressed={selectionMode ? selected : undefined}
+              aria-label={`Mark "${task.title}" complete`}
               className={cn(
-                "focus-ring touch-expand mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-[5px] border bg-background transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-95",
-                selectionMode && selected
-                  ? "border-primary bg-primary"
-                  : "border-border hover:border-foreground/40"
+                "focus-ring touch-expand mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-border bg-background transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] hover:border-foreground/40 active:scale-95"
               )}
             >
               <Check
                 size={11}
                 weight="bold"
-                className={cn(
-                  "transition-colors",
-                  selectionMode && selected
-                    ? "text-primary-foreground"
-                    : "text-foreground/0 group-hover:text-muted-foreground/40"
-                )}
+                className="text-foreground/0 transition-colors group-hover:text-muted-foreground/40"
               />
             </button>
 
-            {/* Title + meta row */}
+            {/* Title + meta row. The title button doubles as the
+                selection target when bulk-selection is on — clicking
+                it toggles the row's membership in the selection set
+                instead of opening the drawer. Outside selection mode
+                it opens the drawer as before. The row's selected
+                state is shown via a tinted ring on the article (see
+                the className on motion.article above), not by
+                hijacking the checkbox glyph. */}
             <div className="min-w-0 flex-1">
               <button
-                onClick={openDrawer}
-                aria-label={`Open ${task.title}`}
+                onClick={() =>
+                  selectionMode ? toggleSelection(task.id) : openDrawer()
+                }
+                aria-label={
+                  selectionMode
+                    ? selected
+                      ? `Deselect ${task.title}`
+                      : `Select ${task.title}`
+                    : `Open ${task.title}`
+                }
+                aria-pressed={selectionMode ? selected : undefined}
                 className="focus-ring group/title flex w-full min-w-0 items-center text-left"
               >
-                <span className="truncate text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2 group-hover/title:underline">
+                <span
+                  className={cn(
+                    "truncate text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2",
+                    !selectionMode && "group-hover/title:underline"
+                  )}
+                >
                   <MentionText text={task.title} />
                 </span>
               </button>
