@@ -157,7 +157,7 @@
     "Helvetica Neue", Arial, ui-sans-serif, system-ui, sans-serif;
 
   /* Cool blue-grey neutrals — resume-builder palette */
-  --background: oklch(0.985 0.003 250);
+  --background: oklch(1 0 0);
   --foreground: oklch(0.2 0.008 250);
 
   --card: oklch(1 0 0);
@@ -201,14 +201,19 @@
 
   --radius: 0.375rem;
 
-  /* Sidebar — slightly deeper than bg so it reads as its own surface */
-  --sidebar: oklch(0.97 0.004 250);
+  /* Sidebar: a soft warm-leaning surface that reads "bright" rather
+     than "industrial gray." Lifted from L 0.97 to 0.985 (basically
+     at the page-background lightness) and pulled toward warm hue 85
+     with a whisper of chroma so it has a hint of cream instead of
+     reading as cool slate. Border lifted in step so the edge stays
+     soft. */
+  --sidebar: oklch(0.994 0.003 85);
   --sidebar-foreground: oklch(0.22 0.008 250);
   --sidebar-primary: oklch(0.62 0.24 348);
   --sidebar-primary-foreground: oklch(0.995 0 0);
   --sidebar-accent: oklch(0.94 0.022 348);
   --sidebar-accent-foreground: oklch(0.2 0.04 348);
-  --sidebar-border: oklch(0.895 0.005 250);
+  --sidebar-border: oklch(0.945 0.003 85);
   --sidebar-ring: oklch(0.62 0.24 348);
 
   /* Priority — pill colors set inline (rose/amber/emerald) */
@@ -224,16 +229,16 @@
      and the slightly-tinted sidebar visually lift off the page instead
      of dissolving into it. Net contrast between body and surfaces is
      now closer to what dark mode delivers. */
-  --rb-body-top: oklch(0.995 0.002 250);
-  --rb-body-bot: oklch(0.95 0.006 250);
+  --rb-body-top: oklch(1 0 0);
+  --rb-body-bot: oklch(1 0 0);
   --rb-scrollbar-thumb: oklch(0.8 0.006 250);
   --rb-scrollbar-thumb-hover: oklch(0.7 0.008 250);
   --rb-focus: oklch(0.62 0.24 348 / 0.7);
   --rb-selection-bg: oklch(0.62 0.24 348 / 0.3);
   --rb-card-top: oklch(1 0 0);
   --rb-card-bot: oklch(0.97 0.005 250);
-  --rb-sidebar-top: oklch(0.975 0.004 250);
-  --rb-sidebar-bot: oklch(0.94 0.006 250);
+  --rb-sidebar-top: oklch(0.998 0.002 250);
+  --rb-sidebar-bot: oklch(0.99 0.003 250);
 }
 
 .dark {
@@ -278,13 +283,13 @@
   --chart-4: oklch(0.72 0.13 150);
   --chart-5: oklch(0.6 0.22 308);
 
-  --sidebar: oklch(0.18 0.005 250);
+  --sidebar: oklch(0.215 0.005 250);
   --sidebar-foreground: oklch(0.94 0.004 250);
   --sidebar-primary: oklch(0.72 0.22 348);
   --sidebar-primary-foreground: oklch(0.18 0.04 348);
   --sidebar-accent: oklch(0.27 0.04 348);
   --sidebar-accent-foreground: oklch(0.94 0.012 348);
-  --sidebar-border: oklch(0.295 0.007 250);
+  --sidebar-border: oklch(0.325 0.007 250);
   --sidebar-ring: oklch(0.72 0.22 348);
 
   /* Soft-shadow recipes need darker ambients so the elevation reads
@@ -307,8 +312,8 @@
   --rb-selection-bg: oklch(0.72 0.22 348 / 0.35);
   --rb-card-top: oklch(0.255 0.006 250);
   --rb-card-bot: oklch(0.215 0.005 250);
-  --rb-sidebar-top: oklch(0.195 0.006 250);
-  --rb-sidebar-bot: oklch(0.165 0.005 250);
+  --rb-sidebar-top: oklch(0.225 0.006 250);
+  --rb-sidebar-bot: oklch(0.2 0.005 250);
 }
 
 @layer base {
