@@ -302,7 +302,7 @@ export function EmptyStateIllustration({
       {/* Glyph badge — frosted glass tile floating off the lower-right
           edge of the blob. Holds a small page-specific icon (check,
           plus, bell, calendar, etc.). HTML overlay so the icon can be
-          a regular React node from @phosphor-icons/react. */}
+          a regular React node from the app's icon set. */}
       {glyph && (
         <div
           aria-hidden

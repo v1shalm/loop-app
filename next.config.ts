@@ -26,13 +26,10 @@ const nextConfig: NextConfig = {
   compress: true,
 
   experimental: {
-    // Tree-shake barrel imports for heavy libraries. Without this, an
-    // `import { Tray } from "@phosphor-icons/react"` pulled the whole
-    // 800kb icon set; with it Next only emits the requested glyphs.
-    // Same shape of win for date-fns (per-function modules), motion
-    // (per-component modules), and base-ui / dnd-kit (large barrels).
+    // Tree-shake barrel imports for heavy libraries so Next only emits
+    // what's used. Icons don't need an entry here — components/icons.ts
+    // imports each HugeIcons glyph from its own subpath module already.
     optimizePackageImports: [
-      "@phosphor-icons/react",
       "date-fns",
       "motion",
       "@base-ui/react",
