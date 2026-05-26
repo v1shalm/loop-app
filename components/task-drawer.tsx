@@ -36,6 +36,7 @@ import {
   Plus,
   Trash,
   Tray,
+  User,
   UserPlus,
   X,
 } from "@/components/icons";
@@ -508,14 +509,35 @@ function DrawerInner({
 
   return (
     <div className="flex h-full flex-col">
-      <Header onClose={onClose} pending={pending} />
+      <Header
+        onClose={onClose}
+        pending={pending}
+        task={task}
+        projects={projects}
+        onChangeProject={(id) => patch({ projectId: id })}
+        onDelete={remove}
+      />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        {/* Title — checkbox removed; completion lives on the footer
-            primary CTA instead. Two paths to the same state-flip
-            (inline checkbox + footer button) read as redundant in a
-            focused detail view. */}
-        <section className="px-6 pb-4 pt-4">
+        {/* Title row: checkbox + heading. The checkbox is the
+            in-view "is this done?" affordance at the top of the
+            details; the footer CTA is the same intent at the bottom
+            for thumb reach. Two surfaces, one state. */}
+        <section className="flex items-start gap-3 px-6 pb-4 pt-6">
+          <button
+            type="button"
+            onClick={toggleDone}
+            disabled={pending}
+            aria-label={done ? "Reopen task" : "Mark complete"}
+            className={cn(
+              "focus-ring mt-1 grid size-[20px] shrink-0 place-items-center rounded-[6px] border-[1.5px] transition-colors duration-150 ease-[var(--ease-out)] active:scale-95",
+              done
+                ? "border-emerald-600 bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-500"
+                : "border-border bg-background hover:border-foreground/40"
+            )}
+          >
+            {done && <Check size={12} weight="bold" className="text-white" />}
+          </button>
           <AutoTextarea
             ref={titleRef}
             defaultValue={task.title}
@@ -530,35 +552,35 @@ function DrawerInner({
 
         <SectionDivider />
 
-        {/* Details — key-value rows for the four picker-driven properties.
-            Project moved into this grid (was in the header). Created sits
-            below the grid as a tiny read-only meta strip so users don't
-            tap it expecting a picker. */}
-        <section className="px-6 py-4">
-          <SectionHeader label="Details" />
-          <dl className="mt-3 grid grid-cols-[110px_minmax(0,1fr)] items-center gap-x-4 gap-y-1">
-            <DetailLabel>Project</DetailLabel>
-            <dd>
+        {/* Details: flat icon-labeled rows. No section heading; the
+            list reads self-evidently as the task's structured
+            properties. Created is included as a row so users have a
+            single visual register for "what is this task," not a
+            separate meta strip. Completed badge stacks below the list
+            when relevant. */}
+        <section className="px-6 pb-5">
+          <ul className="flex flex-col">
+            <DetailRow
+              icon={<Folder size={13} className="text-muted-foreground" />}
+              label="Project"
+            >
               <Popover>
-                {/* Project is plain text by default — the folder
-                    glyph carries identity (same icon + colour the
-                    sidebar uses for each project), so wrapping it
-                    in a chip-shaped block adds redundant weight.
-                    Hover lifts a soft background so the affordance
-                    is still discoverable, no resting block. */}
-                <PopoverTrigger
-                  className="focus-ring -mx-1.5 inline-flex h-7 items-center gap-2 rounded-md px-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40"
-                >
+                <PopoverTrigger className="focus-ring -mx-1.5 inline-flex h-7 items-center gap-2 rounded-md px-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40">
                   {task.project ? (
-                    <Folder
-                      size={13}
-                      weight="fill"
-                      style={{ color: projectColor(task.project as Project) }}
-                    />
+                    <>
+                      <Folder
+                        size={13}
+                        weight="fill"
+                        style={{ color: projectColor(task.project as Project) }}
+                      />
+                      <span className="truncate">{task.project.name}</span>
+                    </>
                   ) : (
-                    <Tray size={13} className="text-muted-foreground" />
+                    <>
+                      <Tray size={13} className="text-muted-foreground" />
+                      <span>Inbox</span>
+                    </>
                   )}
-                  {task.project ? task.project.name : "Inbox"}
                 </PopoverTrigger>
                 <PopoverContent className="w-[240px] gap-0 p-1" align="start">
                   <PopoverItem
@@ -584,10 +606,12 @@ function DrawerInner({
                   ))}
                 </PopoverContent>
               </Popover>
-            </dd>
+            </DetailRow>
 
-            <DetailLabel>Assignee</DetailLabel>
-            <dd>
+            <DetailRow
+              icon={<User size={13} className="text-muted-foreground" />}
+              label="Assignee"
+            >
               <AssigneeStackPicker
                 taskId={task.id}
                 members={members}
@@ -597,10 +621,12 @@ function DrawerInner({
                 primaryId={task.assignee?.id ?? null}
                 onSetPrimary={(id) => patch({ assigneeId: id })}
               />
-            </dd>
+            </DetailRow>
 
-            <DetailLabel>Due date</DetailLabel>
-            <dd>
+            <DetailRow
+              icon={<CalendarBlank size={13} className="text-muted-foreground" />}
+              label="Due date"
+            >
               <Popover>
                 <PopoverTrigger className={cn(chipBase, dueChipTone)}>
                   <CalendarBlank size={13} weight="fill" />
@@ -617,10 +643,12 @@ function DrawerInner({
                   />
                 </PopoverContent>
               </Popover>
-            </dd>
+            </DetailRow>
 
-            <DetailLabel>Priority</DetailLabel>
-            <dd>
+            <DetailRow
+              icon={<Flag size={13} className="text-muted-foreground" />}
+              label="Priority"
+            >
               <Popover>
                 <PopoverTrigger
                   className={cn(chipBase, priorityChipTone[task.priority as Priority])}
@@ -648,56 +676,60 @@ function DrawerInner({
                   ))}
                 </PopoverContent>
               </Popover>
-            </dd>
-          </dl>
+            </DetailRow>
 
-          {/* Created — read-only meta. Sits *below* the picker grid with
-              its own pre-line hairline so users don't read it as another
-              tap-to-change row. Format: avatar + name · timestamp, all
-              muted. Completed badge stacks under it when relevant. */}
-          <div className="mt-3 border-t border-border/40 pt-3 text-[12px]">
-            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-foreground/65">
-              <span className="text-foreground/55">Created by</span>
-              {task.author ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Avatar
-                    src={task.author.avatar_url}
-                    initials={task.author.initials}
-                    color={task.author.avatar_color}
-                    size={16}
-                  />
-                  <span className="text-foreground">{task.author.name}</span>
+            <DetailRow
+              icon={<User size={13} className="text-muted-foreground" />}
+              label="Created"
+            >
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px]">
+                {task.author ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Avatar
+                      src={task.author.avatar_url}
+                      initials={task.author.initials}
+                      color={task.author.avatar_color}
+                      size={16}
+                    />
+                    <span className="text-foreground">{task.author.name}</span>
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">Unknown</span>
+                )}
+                <span className="text-foreground/35">·</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {format(new Date(task.created_at), "d MMM, h:mm a")}
                 </span>
-              ) : (
-                <span>Unknown</span>
-              )}
-              <span className="text-foreground/35">·</span>
-              <span className="tabular-nums">
-                {format(new Date(task.created_at), "d MMM, h:mm a")}
-              </span>
-            </div>
-            {task.completed_at && (
-              <div className="mt-1.5 inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
-                <CheckCircle size={13} weight="fill" />
-                Completed {format(new Date(task.completed_at), "d MMM, h:mm a")}
               </div>
-            )}
-          </div>
+            </DetailRow>
+          </ul>
+
+          {task.completed_at && (
+            <div className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-emerald-700 dark:text-emerald-300">
+              <CheckCircle size={12} weight="fill" />
+              Completed {format(new Date(task.completed_at), "d MMM, h:mm a")}
+            </div>
+          )}
         </section>
 
         <SectionDivider />
 
-        {/* Description */}
-        <section className="px-6 py-4">
+        {/* Description: wrapped in a quiet card so the body has a
+            visible writable region (matches the reference treatment)
+            without competing with the title above. Uses muted/40 +
+            inset hairline, the same recipe other block surfaces use. */}
+        <section className="px-6 py-5">
           <SectionHeader label="Description" />
-          <AutoTextarea
-            ref={descRef}
-            defaultValue={task.description ?? ""}
-            onBlur={saveDescription}
-            placeholder="Add a description…"
-            minRows={3}
-            className="focus-ring mt-3 w-full resize-none rounded-md bg-transparent text-[14px] leading-relaxed text-foreground outline-none placeholder:text-foreground/35"
-          />
+          <div className="mt-3 rounded-lg bg-muted/40 p-3.5 ring-1 ring-inset ring-border/40">
+            <AutoTextarea
+              ref={descRef}
+              defaultValue={task.description ?? ""}
+              onBlur={saveDescription}
+              placeholder="Add a description…"
+              minRows={2}
+              className="focus-ring w-full resize-none bg-transparent text-[13.5px] leading-relaxed text-foreground outline-none placeholder:text-foreground/40"
+            />
+          </div>
         </section>
 
         <SectionDivider />
@@ -707,7 +739,7 @@ function DrawerInner({
             see the affordance even when the list is empty. */}
         {!task.parent_task_id && (
           <>
-            <section className="px-6 py-4">
+            <section className="px-6 py-5">
               <SubtasksSection taskId={task.id} />
             </section>
             <SectionDivider />
@@ -715,7 +747,7 @@ function DrawerInner({
         )}
 
         {/* Comments */}
-        <section className="px-6 py-4">
+        <section className="px-6 py-5">
           <CommentsSection
             taskId={task.id}
             comments={comments}
@@ -732,7 +764,6 @@ function DrawerInner({
         done={done}
         pending={pending}
         onToggle={toggleDone}
-        onDelete={remove}
       />
 
       <ConfirmDialog
@@ -828,7 +859,6 @@ function DrawerSkeleton({ onClose }: { onClose: () => void }) {
         done={false}
         pending={true}
         onToggle={() => {}}
-        onDelete={() => {}}
       />
     </div>
   );
@@ -859,14 +889,14 @@ function SectionHeader({
   label: string;
   trailing?: React.ReactNode;
 }) {
-  // icon prop is accepted for backwards compatibility but no longer
-  // rendered. Section labels are sentence-case headings at full
-  // foreground contrast so Details / Description / Subtasks /
-  // Comments read as structural headings under the 22px task title.
+  // Small-caps muted labels (DESCRIPTION / SUBTASKS / COMMENTS) so
+  // they read as structural dividers, not headings competing with the
+  // 22px task title. icon prop is kept for back-compat with old call
+  // sites but no longer rendered.
   void _icon;
   return (
-    <div className="flex items-baseline gap-2">
-      <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+    <div className="flex items-center gap-2">
+      <h3 className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
         {label}
       </h3>
       {trailing && <div className="ml-auto">{trailing}</div>}
@@ -874,18 +904,27 @@ function SectionHeader({
   );
 }
 
-function DetailLabel({ children }: { children: React.ReactNode }) {
-  // Label-side icons used to duplicate the icons already inside each
-  // picker chip (User next to assignee avatar, Calendar next to date
-  // chip, Flag next to priority chip). At 13–14px each pair was just
-  // visual noise. Label is now text-only; the chip carries the cue.
-  // foreground/65 instead of muted-foreground so the label reads
-  // legibly in both themes (muted-foreground at full opacity was
-  // still too dim against the dark surface).
+function DetailRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  // One row in the details list. Icon + label on the left at a fixed
+  // 120px column so all rows align; value on the right. The icon is
+  // muted (it's a category cue, not the answer); the value carries
+  // the visual weight.
   return (
-    <dt className="flex h-9 items-center text-[12.5px] font-medium text-foreground/65">
-      {children}
-    </dt>
+    <li className="grid grid-cols-[120px_minmax(0,1fr)] items-center gap-3 py-2">
+      <span className="flex items-center gap-2 text-[12.5px] font-medium text-muted-foreground">
+        {icon}
+        {label}
+      </span>
+      <div className="min-w-0">{children}</div>
+    </li>
   );
 }
 
@@ -893,23 +932,21 @@ function DrawerFooter({
   done,
   pending,
   onToggle,
-  onDelete,
 }: {
   done: boolean;
   pending: boolean;
   onToggle: () => void;
-  onDelete: () => void;
 }) {
+  // Footer is single-purpose: Mark complete / Reopen. Overflow actions
+  // (Delete) live in the header next to the close button, keeping this
+  // shelf a clean primary-action surface.
   return (
-    <div className="flex items-center gap-2 border-t border-border/60 bg-popover px-5 py-3 max-md:pb-[max(env(safe-area-inset-bottom),3.5rem)]">
-      {/* Primary action — full-width emerald pill when the task is open,
-          softer ghost when it's already done (so re-opening reads as a
-          recovery move, not the headline action). */}
+    <div className="border-t border-border/60 bg-popover px-5 py-3 max-md:pb-[max(env(safe-area-inset-bottom),3.5rem)]">
       <button
         onClick={onToggle}
         disabled={pending}
         className={cn(
-          "focus-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md text-[13.5px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100",
+          "focus-ring inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13.5px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.99] disabled:opacity-60 disabled:active:scale-100",
           done
             ? "border border-border bg-card text-foreground shadow-[var(--shadow-cta-secondary)] hover:bg-accent/40"
             : "bg-emerald-600 text-white shadow-[var(--shadow-cta-success)] hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
@@ -922,20 +959,6 @@ function DrawerFooter({
         />
         {done ? "Reopen task" : "Mark complete"}
       </button>
-      <Popover>
-        <PopoverTrigger
-          aria-label="More actions"
-          className="focus-ring grid size-10 shrink-0 place-items-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-        >
-          <DotsThree size={18} weight="bold" />
-        </PopoverTrigger>
-        <PopoverContent className="w-[180px] gap-0 p-1" align="end">
-          <PopoverItem onSelect={onDelete}>
-            <Trash size={13} className="text-rose-600" />
-            <span className="text-rose-600">Delete task</span>
-          </PopoverItem>
-        </PopoverContent>
-      </Popover>
     </div>
   );
 }
@@ -1097,7 +1120,11 @@ function CommentsSection({
         }
       />
 
-      {roots.length === 0 ? null : (
+      {roots.length === 0 ? (
+        <p className="mt-4 text-center text-[12.5px] text-muted-foreground">
+          No comments yet
+        </p>
+      ) : (
         <ul className="mt-3 flex flex-col">
           {roots.map((c, i) => (
             <CommentItem
@@ -1474,19 +1501,28 @@ function ReplyComposer({
 function Header({
   onClose,
   pending,
+  task,
+  projects,
+  onChangeProject,
+  onDelete,
 }: {
   onClose: () => void;
   pending: boolean;
+  task?: TaskWithRelations | null;
+  projects?: Project[];
+  onChangeProject?: (projectId: string | null) => void;
+  onDelete?: () => void;
 }) {
-  // task / projects / onChangeProject deliberately removed: project
-  // context moved out of the header into a Details row (audit fix #6).
-  // Header is now pure dismissal chrome — Back on mobile, ✕ on desktop.
+  // Header carries dismissal + project breadcrumb + overflow menu.
+  // Breadcrumb gives users a visible "where am I" anchor and a quick
+  // re-bucket affordance via popover. The dots menu houses task-level
+  // actions (Delete) so the footer stays single-purpose. Task /
+  // projects / handlers are optional so the skeleton + empty-state
+  // headers render the same chrome before data lands.
   return (
-    <div className="flex items-center gap-1 border-b border-border/60 px-3 py-3">
-      {/* Mobile: Back arrow is the conventional dismissal pattern for
-          a bottom sheet. Hidden on desktop. touch-expand bumps the
-          32px visible button to a ~58px hit area on mobile (44pt+
-          tap target) without changing the visible size. */}
+    <div className="flex items-center gap-1 border-b border-border/60 px-3 py-2.5">
+      {/* Mobile: Back arrow. Desktop: hidden (✕ on the right is the
+          dismissal there). touch-expand pads the hit target on mobile. */}
       <button
         onClick={onClose}
         aria-label="Back"
@@ -1494,21 +1530,88 @@ function Header({
       >
         <CaretLeft size={14} weight="bold" />
       </button>
+
+      {/* Project breadcrumb: clickable popover to switch project.
+          Plain text with a coloured folder glyph (no chip block) so
+          it reads as a label, not a CTA. */}
+      {task && onChangeProject && projects ? (
+        <Popover>
+          <PopoverTrigger className="focus-ring inline-flex h-7 min-w-0 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40">
+            {task.project ? (
+              <>
+                <Folder
+                  size={12}
+                  weight="fill"
+                  style={{ color: projectColor(task.project as Project) }}
+                />
+                <span className="truncate">{task.project.name}</span>
+              </>
+            ) : (
+              <>
+                <Tray size={12} className="text-muted-foreground" />
+                <span>Inbox</span>
+              </>
+            )}
+          </PopoverTrigger>
+          <PopoverContent className="w-[240px] gap-0 p-1" align="start">
+            <PopoverItem
+              selected={task.project_id === null}
+              onSelect={() => onChangeProject(null)}
+            >
+              <Tray size={14} className="text-muted-foreground" />
+              <span>Inbox (no project)</span>
+            </PopoverItem>
+            {projects.map((p) => (
+              <PopoverItem
+                key={p.id}
+                selected={task.project_id === p.id}
+                onSelect={() => onChangeProject(p.id)}
+              >
+                <Folder
+                  size={14}
+                  weight="fill"
+                  style={{ color: projectColor(p) }}
+                />
+                <span className="truncate">{p.name}</span>
+              </PopoverItem>
+            ))}
+          </PopoverContent>
+        </Popover>
+      ) : null}
+
       {pending && (
-        <CircleNotch size={13} className="animate-spin text-muted-foreground" />
+        <CircleNotch
+          size={12}
+          className="ml-1 animate-spin text-muted-foreground"
+        />
       )}
-      {/* Desktop: ✕ is the conventional close affordance. Hidden on
-          mobile where Back covers the same intent (and the bottom
-          sheet also dismisses on backdrop tap / drag-down).
-          touch-expand bumps the 32px button to a 52px desktop hit
-          area — better target for mouse imprecision near the edge. */}
-      <button
-        onClick={onClose}
-        aria-label="Close"
-        className="focus-ring touch-expand ml-auto grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.94] max-md:hidden"
-      >
-        <X size={14} weight="bold" />
-      </button>
+
+      <div className="ml-auto flex items-center gap-0.5">
+        {onDelete && (
+          <Popover>
+            <PopoverTrigger
+              aria-label="More actions"
+              className="focus-ring touch-expand grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+            >
+              <DotsThree size={16} weight="bold" />
+            </PopoverTrigger>
+            <PopoverContent className="w-[180px] gap-0 p-1" align="end">
+              <PopoverItem onSelect={onDelete}>
+                <Trash size={13} className="text-rose-600" />
+                <span className="text-rose-600">Delete task</span>
+              </PopoverItem>
+            </PopoverContent>
+          </Popover>
+        )}
+        {/* Desktop: ✕ is the dismissal. Hidden on mobile (Back covers it). */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="focus-ring touch-expand grid size-8 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.94] max-md:hidden"
+        >
+          <X size={14} weight="bold" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -1650,7 +1753,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
 
       {/* Progress bar — quiet by default, fills as items are checked. */}
       {total > 0 && (
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+        <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted">
           <motion.div
             className="h-full bg-primary"
             initial={false}
@@ -1660,7 +1763,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
         </div>
       )}
 
-      <ul className="mt-2.5 flex flex-col">
+      <ul className="mt-3 flex flex-col">
         <AnimatePresence initial={false}>
           {subtasks.map((s) => (
             <motion.li
