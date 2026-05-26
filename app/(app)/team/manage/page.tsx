@@ -1,42 +1,43 @@
 import { redirect } from "next/navigation";
-import { UsersThree } from "@/components/icons";
-import { PageHeader } from "@/components/page-header";
-import { ManageTeamUI } from "@/components/manage-team-ui";
 import {
+  getCurrentProfile,
   getMyTeam,
   getMyTeamRole,
   getPendingInvitations,
   getTeamMembersWithRole,
 } from "@/lib/queries";
+import { WorkspaceMembersDialogShell } from "@/components/workspace-members-dialog-shell";
 
-export const metadata = { title: "Manage team · Loop" };
+export const metadata = { title: "Manage workspace · Loop" };
 
 /**
- * Admin-only — server component gates by role before the client UI renders.
- * Members redirect to /team (read-only list) so they never see the controls.
+ * Admin-only workspace management. The page itself is a thin shell — all
+ * the UI lives in WorkspaceMembersDialog (rendered open). Closing the
+ * dialog navigates back to /team. Server-side data is passed in so the
+ * dialog renders instantly with no client-side round-trip.
+ *
+ * Non-admins redirect to /team (read-only roster) so they never see the
+ * management surface.
  */
 export default async function ManageTeamPage() {
-  const [team, role, members, pendingInvites] = await Promise.all([
+  const [team, role, members, pendingInvites, profile] = await Promise.all([
     getMyTeam(),
     getMyTeamRole(),
     getTeamMembersWithRole(),
     getPendingInvitations(),
+    getCurrentProfile(),
   ]);
 
-  if (role !== "admin") {
+  if (role !== "admin" || !profile) {
     redirect("/team");
   }
 
   return (
-    <div className="min-h-full">
-      <PageHeader
-        icon={<UsersThree size={16} />}
-        title={team ? `Manage ${team.name}` : "Manage team"}
-      />
-
-      <div className="mx-auto w-full max-w-[760px] px-8 pb-24 pt-8">
-        <ManageTeamUI members={members} pendingInvites={pendingInvites} />
-      </div>
-    </div>
+    <WorkspaceMembersDialogShell
+      team={team}
+      currentUserId={profile.id}
+      members={members}
+      pendingInvites={pendingInvites}
+    />
   );
 }
