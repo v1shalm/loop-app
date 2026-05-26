@@ -13,7 +13,7 @@ export function MobileFab({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label="Add task"
-      className="fixed right-4 z-30 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.94] md:hidden"
+      className="surface-brand surface-brand-hover focus-ring fixed right-4 z-30 grid size-14 place-items-center rounded-full text-primary-foreground shadow-[var(--shadow-cta)] transition-[transform,box-shadow] duration-150 ease-[var(--ease-out)] active:scale-[0.94] md:hidden"
       style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 76px)" }}
     >
       <Plus size={26} weight="bold" />

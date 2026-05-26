@@ -5,10 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import {
-  CalendarDots,
-  Crosshair,
+  CalendarBlank,
   List,
   MagnifyingGlass,
+  Sun,
   Tray,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
@@ -56,7 +56,7 @@ export function MobileBottomNav({
     >
       <TabLink
         href="/assigned-to-me"
-        icon={Crosshair}
+        icon={Sun}
         label="My Day"
         active={isMyWork}
         badge={myWorkBadge}
@@ -79,7 +79,7 @@ export function MobileBottomNav({
       />
       <TabLink
         href="/upcoming"
-        icon={CalendarDots}
+        icon={CalendarBlank}
         label="Upcoming"
         active={isUpcoming}
         navId={navId}
@@ -187,14 +187,21 @@ function TabIcon({
   active: boolean;
   badge?: number;
 }) {
+  // Tab icon springs up a touch when the tab becomes active. Pairs
+  // with the layoutId pill slide so the new tab gets a small "I'm
+  // it now" signal beyond just the colour change.
   return (
-    <span className="relative">
+    <motion.span
+      className="relative"
+      animate={{ scale: active ? 1.08 : 1 }}
+      transition={{ type: "spring", stiffness: 480, damping: 18 }}
+    >
       <Icon size={22} weight={active ? "fill" : "regular"} />
       {badge !== undefined && badge > 0 && (
-        <span className="absolute -right-2 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-none text-white">
+        <span className="absolute -right-2 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground ring-2 ring-background">
           {badge > 99 ? "99+" : badge}
         </span>
       )}
-    </span>
+    </motion.span>
   );
 }

@@ -118,6 +118,8 @@ export function EmptyState({
         // Custom illustration. Renders the bitmap free on the canvas
         // (no container, no background) so it sits like the SVG blob.
         // Slight rise + fade entry handled by the parent motion.div.
+        // scale-90 on mobile keeps the art from dominating narrow
+        // viewports; sm:scale-100 restores full size on tablet+.
         <Image
           src={illustrationSrc}
           alt=""
@@ -125,15 +127,17 @@ export function EmptyState({
           width={illustrationSize}
           height={illustrationSize}
           priority
-          className="select-none"
+          className="select-none scale-90 sm:scale-100"
           style={{ width: illustrationSize, height: "auto" }}
         />
       ) : (
-        <EmptyStateIllustration
-          tone={tone}
-          glyph={icon}
-          size={illustrationSize}
-        />
+        <div className="scale-90 sm:scale-100">
+          <EmptyStateIllustration
+            tone={tone}
+            glyph={icon}
+            size={illustrationSize}
+          />
+        </div>
       )}
 
       <h3 className="mt-6 text-[20px] font-semibold tracking-tight text-foreground">
