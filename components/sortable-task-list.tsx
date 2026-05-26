@@ -144,15 +144,15 @@ function SortableTaskItem({
         {...attributes}
         {...listeners}
         className={cn(
-          "focus-ring absolute -left-7 top-4 grid size-5 cursor-grab place-items-center rounded text-muted-foreground/70 transition-[opacity,color,background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:cursor-grabbing",
+          "focus-ring absolute -left-8 top-3 grid size-7 cursor-grab place-items-center rounded-md text-muted-foreground/70 transition-[opacity,color,background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:cursor-grabbing",
           // Desktop: hidden at rest, reveals on row hover or handle focus.
-          // Mobile: always visible — no hover state on touch, and the
-          // grip needs to be discoverable without a long-press affordance.
+          // Mobile: always visible. No hover state on touch, and the grip
+          // needs to be discoverable without a long-press affordance.
           "md:opacity-0 md:group-hover/draggable:opacity-100 focus-visible:opacity-100",
           isDragging && "cursor-grabbing opacity-100"
         )}
       >
-        <DotsSixVertical size={14} weight="bold" />
+        <DotsSixVertical size={18} weight="bold" />
       </button>
       <TaskRow task={task} flat={flat} />
     </div>

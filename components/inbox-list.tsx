@@ -320,12 +320,12 @@ function SortableInboxItem({ task }: { task: TaskWithRelations }) {
           {...attributes}
           {...listeners}
           className={cn(
-            "focus-ring mt-5 grid size-5 shrink-0 cursor-grab place-items-center rounded text-muted-foreground/45 transition-[opacity,color,background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:cursor-grabbing",
+            "focus-ring mt-4 grid size-7 shrink-0 cursor-grab place-items-center rounded-md text-muted-foreground/55 transition-[opacity,color,background-color] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:cursor-grabbing",
             "opacity-0 group-hover/draggable:opacity-100 focus-visible:opacity-100",
             isDragging && "cursor-grabbing opacity-100"
           )}
         >
-          <DotsSixVertical size={14} weight="bold" />
+          <DotsSixVertical size={18} weight="bold" />
         </button>
         <div className="min-w-0 flex-1">
           <InboxItem task={task} />
