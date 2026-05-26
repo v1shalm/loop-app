@@ -1902,7 +1902,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
                   s.status === "done" ? "Mark not done" : "Mark complete"
                 }
                 className={cn(
-                  "focus-ring grid size-[18px] shrink-0 place-items-center rounded-[5px] border-[1.5px] transition-colors duration-150 ease-[var(--ease-out)] active:scale-95",
+                  "focus-ring grid size-6 shrink-0 place-items-center rounded-[6px] border-[1.5px] transition-colors duration-150 ease-[var(--ease-out)] active:scale-95",
                   s.status === "done"
                     ? "border-emerald-600 bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-500"
                     : "border-border hover:border-foreground/40 bg-background"
@@ -1910,7 +1910,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
               >
                 {s.status === "done" && (
                   <Check
-                    size={11}
+                    size={13}
                     weight="bold"
                     className="text-white"
                   />
@@ -1943,7 +1943,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
           keeps focus so users can hammer in a checklist quickly. */}
       {adding ? (
         <form onSubmit={submit} className="mt-1 flex items-center gap-2 px-1">
-          <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border-[1.5px] border-dashed border-muted-foreground/40" />
+          <span className="grid size-6 shrink-0 place-items-center rounded-[6px] border-[1.5px] border-dashed border-muted-foreground/40" />
           <input
             ref={addInputRef}
             autoFocus

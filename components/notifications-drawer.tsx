@@ -43,7 +43,7 @@ export function NotificationsDrawer() {
   return (
     <aside
       aria-label="Notifications"
-      aria-hidden={!open}
+      inert={!open}
       className={cn(
         "relative hidden h-full shrink-0 overflow-hidden border-l border-border/60 bg-popover/95 backdrop-blur-sm transition-[width] duration-300 ease-[var(--ease-out)] md:block",
         open ? "pointer-events-auto" : "pointer-events-none"

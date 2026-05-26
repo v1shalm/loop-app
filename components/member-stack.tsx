@@ -34,6 +34,7 @@ export function MemberStack({
         <Link
           key={m.id}
           href={`/team/${m.id}`}
+          prefetch={false}
           aria-label={m.name}
           title={m.name}
           className="focus-ring relative grid shrink-0 place-items-center rounded-full ring-2 ring-background transition-transform duration-150 ease-[var(--ease-out)] hover:z-10 hover:scale-[1.08]"

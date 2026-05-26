@@ -113,11 +113,11 @@ function TabLink({
   return (
     <Link
       href={href}
-      prefetch
+      prefetch={false}
       aria-current={active ? "page" : undefined}
       className={cn(
         "relative flex flex-1 flex-col items-center justify-center gap-0.5 pb-2.5 pt-2 text-[10.5px] font-medium transition-[color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.94] active:bg-accent/30",
-        active ? "text-primary" : "text-muted-foreground"
+        active ? "text-primary-readable" : "text-muted-foreground"
       )}
     >
       {active && <ActiveTabPill navId={navId} />}

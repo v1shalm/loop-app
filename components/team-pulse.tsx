@@ -106,6 +106,7 @@ function PulseRow({
           render={
             <Link
               href={`/team/${member.id}`}
+              prefetch={false}
               aria-label={member.name}
               className="focus-ring relative grid size-9 place-items-center rounded-md hover:bg-sidebar-accent/40"
             >
@@ -148,6 +149,7 @@ function PulseRow({
         render={
           <Link
             href={`/team/${member.id}`}
+            prefetch={false}
             className={cn(
               "focus-ring group flex h-11 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors",
               "text-sidebar-foreground/90 hover:bg-sidebar-accent/40 hover:text-foreground"

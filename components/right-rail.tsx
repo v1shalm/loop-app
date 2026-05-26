@@ -64,6 +64,7 @@ function SectionHeader({
       {href && (
         <Link
           href={href}
+          prefetch={false}
           className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground"
         >
           {linkLabel}
@@ -242,6 +243,7 @@ function TeamSection({
             <li key={m.id}>
               <Link
                 href={`/team/${m.id}`}
+                prefetch={false}
                 className="focus-ring -mx-1.5 flex items-center gap-2.5 rounded-md px-1.5 py-1.5 transition-colors hover:bg-accent/40"
               >
                 <span className="relative shrink-0">

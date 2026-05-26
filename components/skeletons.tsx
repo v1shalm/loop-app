@@ -82,7 +82,7 @@ export function TaskRowSkeleton({
       )}
     >
       <div
-        className="mt-0.5 size-[18px] shrink-0 rounded-[5px] border border-border bg-background"
+        className="mt-0.5 size-6 shrink-0 rounded-[6px] border border-border bg-background"
         aria-hidden
       />
       <div className="min-w-0 flex-1 space-y-2">

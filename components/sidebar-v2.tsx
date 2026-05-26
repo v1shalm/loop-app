@@ -146,16 +146,16 @@ export function SidebarV2({
       <div className="flex items-center gap-2 px-3 pt-4 pb-3">
         <Popover>
           <PopoverTrigger
-            aria-label="Workspace menu"
+            aria-label={`${workspaceName} workspace menu`}
             className="focus-ring group/wp inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:bg-foreground/[0.04] data-[popup-open]:bg-foreground/[0.06]"
           >
-            <span className="min-w-0 truncate text-[14px] font-semibold tracking-tight text-primary">
+            <span className="min-w-0 truncate text-[14px] font-semibold tracking-tight text-primary-readable">
               {workspaceName}
             </span>
             <CaretDown
               size={14}
               weight="bold"
-              className="shrink-0 text-primary/70 transition-transform duration-150 group-data-[popup-open]/wp:rotate-180"
+              className="shrink-0 text-primary-readable/70 transition-transform duration-150 group-data-[popup-open]/wp:rotate-180"
 
             />
           </PopoverTrigger>
@@ -272,10 +272,11 @@ function NavRow({
   return (
     <Link
       href={href}
+      prefetch={false}
       className={cn(
         "group/row focus-ring relative flex h-9 items-center gap-3 rounded-md px-3 text-[14px] transition-colors",
         active
-          ? "font-semibold text-primary"
+          ? "font-semibold text-primary-readable"
           : "text-foreground/85 hover:text-foreground"
       )}
     >
@@ -485,11 +486,12 @@ function RailNavLink({
         render={
           <Link
             href={href}
+            prefetch={false}
             aria-label={label}
             className={cn(
               "focus-ring relative grid size-9 place-items-center rounded-md transition-colors",
               active
-                ? "text-primary"
+                ? "text-primary-readable"
                 : "text-foreground/85 hover:bg-foreground/[0.04] hover:text-foreground"
             )}
           >
@@ -497,7 +499,7 @@ function RailNavLink({
             {active && (
               <span
                 aria-hidden
-                className="absolute -bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary"
+                className="absolute -bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary-readable"
               />
             )}
           </Link>
@@ -530,6 +532,7 @@ function RailProjectLink({
         render={
           <Link
             href={`/projects/${id}`}
+            prefetch={false}
             aria-label={name}
             className={cn(
               "focus-ring relative grid size-9 place-items-center rounded-md transition-colors",
@@ -561,10 +564,11 @@ function ProjectRow({
   return (
     <Link
       href={`/projects/${id}`}
+      prefetch={false}
       className={cn(
         "group/proj focus-ring relative flex h-8 items-center gap-3 rounded-md px-3 text-[13.5px] transition-colors",
         active
-          ? "font-semibold text-primary"
+          ? "font-semibold text-primary-readable"
           : "text-foreground/85 hover:text-foreground"
       )}
     >
@@ -589,7 +593,7 @@ function ProjectRow({
           weight="fill"
           className={cn(
             "relative z-[1] shrink-0",
-            active ? "text-primary" : "text-muted-foreground/60"
+            active ? "text-primary-readable" : "text-muted-foreground/60"
           )}
         />
       )}

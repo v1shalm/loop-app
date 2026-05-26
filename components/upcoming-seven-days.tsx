@@ -78,7 +78,7 @@ function DayColumn({
   return (
     <TaskCardGroup title={label} subtitle={subtitle} count={tasks.length} width="320px">
       {tasks.length === 0 ? (
-        <p className="px-2 py-2 text-[12px] text-muted-foreground/60">
+        <p className="px-2 py-2 text-[12px] text-muted-foreground/80">
           Nothing scheduled.
         </p>
       ) : (

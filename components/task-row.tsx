@@ -343,7 +343,7 @@ function TaskRowInner({
               </motion.div>
             </div>
           )}
-          <motion.article
+          <motion.div
             drag={isMobile ? "x" : false}
             dragConstraints={{ left: -160, right: 160 }}
             dragElastic={0.15}
@@ -398,11 +398,11 @@ function TaskRowInner({
               disabled={pending}
               aria-label={`Mark "${task.title}" complete`}
               className={cn(
-                "focus-ring touch-expand mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-border bg-background transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] hover:border-foreground/40 active:scale-95"
+                "focus-ring mt-0.5 grid size-6 shrink-0 place-items-center rounded-[6px] border border-border bg-background transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] hover:border-foreground/40 active:scale-95"
               )}
             >
               <Check
-                size={11}
+                size={13}
                 weight="bold"
                 className="text-foreground/0 transition-colors group-hover:text-muted-foreground/40"
               />
@@ -431,9 +431,9 @@ function TaskRowInner({
                 {/* Priority — 5px colored dot + tertiary text label */}
                 <Popover>
                   <PopoverTrigger
-                    aria-label="Priority"
+                    aria-label={`Priority: ${PRIORITY_LABELS[priority]}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="focus-ring -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-muted-foreground transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground"
+                    className="focus-ring -mx-1 inline-flex h-6 items-center gap-1.5 rounded px-1 py-0.5 text-muted-foreground transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground"
                   >
                     <span
                       aria-hidden
@@ -468,10 +468,10 @@ function TaskRowInner({
                     overdue or today; otherwise tertiary. */}
                 <Popover>
                   <PopoverTrigger
-                    aria-label="Due date"
+                    aria-label={dateText ? `Due ${dateText}` : "Set due date"}
                     onClick={(e) => e.stopPropagation()}
                     className={cn(
-                      "focus-ring -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40",
+                      "focus-ring -mx-1 inline-flex h-6 items-center gap-1.5 rounded px-1 py-0.5 transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40",
                       dateTone
                     )}
                   >
@@ -581,12 +581,14 @@ function TaskRowInner({
               <Popover>
                 <PopoverTrigger
                   aria-label={
-                    extraAssigneeCount > 0
-                      ? `Assignee and ${extraAssigneeCount} more`
-                      : "Assignee"
+                    optAssignee
+                      ? extraAssigneeCount > 0
+                        ? `Assigned to ${optAssignee.name ?? "teammate"} and ${extraAssigneeCount} more`
+                        : `Assigned to ${optAssignee.name ?? "teammate"}`
+                      : "Assign teammate"
                   }
                   onClick={(e) => e.stopPropagation()}
-                  className="focus-ring touch-expand relative grid size-[22px] shrink-0 place-items-center rounded-full transition-[filter] hover:brightness-95"
+                  className="focus-ring relative grid size-6 shrink-0 place-items-center rounded-full transition-[filter] hover:brightness-95"
                 >
                   {optAssignee ? (
                     <Avatar
@@ -667,7 +669,7 @@ function TaskRowInner({
               </Popover>
             </div>
           </div>
-          </motion.article>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

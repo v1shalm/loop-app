@@ -214,8 +214,8 @@ export function AddTaskInline({
       className="relative rounded-xl border border-border bg-card shadow-soft-xs"
     >
       <div className="flex items-center gap-3 px-4 py-3">
-        <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border border-muted-foreground/40 text-muted-foreground/70">
-          <Plus size={11} weight="bold" />
+        <span className="grid size-6 shrink-0 place-items-center rounded-[6px] border border-muted-foreground/40 text-muted-foreground/70">
+          <Plus size={13} weight="bold" />
         </span>
         <input
           ref={inputRef}
