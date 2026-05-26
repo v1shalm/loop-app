@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
+  ArrowUp,
   CalendarDots,
   Check,
   CheckCircle,
@@ -115,39 +116,6 @@ const JUMP_TARGETS: JumpItem[] = [
   },
 ];
 
-const RECENTS_KEY = "loop:search-recents";
-const RECENTS_MAX = 5;
-
-function loadRecents(): ResultRow[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(RECENTS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (r): r is ResultRow =>
-        r && typeof r === "object" && typeof r.kind === "string" && r.kind !== "jump"
-    );
-  } catch {
-    return [];
-  }
-}
-
-function pushRecent(row: ResultRow) {
-  if (typeof window === "undefined") return;
-  if (row.kind === "jump") return;
-  const key = (r: ResultRow) => `${r.kind}:${"id" in r ? r.id : ""}`;
-  const existing = loadRecents();
-  const next = [row, ...existing.filter((r) => key(r) !== key(row))].slice(
-    0,
-    RECENTS_MAX
-  );
-  try {
-    window.localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
-  } catch {}
-}
-
 export function SearchPalette({
   open,
   onOpenChange,
@@ -167,14 +135,12 @@ export function SearchPalette({
   });
   const [active, setActive] = useState(0);
   const [pending, startTransition] = useTransition();
-  const [recents, setRecents] = useState<ResultRow[]>([]);
 
   useEffect(() => {
     if (open) {
       setQuery("");
       setResults({ tasks: [], projects: [], people: [] });
       setActive(0);
-      setRecents(loadRecents());
     }
   }, [open]);
 
@@ -234,10 +200,12 @@ export function SearchPalette({
     }));
 
     if (q.length < 2) {
-      // Empty state: show recents first (if any), then page jumps.
-      // Mirrors Notion / Linear's "recently viewed + workspace" idle
-      // pane without dragging in group headers.
-      return [...recents, ...JUMP_TARGETS];
+      // Empty state is intentionally blank — just the input pill.
+      // Listing recents / page jumps when nothing has been typed
+      // gives the modal the "command palette idle pane" look the
+      // user explicitly didn't want. The modal becomes a quiet
+      // search field; results appear only once there's a query.
+      return [];
     }
 
     // Active query: filter jumps inline so typing "comp" surfaces the
@@ -247,12 +215,11 @@ export function SearchPalette({
     );
 
     return [...taskRows, ...projectRows, ...peopleRows, ...matchingJumps];
-  }, [query, results, recents]);
+  }, [query, results]);
 
   const totalRows = rows.length;
 
   const go = (row: ResultRow) => {
-    pushRecent(row);
     if (row.kind === "jump") {
       router.push(row.href);
     } else if (row.kind === "task") {
@@ -288,20 +255,21 @@ export function SearchPalette({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="block w-full max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-2xl border border-border/60 bg-popover p-0 shadow-[var(--shadow-soft-xl)] sm:max-w-[600px]"
+        className="block w-full max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-[28px] border-0 bg-popover p-0 shadow-[0_24px_80px_-12px_oklch(0.25_0.06_265_/_0.22),0_8px_24px_-6px_oklch(0.25_0.06_265_/_0.08),0_0_0_1px_oklch(0.25_0.06_265_/_0.04)] sm:max-w-[640px]"
       >
-        {/* Input — single row, no border below until results appear so
-            the empty modal reads as a quiet search field rather than a
-            split panel. */}
+        {/* Input — pill row. The reference is a soft floating search
+            field, not a dialog header, so we drop the border below
+            (only appears once results need separating) and let the
+            outer card carry the shape. */}
         <div
           className={cn(
-            "flex items-center gap-3 px-5 py-4",
-            totalRows > 0 && "border-b border-border/60"
+            "flex items-center gap-3 px-6 py-4",
+            totalRows > 0 && "border-b border-border/40"
           )}
         >
           <MagnifyingGlass
             size={18}
-            className="shrink-0 text-muted-foreground"
+            className="shrink-0 text-muted-foreground/80"
           />
           <input
             ref={inputRef}
@@ -310,22 +278,27 @@ export function SearchPalette({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Search tasks, projects, teammates…"
-            className="flex-1 bg-transparent text-[14.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+            className="flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground/55"
           />
-          {pending && (
+          {pending ? (
             <CircleNotch
               size={14}
-              className="animate-spin text-muted-foreground"
+              className="shrink-0 animate-spin text-muted-foreground"
             />
+          ) : (
+            <span
+              aria-hidden
+              className="grid size-7 shrink-0 place-items-center rounded-full bg-muted/60 text-muted-foreground/70"
+            >
+              <ArrowUp size={13} weight="bold" />
+            </span>
           )}
         </div>
 
-        {/* Body — one flat list, no group headers. Mirrors the
-            Brief/Notion-style "find anything" experience: mixed result
-            types share the same row shape so the eye scans the title
-            column without re-orienting between sections. */}
+        {/* Body — flat list. Only renders once there's a result;
+            empty modal stays as the lone pill input. */}
         {totalRows > 0 && (
-          <div className="max-h-[440px] overflow-y-auto p-1.5">
+          <div className="max-h-[440px] overflow-y-auto p-2">
             {rows.map((row, idx) => (
               <Row
                 key={`${row.kind}-${"id" in row ? row.id : idx}`}
