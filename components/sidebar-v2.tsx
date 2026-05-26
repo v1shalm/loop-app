@@ -3,19 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import {
-  CalendarBlank,
   CaretDown,
-  CheckCircle,
   Folder,
   MagnifyingGlass,
   PushPin,
   SidebarSimple,
-  Sun,
-  Tray,
 } from "@/components/icons";
-import { AnimatedNavIcon } from "@/components/animated-nav-icons";
+import {
+  CompletedIcon,
+  InboxIcon,
+  MyDayIcon,
+  UpcomingIcon,
+  type NavIcon,
+} from "@/components/animated-nav-icons";
 import {
   Popover,
   PopoverContent,
@@ -112,7 +113,7 @@ export function SidebarV2({
   const navItems = [
     {
       href: "/assigned-to-me",
-      icon: Sun,
+      icon: MyDayIcon,
       label: "My Day",
       count: counts.today,
       active:
@@ -122,21 +123,21 @@ export function SidebarV2({
     },
     {
       href: "/inbox",
-      icon: Tray,
+      icon: InboxIcon,
       label: "Inbox",
       count: counts.inbox,
       active: pathname === "/inbox",
     },
     {
       href: "/upcoming",
-      icon: CalendarBlank,
+      icon: UpcomingIcon,
       label: "Upcoming",
       count: 0,
       active: pathname === "/upcoming",
     },
     {
       href: "/completed",
-      icon: CheckCircle,
+      icon: CompletedIcon,
       label: "Completed",
       count: 0,
       active: pathname === "/completed",
@@ -268,7 +269,7 @@ function NavRow({
   active,
 }: {
   href: string;
-  icon: PhosphorIcon;
+  icon: NavIcon;
   label: string;
   count?: number;
   active: boolean;
@@ -300,7 +301,7 @@ function NavRow({
         />
       )}
       <span className="relative z-[1] grid size-5 shrink-0 place-items-center">
-        <AnimatedNavIcon icon={Icon} size={18} active={active} />
+        <Icon size={18} active={active} />
       </span>
       <span className="relative z-[1]">{label}</span>
       {/* Count sits inline next to the label (not pushed to the right
@@ -354,7 +355,7 @@ function SidebarRail({
   const navItems = [
     {
       href: "/assigned-to-me",
-      icon: Sun,
+      icon: MyDayIcon,
       label: "My Day",
       active:
         pathname === "/assigned-to-me" ||
@@ -364,21 +365,21 @@ function SidebarRail({
     },
     {
       href: "/inbox",
-      icon: Tray,
+      icon: InboxIcon,
       label: "Inbox",
       active: pathname === "/inbox",
       count: counts.inbox,
     },
     {
       href: "/upcoming",
-      icon: CalendarBlank,
+      icon: UpcomingIcon,
       label: "Upcoming",
       active: pathname === "/upcoming",
       count: 0,
     },
     {
       href: "/completed",
-      icon: CheckCircle,
+      icon: CompletedIcon,
       label: "Completed",
       active: pathname === "/completed",
       count: 0,
@@ -481,7 +482,7 @@ function RailNavLink({
   count,
 }: {
   href: string;
-  icon: PhosphorIcon;
+  icon: NavIcon;
   label: string;
   active: boolean;
   count?: number;
@@ -504,7 +505,7 @@ function RailNavLink({
                 : "text-foreground/85 hover:bg-foreground/[0.04] hover:text-foreground"
             )}
           >
-            <AnimatedNavIcon icon={Icon} size={18} active={active} />
+            <Icon size={18} active={active} />
             {active && (
               <span
                 aria-hidden
