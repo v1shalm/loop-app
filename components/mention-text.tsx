@@ -40,13 +40,20 @@ export function MentionText({
     if (!text || members.length === 0) {
       return [{ type: "text" as const, value: text ?? "" }];
     }
-    return splitMentions(text, members, currentUserId);
+    // Legacy comments used `@[Name](uuid)` as the on-disk format.
+    // Strip that to plain `@Name` so the same matcher handles both
+    // old and new content. New comments are inserted as `@Name`
+    // directly, so for them this replace is a no-op.
+    const normalized = text.replace(/@\[([^\]]+)\]\([^)]+\)/g, "@$1");
+    return splitMentions(normalized, members, currentUserId);
   }, [text, members, currentUserId]);
 
   if (parts.length === 1 && parts[0].type === "text") {
-    // Fast path — no mentions in this string, render unchanged so the
-    // common case doesn't pay the chip-wrapping cost.
-    return <>{text}</>;
+    // Fast path — no mentions in this string, render the normalized
+    // single text part (strips any legacy `@[Name](uuid)` brackets if
+    // the matcher didn't resolve them). For brand-new strings with no
+    // mentions at all, parts[0].value === text so this is a no-op.
+    return <>{parts[0].value}</>;
   }
 
   return (

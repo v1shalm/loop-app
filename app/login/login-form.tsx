@@ -133,7 +133,7 @@ export function LoginForm() {
       {/* Divider */}
       <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">
+        <span className="text-[12px] font-medium text-muted-foreground/70">
           or with email
         </span>
         <div className="h-px flex-1 bg-border" />

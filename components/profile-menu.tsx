@@ -21,7 +21,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -387,7 +386,7 @@ export function ProfileMenu({
         side={compact ? "right" : "top"}
         align={compact ? "end" : "start"}
         sideOffset={compact ? 12 : 8}
-        className="w-[268px] rounded-xl border border-border/60 bg-popover p-1.5 shadow-soft-sm ring-0"
+        className="w-[268px]"
       >
         {/* Header: avatar (or progress ring), name, role / today's progress */}
         <div className="flex items-center gap-2.5 px-2 pb-2 pt-1">
@@ -416,7 +415,7 @@ export function ProfileMenu({
           </div>
         </div>
 
-        <DropdownMenuSeparator className="my-1 bg-border/60" />
+        <div className="my-1" />
 
         {/* Presence + notifications — top-level toggles inspired by the
             Slack profile menu the user referenced. Each one is its own
@@ -446,31 +445,24 @@ export function ProfileMenu({
           {notificationsPaused ? "Notifications paused" : "Pause notifications"}
         </MenuRow>
 
-        <DropdownMenuSeparator className="my-1 bg-border/60" />
+        <div className="my-1" />
 
-        {/* Secondary links */}
+        {/* Secondary links. DropdownMenuItem now picks up the
+            gold-standard spacing + hover tint from the primitive
+            defaults — no per-item className override needed. */}
         {onOpenHelp && (
-          <DropdownMenuItem
-            onClick={onOpenHelp}
-            className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
-          >
+          <DropdownMenuItem onClick={onOpenHelp}>
             <Question size={15} className="text-muted-foreground" />
             <span className="flex-1">Help</span>
           </DropdownMenuItem>
         )}
 
-        <DropdownMenuItem
-          render={<Link href="/profile" />}
-          className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
-        >
+        <DropdownMenuItem render={<Link href="/profile" />}>
           <Gear size={15} className="text-muted-foreground" />
           <span className="flex-1">Settings</span>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          render={<Link href="/team" />}
-          className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
-        >
+        <DropdownMenuItem render={<Link href="/team" />}>
           <UsersThree size={15} className="text-muted-foreground" />
           <span className="flex-1">Team</span>
         </DropdownMenuItem>
@@ -484,7 +476,7 @@ export function ProfileMenu({
           }}
           role="menuitemcheckbox"
           aria-checked={soundsOn}
-          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.04] focus-visible:outline-none"
         >
           {soundsOn ? (
             <SpeakerHigh size={15} className="text-muted-foreground" />
@@ -494,7 +486,7 @@ export function ProfileMenu({
           <span className="flex-1">Sounds</span>
           <span
             className={cn(
-              "text-[11px] font-semibold",
+              "text-[11.5px] font-semibold",
               soundsOn ? "text-primary" : "text-muted-foreground/70"
             )}
           >
@@ -502,7 +494,7 @@ export function ProfileMenu({
           </span>
         </button>
 
-        <DropdownMenuSeparator className="my-1 bg-border/60" />
+        <div className="my-1" />
 
         {/* Theme segmented control — text-first, three options, the
             active one lit on the brand color. Slack-style. */}
@@ -538,13 +530,12 @@ export function ProfileMenu({
           })}
         </div>
 
-        <DropdownMenuSeparator className="my-1 bg-border/60" />
+        <div className="my-1" />
 
         <DropdownMenuItem
           variant="destructive"
           disabled={pending}
           onClick={() => startTransition(() => signOut())}
-          className="gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
         >
           <SignOut size={15} />
           <span>{pending ? "Logging out…" : "Log out"}</span>
@@ -583,8 +574,8 @@ function MenuRow({
       disabled={disabled}
       aria-pressed={aria["aria-pressed"]}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-foreground transition-colors",
-        "hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none",
+        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] text-foreground transition-colors",
+        "hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.04] focus-visible:outline-none",
         "disabled:cursor-not-allowed disabled:opacity-60"
       )}
     >

@@ -30,9 +30,16 @@ import {
   CheckCircle,
   ChatCircle,
   CircleNotch,
+  Copy,
   DotsThree,
+  FileDoc,
+  FileHtml,
+  FilePdf,
   Flag,
   Folder,
+  Image,
+  LinkSimple,
+  Paperclip,
   Plus,
   Trash,
   Tray,
@@ -46,22 +53,27 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 import {
   addComment,
   addTaskAssignee,
+  addTaskAttachmentFile,
+  addTaskAttachmentLink,
   createSubtask,
   deleteComment,
   deleteTask,
+  removeTaskAttachment,
   removeTaskAssignee,
   setTaskStatus,
   updateTask,
   type CommentRow,
+  type TaskAttachmentRow,
 } from "@/lib/actions";
+import { compressImage } from "@/lib/compress-image";
 import { playSound } from "@/lib/sounds";
 import { RelativeTime } from "@/components/relative-time";
 import { CommentReactions } from "@/components/comment-reactions";
 import {
   MentionInput,
-  MentionRenderer,
   type MentionInputHandle,
 } from "@/components/mention-input";
+import { MentionText } from "@/components/mention-text";
 import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -102,6 +114,11 @@ export function TaskDrawer({
   const pathname = usePathname();
   const taskId = params.get("task");
   const [mounted, setMounted] = useState(false);
+  // Chat panel toggle. Lifted out of DrawerInner so the outer modal
+  // motion.div can animate its width when the panel opens, and so the
+  // preference persists across task-to-task switching within a
+  // session. Always starts closed on first open.
+  const [chatOpen, setChatOpen] = useState(false);
   // Mobile sheet drag is owned by the panel but only activates from
   // the handle. Without this split, motion's drag listener captures
   // every touch in the panel and breaks inner scrolling on phones.
@@ -137,25 +154,36 @@ export function TaskDrawer({
           <motion.div
             key="backdrop"
             onClick={close}
-            className="absolute inset-0 bg-black/25 supports-backdrop-filter:backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 supports-backdrop-filter:backdrop-blur-sm md:bg-black/45"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
           />
-          {/* Desktop: floating side panel inset from the edges, slides in
-              from the right with the Vaul/Ionic deceleration curve.
-              Hidden on mobile (md and below). */}
+          {/* Desktop: centered modal. Was a slide-from-right side
+              panel; the modal reads as "look at this one thing" while
+              the drawer read as "spreadsheet sidebar." Mobile still
+              uses the bottom-sheet below. Bounded height so a long
+              task with many comments scrolls internally instead of
+              pushing the modal off-screen.
+              Width grows from 720 → 1060 when the chat panel opens,
+              animated via Framer so the page rebalances under the
+              centered modal instead of jumping. */}
           <motion.div
             key="panel-desktop"
-            initial={{ x: "calc(100% + 24px)" }}
-            animate={{ x: 0 }}
-            exit={{ x: "calc(100% + 24px)" }}
+            initial={{ opacity: 0, scale: 0.96, maxWidth: chatOpen ? 1060 : 720 }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              maxWidth: chatOpen ? 1060 : 720,
+            }}
+            exit={{ opacity: 0, scale: 0.97 }}
             transition={{
-              duration: 0.42,
+              duration: 0.22,
               ease: [0.32, 0.72, 0, 1],
             }}
-            className="pointer-events-none absolute inset-y-3 right-3 hidden w-full max-w-[480px] flex-col md:flex"
+            className="pointer-events-none absolute left-1/2 top-1/2 hidden w-full -translate-x-1/2 -translate-y-1/2 flex-col px-4 md:flex"
+            style={{ maxHeight: "min(86dvh, 880px)" }}
           >
             <div className="pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-popover shadow-[var(--shadow-soft-xl)]">
               <DrawerInner
@@ -164,6 +192,8 @@ export function TaskDrawer({
                 members={members}
                 currentUserId={currentUserId}
                 onClose={close}
+                chatOpen={chatOpen}
+                onToggleChat={() => setChatOpen((v) => !v)}
               />
             </div>
           </motion.div>
@@ -212,6 +242,8 @@ export function TaskDrawer({
                 members={members}
                 currentUserId={currentUserId}
                 onClose={close}
+                chatOpen={false}
+                onToggleChat={undefined}
               />
             </div>
           </motion.div>
@@ -228,12 +260,19 @@ function DrawerInner({
   members,
   currentUserId,
   onClose,
+  chatOpen,
+  onToggleChat,
 }: {
   taskId: string;
   projects: Project[];
   members: Profile[];
   currentUserId: string;
   onClose: () => void;
+  /** Chat panel state lifted to TaskDrawer so the outer motion.div
+   *  can animate its width and the preference survives task switches. */
+  chatOpen: boolean;
+  /** undefined on mobile — the chat panel is desktop-only. */
+  onToggleChat?: () => void;
 }) {
   const [task, setTask] = useState<TaskWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
@@ -484,28 +523,29 @@ function DrawerInner({
   const done = task.status === "done";
   const currentUser = members.find((m) => m.id === currentUserId) ?? null;
 
-  // Chip tones — semantic colour + tactile bevel. Date and priority
-  // both use the rose/amber/emerald scale so urgency reads at a glance.
-  // The chip-3d class adds an inset top highlight + soft drop so the
-  // chips sit on the page with the same depth language as the rest of
-  // the app's small affordances, not as flat tints.
-  const dueChipTone =
+  // Chip tones — color lives in the ICON only, not the whole pill.
+  // The chip body is a quiet neutral card across the board, so the
+  // row scans cleanly and doesn't read as a wall of warning labels.
+  // Semantic meaning still travels: a rose flag means high priority
+  // at a glance, an amber calendar means due-today, etc.
+  const dueIconTone =
     overdue || (due && isToday(due))
-      ? "bg-rose-500/14 text-rose-700 ring-1 ring-inset ring-rose-500/25 hover:bg-rose-500/20 dark:bg-rose-500/18 dark:text-rose-200 dark:ring-rose-400/30 dark:hover:bg-rose-500/24"
-      : "bg-accent/50 text-foreground ring-1 ring-inset ring-border/70 hover:bg-accent/70";
+      ? "text-rose-600 dark:text-rose-300"
+      : "text-muted-foreground";
 
-  const priorityChipTone: Record<Priority, string> = {
-    1: "bg-rose-500/14 text-rose-700 ring-1 ring-inset ring-rose-500/25 hover:bg-rose-500/20 dark:bg-rose-500/18 dark:text-rose-200 dark:ring-rose-400/30 dark:hover:bg-rose-500/24",
-    2: "bg-amber-500/14 text-amber-700 ring-1 ring-inset ring-amber-500/30 hover:bg-amber-500/20 dark:bg-amber-500/18 dark:text-amber-200 dark:ring-amber-400/30 dark:hover:bg-amber-500/24",
-    3: "bg-emerald-500/14 text-emerald-700 ring-1 ring-inset ring-emerald-500/25 hover:bg-emerald-500/20 dark:bg-emerald-500/18 dark:text-emerald-200 dark:ring-emerald-400/30 dark:hover:bg-emerald-500/24",
-    4: "bg-accent/50 text-foreground ring-1 ring-inset ring-border/70 hover:bg-accent/70",
+  const priorityIconTone: Record<Priority, string> = {
+    1: "text-rose-600 dark:text-rose-300",
+    2: "text-amber-600 dark:text-amber-300",
+    3: "text-emerald-600 dark:text-emerald-300",
+    4: "text-muted-foreground",
   };
 
-  // Tactile chips — semantic background + hairline ring + chip-3d
-  // shadow stack (inset top highlight + soft drop). The .chip-3d
-  // utility composes on top of any tone via the shared chipBase.
+  // Neutral chip: hairline-bordered pill on the card surface. No
+  // chip-3d shadow stack (was making the chips feel heavy); just a
+  // single hairline ring + subtle hover lift via accent. rounded-md
+  // for soft corners that match the modal card.
   const chipBase =
-    "focus-ring chip-3d inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium transition-colors";
+    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2.5 text-[12.5px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40";
 
   return (
     <div className="flex h-full flex-col">
@@ -513,31 +553,25 @@ function DrawerInner({
         onClose={onClose}
         pending={pending}
         task={task}
-        projects={projects}
-        onChangeProject={(id) => patch({ projectId: id })}
         onDelete={remove}
+        done={done}
+        onToggleDone={toggleDone}
+        chatOpen={chatOpen}
+        onToggleChat={onToggleChat}
+        commentCount={comments.length}
       />
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        {/* Title row: checkbox + heading. The checkbox is the
-            in-view "is this done?" affordance at the top of the
-            details; the footer CTA is the same intent at the bottom
-            for thumb reach. Two surfaces, one state. */}
-        <section className="flex items-start gap-3 px-6 pb-4 pt-6">
-          <button
-            type="button"
-            onClick={toggleDone}
-            disabled={pending}
-            aria-label={done ? "Reopen task" : "Mark complete"}
-            className={cn(
-              "focus-ring mt-1 grid size-[20px] shrink-0 place-items-center rounded-[6px] border-[1.5px] transition-colors duration-150 ease-[var(--ease-out)] active:scale-95",
-              done
-                ? "border-emerald-600 bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-500"
-                : "border-border bg-background hover:border-foreground/40"
-            )}
-          >
-            {done && <Check size={12} weight="bold" className="text-white" />}
-          </button>
+      {/* Body region. When the chat panel is open, this splits into a
+          horizontal flex: scrollable task body on the left, chat panel
+          on the right. Mobile (chatOpen is forced false) collapses
+          back to the single column it always was. */}
+      <div className="flex min-h-0 flex-1">
+        <div ref={scrollRef} className="flex-1 min-w-0 overflow-y-auto">
+        {/* Title row. No checkbox here: the Mark-as-complete pill in
+            the header is the single completion CTA. A checkbox next
+            to the title duplicates that intent and adds an extra hit
+            target the eye has to parse before reading the title. */}
+        <section className="px-6 pb-4 pt-6">
           <AutoTextarea
             ref={titleRef}
             defaultValue={task.title}
@@ -550,186 +584,157 @@ function DrawerInner({
           />
         </section>
 
-        <SectionDivider />
+        {/* Chip row — the task's editable properties flattened into
+            one horizontal cluster, no DetailRow labels. Mirrors the
+            reference: avatar stack, date, priority, project all sit
+            as peers under the title. Each chip stays a click-to-edit
+            popover; only the label-icon-vertical-list scaffolding is
+            gone. */}
+        <section className="flex flex-wrap items-center gap-2 px-6 pb-5">
+          <AssigneeStackPicker
+            taskId={task.id}
+            members={members}
+            currentUserId={currentUserId}
+            assigneeIds={assigneeIds}
+            setAssigneeIds={setAssigneeIds}
+            primaryId={task.assignee?.id ?? null}
+            onSetPrimary={(id) => patch({ assigneeId: id })}
+          />
 
-        {/* Details: flat icon-labeled rows. No section heading; the
-            list reads self-evidently as the task's structured
-            properties. Created is included as a row so users have a
-            single visual register for "what is this task," not a
-            separate meta strip. Completed badge stacks below the list
-            when relevant. */}
-        <section className="px-6 pb-5">
-          <ul className="flex flex-col">
-            <DetailRow
-              icon={<Folder size={13} className="text-muted-foreground" />}
-              label="Project"
-            >
-              <Popover>
-                <PopoverTrigger className="focus-ring -mx-1.5 inline-flex h-7 items-center gap-2 rounded-md px-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40">
-                  {task.project ? (
-                    <>
-                      <Folder
-                        size={13}
-                        weight="fill"
-                        style={{ color: projectColor(task.project as Project) }}
-                      />
-                      <span className="truncate">{task.project.name}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Tray size={13} className="text-muted-foreground" />
-                      <span>Inbox</span>
-                    </>
-                  )}
-                </PopoverTrigger>
-                <PopoverContent className="w-[240px] gap-0 p-1" align="start">
-                  <PopoverItem
-                    selected={task.project_id === null}
-                    onSelect={() => patch({ projectId: null })}
-                  >
-                    <Tray size={14} className="text-muted-foreground" />
-                    <span>Inbox (no project)</span>
-                  </PopoverItem>
-                  {projects.map((p) => (
-                    <PopoverItem
-                      key={p.id}
-                      selected={task.project_id === p.id}
-                      onSelect={() => patch({ projectId: p.id })}
-                    >
-                      <Folder
-                        size={14}
-                        weight="fill"
-                        style={{ color: projectColor(p) }}
-                      />
-                      <span className="truncate">{p.name}</span>
-                    </PopoverItem>
-                  ))}
-                </PopoverContent>
-              </Popover>
-            </DetailRow>
-
-            <DetailRow
-              icon={<User size={13} className="text-muted-foreground" />}
-              label="Assignee"
-            >
-              <AssigneeStackPicker
-                taskId={task.id}
-                members={members}
-                currentUserId={currentUserId}
-                assigneeIds={assigneeIds}
-                setAssigneeIds={setAssigneeIds}
-                primaryId={task.assignee?.id ?? null}
-                onSetPrimary={(id) => patch({ assigneeId: id })}
+          <Popover>
+            <PopoverTrigger className={chipBase}>
+              <CalendarBlank
+                size={13}
+                weight="fill"
+                className={dueIconTone}
               />
-            </DetailRow>
+              <span className="tabular-nums">
+                {due ? formatDueShort(due) : "No date"}
+              </span>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto gap-0 p-0" align="start">
+              <DatePicker
+                value={due}
+                onChange={(d) =>
+                  patch({ dueAt: d ? d.toISOString() : null })
+                }
+              />
+            </PopoverContent>
+          </Popover>
 
-            <DetailRow
-              icon={<CalendarBlank size={13} className="text-muted-foreground" />}
-              label="Due date"
-            >
-              <Popover>
-                <PopoverTrigger className={cn(chipBase, dueChipTone)}>
-                  <CalendarBlank size={13} weight="fill" />
-                  <span className="tabular-nums">
-                    {due ? formatDueShort(due) : "No date"}
-                  </span>
-                </PopoverTrigger>
-                <PopoverContent className="gap-0 p-0" align="start">
-                  <DatePicker
-                    value={due}
-                    onChange={(d) =>
-                      patch({ dueAt: d ? d.toISOString() : null })
-                    }
-                  />
-                </PopoverContent>
-              </Popover>
-            </DetailRow>
-
-            <DetailRow
-              icon={<Flag size={13} className="text-muted-foreground" />}
-              label="Priority"
-            >
-              <Popover>
-                <PopoverTrigger
-                  className={cn(chipBase, priorityChipTone[task.priority as Priority])}
+          <Popover>
+            <PopoverTrigger className={chipBase}>
+              <Flag
+                size={13}
+                weight={task.priority === 4 ? "regular" : "fill"}
+                className={priorityIconTone[task.priority as Priority]}
+              />
+              {priorityOpt.label}
+            </PopoverTrigger>
+            <PopoverContent className="w-[180px]" align="start">
+              {PRIORITY_OPTIONS.map((o) => (
+                <PopoverItem
+                  key={o.p}
+                  selected={task.priority === o.p}
+                  onSelect={() => patch({ priority: o.p })}
                 >
                   <Flag
-                    size={13}
-                    weight={task.priority === 4 ? "regular" : "fill"}
+                    size={14}
+                    className={o.cls}
+                    weight={o.p === 4 ? "regular" : "fill"}
                   />
-                  {priorityOpt.label}
-                </PopoverTrigger>
-                <PopoverContent className="w-[180px] gap-0 p-1" align="start">
-                  {PRIORITY_OPTIONS.map((o) => (
-                    <PopoverItem
-                      key={o.p}
-                      selected={task.priority === o.p}
-                      onSelect={() => patch({ priority: o.p })}
-                    >
-                      <Flag
-                        size={14}
-                        className={o.cls}
-                        weight={o.p === 4 ? "regular" : "fill"}
-                      />
-                      <span>{o.label}</span>
-                    </PopoverItem>
-                  ))}
-                </PopoverContent>
-              </Popover>
-            </DetailRow>
+                  <span>{o.label}</span>
+                </PopoverItem>
+              ))}
+            </PopoverContent>
+          </Popover>
 
-            <DetailRow
-              icon={<User size={13} className="text-muted-foreground" />}
-              label="Created"
-            >
-              <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px]">
-                {task.author ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Avatar
-                      src={task.author.avatar_url}
-                      initials={task.author.initials}
-                      color={task.author.avatar_color}
-                      size={16}
-                    />
-                    <span className="text-foreground">{task.author.name}</span>
+          <Popover>
+            <PopoverTrigger className={chipBase}>
+              {task.project ? (
+                <>
+                  <Folder
+                    size={13}
+                    weight="fill"
+                    style={{ color: projectColor(task.project as Project) }}
+                  />
+                  <span className="truncate">{task.project.name}</span>
+                </>
+              ) : (
+                <>
+                  <Tray size={13} className="text-muted-foreground" />
+                  <span>Inbox</span>
+                </>
+              )}
+            </PopoverTrigger>
+            <PopoverContent className="w-[240px]" align="start">
+              <PopoverItem
+                selected={task.project_id === null}
+                onSelect={() => patch({ projectId: null })}
+              >
+                <Tray size={14} className="text-muted-foreground" />
+                <span>Inbox (no project)</span>
+              </PopoverItem>
+              {projects.map((p) => (
+                <PopoverItem
+                  key={p.id}
+                  selected={task.project_id === p.id}
+                  onSelect={() => patch({ projectId: p.id })}
+                >
+                  <Folder
+                    size={14}
+                    weight="fill"
+                    style={{ color: projectColor(p) }}
+                  />
+                  <span className="truncate">{p.name}</span>
+                </PopoverItem>
+              ))}
+            </PopoverContent>
+          </Popover>
+
+          {/* Created + Completed — one quiet line, pushed to the end
+              of the chip row when there's space, wrapping below
+              otherwise. Less weight than its own row but still in
+              view for auditability. */}
+          <p className="ml-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11.5px] text-muted-foreground">
+            <span>
+              by{" "}
+              <span className="text-foreground/75">
+                {task.author?.name ?? "Unknown"}
+              </span>
+              {" · "}
+              <span className="tabular-nums">
+                {format(new Date(task.created_at), "d MMM")}
+              </span>
+            </span>
+            {task.completed_at && (
+              <>
+                <span className="text-foreground/30">·</span>
+                <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
+                  <CheckCircle size={11} weight="fill" />
+                  <span className="tabular-nums">
+                    {format(new Date(task.completed_at), "d MMM")}
                   </span>
-                ) : (
-                  <span className="text-muted-foreground">Unknown</span>
-                )}
-                <span className="text-foreground/35">·</span>
-                <span className="tabular-nums text-muted-foreground">
-                  {format(new Date(task.created_at), "d MMM, h:mm a")}
                 </span>
-              </div>
-            </DetailRow>
-          </ul>
-
-          {task.completed_at && (
-            <div className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-emerald-700 dark:text-emerald-300">
-              <CheckCircle size={12} weight="fill" />
-              Completed {format(new Date(task.completed_at), "d MMM, h:mm a")}
-            </div>
-          )}
+              </>
+            )}
+          </p>
         </section>
 
-        <SectionDivider />
-
-        {/* Description: wrapped in a quiet card so the body has a
-            visible writable region (matches the reference treatment)
-            without competing with the title above. Uses muted/40 +
-            inset hairline, the same recipe other block surfaces use. */}
-        <section className="px-6 py-5">
-          <SectionHeader label="Description" />
-          <div className="mt-3 rounded-lg bg-muted/40 p-3.5 ring-1 ring-inset ring-border/40">
-            <AutoTextarea
-              ref={descRef}
-              defaultValue={task.description ?? ""}
-              onBlur={saveDescription}
-              placeholder="Add a description…"
-              minRows={2}
-              className="focus-ring w-full resize-none bg-transparent text-[13.5px] leading-relaxed text-foreground outline-none placeholder:text-foreground/40"
-            />
-          </div>
+        {/* Description: plain editable text, no card wrapper or
+            section header. Mirrors the reference, where the body
+            copy reads as continuous content of the task. The
+            textarea still focus-rings on edit so the writable region
+            is discoverable. */}
+        <section className="px-6 pb-5">
+          <AutoTextarea
+            ref={descRef}
+            defaultValue={task.description ?? ""}
+            onBlur={saveDescription}
+            placeholder="Add a description…"
+            minRows={2}
+            className="focus-ring w-full resize-none rounded-md bg-transparent px-1 py-1 text-[13.5px] leading-relaxed text-foreground outline-none placeholder:text-foreground/40"
+          />
         </section>
 
         <SectionDivider />
@@ -746,25 +751,60 @@ function DrawerInner({
           </>
         )}
 
-        {/* Comments */}
+        {/* Attachments — files + links the task carries. Reads from
+            task_attachments; adds run client-side (storage upload for
+            files, direct insert for links). */}
         <section className="px-6 py-5">
-          <CommentsSection
-            taskId={task.id}
-            comments={comments}
-            setComments={setComments}
-            currentUser={currentUser}
-            currentUserId={currentUserId}
-            members={members}
-          />
+          <AttachmentsSection taskId={task.id} />
         </section>
+
+        {/* Comments — mobile only. Desktop accesses them via the
+            chat bubble in the header, which opens the right-side
+            Chat panel. Mobile sheets have no horizontal room for a
+            side panel, so the section stays inline there. */}
+        <div className="md:hidden">
+          <SectionDivider />
+          <section className="px-6 py-5">
+            <CommentsSection
+              taskId={task.id}
+              comments={comments}
+              setComments={setComments}
+              currentUser={currentUser}
+              currentUserId={currentUserId}
+              members={members}
+            />
+          </section>
+        </div>
+        </div>
+
+        {/* Right-side Chat panel. Carries comments out of the body
+            into its own surface so the task details stay focused.
+            Desktop only — onToggleChat is undefined on mobile.
+            CommentsSection in "panel" mode owns its own flex column
+            layout: scrollable feed on top, composer pinned to the
+            bottom. No outer header — the chat-bubble icon in the
+            modal header already labels this surface. */}
+        {chatOpen && task && (
+          <div className="hidden w-[340px] shrink-0 flex-col border-l border-border/60 bg-popover md:flex">
+            <CommentsSection
+              taskId={task.id}
+              comments={comments}
+              setComments={setComments}
+              currentUser={currentUser}
+              currentUserId={currentUserId}
+              members={members}
+              variant="panel"
+            />
+          </div>
+        )}
       </div>
 
-      {/* Sticky footer */}
-      <DrawerFooter
-        done={done}
-        pending={pending}
-        onToggle={toggleDone}
-      />
+      {/* Mobile-only footer. Desktop modal lifts the Mark-complete
+          action up into the header pill (always visible), so a footer
+          would be a duplicate CTA. Mobile keeps it for thumb reach. */}
+      <div className="md:hidden">
+        <DrawerFooter done={done} pending={pending} onToggle={toggleDone} />
+      </div>
 
       <ConfirmDialog
         open={confirmDeleteOpen}
@@ -804,62 +844,51 @@ function SectionDivider() {
  * would be.
  */
 function DrawerSkeleton({ onClose }: { onClose: () => void }) {
+  // Skeleton mirrors the loaded modal's flat layout: title at the top,
+  // a single horizontal chip row, plain description block, then the
+  // sections (subtasks / attachments). No DetailRow grid, no green
+  // footer button — those were carried over from the old drawer and
+  // caused the "flash of old UI" before content arrived.
   return (
     <div className="flex h-full flex-col">
       <Header onClose={onClose} pending={false} />
       <div className="flex-1 overflow-y-auto">
-        {/* Title placeholder — matches the 22px title-textarea height
-            so the layout doesn't jump when the title arrives. */}
-        <section className="px-6 pb-4 pt-4">
-          <SkeletonBar className="h-[28px] w-[70%]" />
+        {/* Title — single line, matches the 22px title-textarea height. */}
+        <section className="px-6 pb-4 pt-6">
+          <SkeletonBar className="h-[28px] w-[72%]" />
         </section>
 
-        {/* Details grid — same 110px label / 1fr value layout as the
-            loaded version, so each row's left edge lines up perfectly
-            once the chip text fills in. */}
-        <section className="px-6 py-4">
-          <SkeletonBar className="h-3 w-14" />
-          <dl className="mt-3 grid grid-cols-[110px_minmax(0,1fr)] items-center gap-x-4 gap-y-3">
-            <SkeletonBar className="h-3 w-16" />
-            <SkeletonBar className="h-7 w-28" />
-            <SkeletonBar className="h-3 w-16" />
-            <SkeletonBar className="h-7 w-24" />
-            <SkeletonBar className="h-3 w-16" />
-            <SkeletonBar className="h-7 w-32" />
-            <SkeletonBar className="h-3 w-16" />
-            <SkeletonBar className="h-7 w-20" />
-          </dl>
-          <div className="mt-3 border-t border-border/40 pt-3">
-            <SkeletonBar className="h-3 w-48" />
-          </div>
+        {/* Chip row — four pill placeholders to mirror the avatar
+            stack + date + priority + project chips. */}
+        <section className="flex flex-wrap items-center gap-2 px-6 pb-5">
+          <SkeletonBar className="h-7 w-[72px] rounded-md" />
+          <SkeletonBar className="h-7 w-[88px] rounded-md" />
+          <SkeletonBar className="h-7 w-[78px] rounded-md" />
+          <SkeletonBar className="h-7 w-[120px] rounded-md" />
         </section>
 
-        <section className="px-6 py-4">
-          <SkeletonBar className="h-3 w-20" />
-          <div className="mt-3 flex flex-col gap-2">
-            <SkeletonBar className="h-3 w-full" />
-            <SkeletonBar className="h-3 w-[85%]" />
-          </div>
+        {/* Description placeholder — two lines of plain text, no card. */}
+        <section className="flex flex-col gap-2 px-6 pb-5">
+          <SkeletonBar className="h-3 w-full" />
+          <SkeletonBar className="h-3 w-[68%]" />
         </section>
 
-        <section className="px-6 py-4">
-          <SkeletonBar className="h-3 w-16" />
+        <SectionDivider />
+
+        {/* Subtasks header + add-row placeholder. */}
+        <section className="px-6 py-5">
+          <SkeletonBar className="h-3.5 w-16" />
+          <SkeletonBar className="mt-3 h-4 w-28" />
+        </section>
+
+        <SectionDivider />
+
+        {/* Attachments header + add-row placeholder. */}
+        <section className="px-6 py-5">
+          <SkeletonBar className="h-3.5 w-20" />
           <SkeletonBar className="mt-3 h-4 w-32" />
         </section>
-
-        <section className="px-6 py-4">
-          <SkeletonBar className="h-3 w-20" />
-          <div className="mt-3 flex items-start gap-3">
-            <SkeletonBar className="h-7 w-7 rounded-full" />
-            <SkeletonBar className="h-7 flex-1" />
-          </div>
-        </section>
       </div>
-      <DrawerFooter
-        done={false}
-        pending={true}
-        onToggle={() => {}}
-      />
     </div>
   );
 }
@@ -889,14 +918,14 @@ function SectionHeader({
   label: string;
   trailing?: React.ReactNode;
 }) {
-  // Small-caps muted labels (DESCRIPTION / SUBTASKS / COMMENTS) so
-  // they read as structural dividers, not headings competing with the
-  // 22px task title. icon prop is kept for back-compat with old call
-  // sites but no longer rendered.
+  // Quiet sentence-case section labels (Description / Subtasks /
+  // Comments) so they read as structural dividers under the 22px
+  // task title without going eyebrow-style. icon prop kept for
+  // back-compat with old call sites but no longer rendered.
   void _icon;
   return (
     <div className="flex items-center gap-2">
-      <h3 className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+      <h3 className="text-[13px] font-semibold text-foreground/80">
         {label}
       </h3>
       {trailing && <div className="ml-auto">{trailing}</div>}
@@ -970,6 +999,7 @@ function CommentsSection({
   currentUser,
   currentUserId,
   members,
+  variant = "inline",
 }: {
   taskId: string;
   comments: CommentRow[];
@@ -977,7 +1007,12 @@ function CommentsSection({
   currentUser: Profile | null;
   currentUserId: string;
   members: Profile[];
+  /** "inline" (default) for the mobile sheet's stacked-content body.
+   *  "panel" for the desktop side panel: full-height flex column with
+   *  a scrolling feed and a pinned composer at the bottom. */
+  variant?: "inline" | "panel";
 }) {
+  const isPanel = variant === "panel";
   const [body, setBody] = useState("");
   const [pending, startTransition] = useTransition();
   const [sort, setSort] = useState<"recent" | "oldest">("recent");
@@ -1085,6 +1120,121 @@ function CommentsSection({
     });
   };
 
+  // Reused empty state — quiet centered line. Panel mode pads it
+  // vertically so it doesn't crowd the composer below.
+  const emptyState = (
+    <p
+      className={cn(
+        "text-center text-[12.5px] text-muted-foreground",
+        isPanel ? "py-10" : "mt-4"
+      )}
+    >
+      No comments yet
+    </p>
+  );
+
+  // Reused list — same CommentItem rendering for both variants.
+  const list = (
+    <ul className={cn("flex flex-col", isPanel ? "" : "mt-3")}>
+      {roots.map((c, i) => (
+        <CommentItem
+          key={c.id}
+          comment={c}
+          replies={replies[c.id] ?? []}
+          currentUser={currentUser}
+          currentUserId={currentUserId}
+          members={members}
+          isLast={i === roots.length - 1}
+          onDelete={() => remove(c.id)}
+          onSubmitReply={(text) => submitReply(c.id, text)}
+        />
+      ))}
+    </ul>
+  );
+
+  // Composer — single bordered card so the input region is
+  // unmistakably "type here." Send button lives inside, bottom-right,
+  // and turns primary as soon as there's content to send.
+  const composer = (
+    <div className="group/composer rounded-xl border border-border/60 bg-card px-3 py-2 transition-colors focus-within:border-foreground/40 focus-within:ring-1 focus-within:ring-foreground/10">
+      <MentionInput
+        ref={inputRef}
+        value={body}
+        onChange={setBody}
+        onSubmit={() => submit(null)}
+        members={members}
+        placeholder="Add a comment. Type @ to mention a teammate."
+        minRows={isPanel ? 1 : 2}
+        ariaLabel="Add a comment"
+        className="bg-transparent py-0.5 text-[13.5px]"
+      />
+      <div className="flex items-center justify-end pt-1">
+        <Button
+          onClick={() => submit(null)}
+          disabled={!body.trim() || pending}
+          size="icon-sm"
+          variant="default"
+          aria-label="Send comment"
+          className="rounded-full"
+        >
+          {pending ? (
+            <CircleNotch size={13} className="animate-spin" />
+          ) : (
+            <ArrowUp size={13} weight="bold" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (isPanel) {
+    // Chat-app layout: scrollable feed on top, pinned composer at the
+    // bottom. The panel itself is height-bounded by its parent
+    // (the modal), and this flex column fills it. The sort dropdown
+    // moves up into a small bar so it doesn't intrude on the
+    // standalone-surface feel.
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {comments.length > 0 && (
+          <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-4 py-2">
+            <span className="text-[11.5px] text-muted-foreground tabular-nums">
+              {comments.length}{" "}
+              {comments.length === 1 ? "comment" : "comments"}
+            </span>
+            <Popover>
+              <PopoverTrigger className="focus-ring inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground">
+                {sort === "recent" ? "Most recent" : "Oldest first"}
+                <CaretDown size={10} weight="bold" />
+              </PopoverTrigger>
+              <PopoverContent className="w-[160px]" align="end">
+                <PopoverItem
+                  selected={sort === "recent"}
+                  onSelect={() => setSort("recent")}
+                >
+                  Most recent
+                </PopoverItem>
+                <PopoverItem
+                  selected={sort === "oldest"}
+                  onSelect={() => setSort("oldest")}
+                >
+                  Oldest first
+                </PopoverItem>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          {roots.length === 0 ? emptyState : list}
+        </div>
+        <div className="shrink-0 border-t border-border/60 p-3">
+          {composer}
+        </div>
+      </div>
+    );
+  }
+
+  // Inline (mobile sheet): stacked content with the standard section
+  // header on top, list and composer below as flow content.
   return (
     <div>
       <SectionHeader
@@ -1097,7 +1247,7 @@ function CommentsSection({
                 {sort === "recent" ? "Most recent" : "Oldest first"}
                 <CaretDown size={10} weight="bold" />
               </PopoverTrigger>
-              <PopoverContent className="w-[160px] gap-0 p-1" align="end">
+              <PopoverContent className="w-[160px]" align="end">
                 <PopoverItem
                   selected={sort === "recent"}
                   onSelect={() => setSort("recent")}
@@ -1120,72 +1270,9 @@ function CommentsSection({
         }
       />
 
-      {roots.length === 0 ? (
-        <p className="mt-4 text-center text-[12.5px] text-muted-foreground">
-          No comments yet
-        </p>
-      ) : (
-        <ul className="mt-3 flex flex-col">
-          {roots.map((c, i) => (
-            <CommentItem
-              key={c.id}
-              comment={c}
-              replies={replies[c.id] ?? []}
-              currentUser={currentUser}
-              currentUserId={currentUserId}
-              members={members}
-              isLast={i === roots.length - 1}
-              onDelete={() => remove(c.id)}
-              onSubmitReply={(text) => submitReply(c.id, text)}
-            />
-          ))}
-        </ul>
-      )}
+      {roots.length === 0 ? emptyState : list}
 
-      {/* Composer — flat inline area, no nested card. Avatar sits beside
-          the input column; the input column has a single thin bottom
-          border that brightens on focus. */}
-      <div className="mt-4 flex items-start gap-3">
-        {currentUser && (
-          <span className="mt-1 shrink-0">
-            <Avatar
-              src={currentUser.avatar_url}
-              initials={currentUser.initials}
-              color={currentUser.avatar_color}
-              size={28}
-            />
-          </span>
-        )}
-        <div className="group/composer min-w-0 flex-1 border-b border-border transition-colors focus-within:border-foreground/40">
-          <MentionInput
-            ref={inputRef}
-            value={body}
-            onChange={setBody}
-            onSubmit={() => submit(null)}
-            members={members}
-            placeholder="Add a comment. Type @ to mention a teammate."
-            minRows={2}
-            ariaLabel="Add a comment"
-            className="bg-transparent py-1.5 text-[14px]"
-          />
-          <div className="flex items-center justify-end gap-2 pb-2">
-            <Button
-              onClick={() => submit(null)}
-              disabled={!body.trim() || pending}
-              size="icon-sm"
-              variant="default"
-              aria-label="Send comment"
-              className="rounded-full"
-            >
-              {pending ? (
-                <CircleNotch size={13} className="animate-spin" />
-              ) : (
-                <ArrowUp size={13} weight="bold" />
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
+      <div className="mt-4">{composer}</div>
     </div>
   );
 }
@@ -1292,7 +1379,7 @@ function CommentItem({
             </button>
           )}
         </div>
-        <MentionRenderer
+        <MentionText
           text={comment.body}
           className="mt-0.5 block text-[13px] leading-relaxed text-foreground"
         />
@@ -1367,7 +1454,6 @@ function CommentItem({
               </ul>
             )}
             <ReplyComposer
-              currentUser={currentUser}
               members={members}
               onSubmit={(text) => {
                 onSubmitReply(text);
@@ -1421,7 +1507,7 @@ function ReplyItem({
             </button>
           )}
         </div>
-        <MentionRenderer
+        <MentionText
           text={reply.body}
           className="mt-0.5 block text-[12.5px] leading-relaxed text-foreground"
         />
@@ -1436,12 +1522,10 @@ function ReplyItem({
  * to send, Esc to cancel.
  */
 function ReplyComposer({
-  currentUser,
   members,
   onSubmit,
   onCancel,
 }: {
-  currentUser: Profile | null;
   members: Profile[];
   onSubmit: (text: string) => void;
   onCancel: () => void;
@@ -1453,46 +1537,40 @@ function ReplyComposer({
     onSubmit(t);
     setText("");
   };
+  // Bordered-card composer to match the main one. Drops the leading
+  // avatar (the parent comment's author owns the visual identity of
+  // the thread; the reply composer here is just "your reply input").
+  // Cancel sits left, Send chip sits right inside the card.
   return (
-    <div className="mt-3 flex items-start gap-2">
-      {currentUser && (
-        <Avatar
-          src={currentUser.avatar_url}
-          initials={currentUser.initials}
-          color={currentUser.avatar_color}
-          size={20}
-        />
-      )}
-      <div className="group/reply-composer min-w-0 flex-1 border-b border-border/70 transition-colors focus-within:border-foreground/40">
-        <MentionInput
-          value={text}
-          onChange={setText}
-          onSubmit={send}
-          members={members}
-          placeholder="Reply to this thread..."
-          minRows={1}
-          ariaLabel="Reply to thread"
-          className="bg-transparent py-1 text-[13px]"
-        />
-        <div className="flex items-center justify-end gap-1 pb-1.5">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="focus-ring rounded-md px-2 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-          >
-            Cancel
-          </button>
-          <Button
-            onClick={send}
-            disabled={!text.trim()}
-            size="icon-sm"
-            variant="default"
-            aria-label="Send reply"
-            className="rounded-full"
-          >
-            <ArrowUp size={12} weight="bold" />
-          </Button>
-        </div>
+    <div className="group/reply-composer mt-3 rounded-xl border border-border/60 bg-card px-3 py-2 transition-colors focus-within:border-foreground/40 focus-within:ring-1 focus-within:ring-foreground/10">
+      <MentionInput
+        value={text}
+        onChange={setText}
+        onSubmit={send}
+        members={members}
+        placeholder="Reply to this thread..."
+        minRows={1}
+        ariaLabel="Reply to thread"
+        className="bg-transparent py-0.5 text-[13px]"
+      />
+      <div className="flex items-center justify-between pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="focus-ring rounded-md px-2 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+        >
+          Cancel
+        </button>
+        <Button
+          onClick={send}
+          disabled={!text.trim()}
+          size="icon-sm"
+          variant="default"
+          aria-label="Send reply"
+          className="rounded-full"
+        >
+          <ArrowUp size={12} weight="bold" />
+        </Button>
       </div>
     </div>
   );
@@ -1502,17 +1580,29 @@ function Header({
   onClose,
   pending,
   task,
-  projects,
-  onChangeProject,
   onDelete,
+  done,
+  onToggleDone,
+  chatOpen,
+  onToggleChat,
+  commentCount,
 }: {
   onClose: () => void;
   pending: boolean;
   task?: TaskWithRelations | null;
-  projects?: Project[];
-  onChangeProject?: (projectId: string | null) => void;
   onDelete?: () => void;
+  done?: boolean;
+  onToggleDone?: () => void;
+  chatOpen?: boolean;
+  onToggleChat?: () => void;
+  commentCount?: number;
 }) {
+  const copyLink = () => {
+    if (!task) return;
+    const url = `${window.location.origin}${window.location.pathname}?task=${task.id}`;
+    void navigator.clipboard.writeText(url);
+    sileo.success({ title: "Link copied" });
+  };
   // Header carries dismissal + project breadcrumb + overflow menu.
   // Breadcrumb gives users a visible "where am I" anchor and a quick
   // re-bucket affordance via popover. The dots menu houses task-level
@@ -1531,54 +1621,10 @@ function Header({
         <CaretLeft size={14} weight="bold" />
       </button>
 
-      {/* Project breadcrumb: clickable popover to switch project.
-          Plain text with a coloured folder glyph (no chip block) so
-          it reads as a label, not a CTA. */}
-      {task && onChangeProject && projects ? (
-        <Popover>
-          <PopoverTrigger className="focus-ring inline-flex h-7 min-w-0 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40">
-            {task.project ? (
-              <>
-                <Folder
-                  size={12}
-                  weight="fill"
-                  style={{ color: projectColor(task.project as Project) }}
-                />
-                <span className="truncate">{task.project.name}</span>
-              </>
-            ) : (
-              <>
-                <Tray size={12} className="text-muted-foreground" />
-                <span>Inbox</span>
-              </>
-            )}
-          </PopoverTrigger>
-          <PopoverContent className="w-[240px] gap-0 p-1" align="start">
-            <PopoverItem
-              selected={task.project_id === null}
-              onSelect={() => onChangeProject(null)}
-            >
-              <Tray size={14} className="text-muted-foreground" />
-              <span>Inbox (no project)</span>
-            </PopoverItem>
-            {projects.map((p) => (
-              <PopoverItem
-                key={p.id}
-                selected={task.project_id === p.id}
-                onSelect={() => onChangeProject(p.id)}
-              >
-                <Folder
-                  size={14}
-                  weight="fill"
-                  style={{ color: projectColor(p) }}
-                />
-                <span className="truncate">{p.name}</span>
-              </PopoverItem>
-            ))}
-          </PopoverContent>
-        </Popover>
-      ) : null}
-
+      {/* Project breadcrumb removed from the header per user note.
+          Project switching lives in the chip row below the title
+          (folder chip), where it sits alongside the other editable
+          properties as a peer instead of as a corner anchor. */}
       {pending && (
         <CircleNotch
           size={12}
@@ -1586,8 +1632,59 @@ function Header({
         />
       )}
 
-      <div className="ml-auto flex items-center gap-0.5">
-        {onDelete && (
+      <div className="ml-auto flex items-center gap-1">
+        {/* Mark-as-complete pill — primary CTA, moved up from the
+            footer so it's always in view while editing. Hollow when
+            the task is open, filled emerald when already done so the
+            reverse-action also reads at a glance. */}
+        {task && onToggleDone && (
+          <button
+            type="button"
+            onClick={onToggleDone}
+            disabled={pending}
+            className={cn(
+              "focus-ring inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-semibold transition-colors disabled:opacity-60",
+              done
+                ? "bg-emerald-600 text-white hover:brightness-110 dark:bg-emerald-500"
+                : "bg-foreground/[0.06] text-foreground hover:bg-foreground/[0.1]"
+            )}
+          >
+            {done ? (
+              <>
+                <Check size={12} weight="bold" />
+                Completed
+              </>
+            ) : (
+              "Mark as complete"
+            )}
+          </button>
+        )}
+        {onToggleChat && (
+          <button
+            type="button"
+            onClick={onToggleChat}
+            aria-label={chatOpen ? "Hide comments" : "Show comments"}
+            aria-pressed={chatOpen}
+            className={cn(
+              "focus-ring touch-expand relative grid size-8 place-items-center rounded-md transition-colors max-md:hidden",
+              chatOpen
+                ? "bg-foreground/[0.06] text-foreground"
+                : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+            )}
+          >
+            <ChatCircle size={16} weight={chatOpen ? "fill" : "regular"} />
+            {/* Unread-ish badge — just shows there are comments, no
+                seen/unread tracking. A tiny dot keeps the chrome
+                quiet. */}
+            {!chatOpen && commentCount !== undefined && commentCount > 0 && (
+              <span
+                aria-hidden
+                className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary ring-2 ring-popover"
+              />
+            )}
+          </button>
+        )}
+        {(onDelete || task) && (
           <Popover>
             <PopoverTrigger
               aria-label="More actions"
@@ -1595,11 +1692,19 @@ function Header({
             >
               <DotsThree size={16} weight="bold" />
             </PopoverTrigger>
-            <PopoverContent className="w-[180px] gap-0 p-1" align="end">
-              <PopoverItem onSelect={onDelete}>
-                <Trash size={13} className="text-rose-600" />
-                <span className="text-rose-600">Delete task</span>
-              </PopoverItem>
+            <PopoverContent className="w-[180px]" align="end">
+              {task && (
+                <PopoverItem onSelect={copyLink}>
+                  <Copy size={13} className="text-muted-foreground" />
+                  <span>Copy link</span>
+                </PopoverItem>
+              )}
+              {onDelete && (
+                <PopoverItem onSelect={onDelete}>
+                  <Trash size={13} className="text-rose-600" />
+                  <span className="text-rose-600">Delete task</span>
+                </PopoverItem>
+              )}
             </PopoverContent>
           </Popover>
         )}
@@ -1629,7 +1734,7 @@ function PopoverItem({
     <button
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] transition-colors",
         selected
           ? "bg-primary/8 font-medium text-primary"
           : "text-foreground hover:bg-accent/40 hover:text-foreground"
@@ -1861,6 +1966,388 @@ function SubtasksSection({ taskId }: { taskId: string }) {
   );
 }
 
+// ── Attachments ───────────────────────────────────────────────────────────
+
+/**
+ * Lists every attachment on a task and lets the user add / open / remove.
+ * Two adders: paste a link, or pick a file. Images get compressed
+ * client-side before upload (lib/compress-image.ts). Files land in the
+ * task-attachments storage bucket; metadata in task_attachments.
+ *
+ * UX: tile per attachment with a kind-specific icon (Image / PDF / Doc
+ * / HTML / Link / generic file), label, size for files, and a remove X
+ * on hover. Click anywhere else on the tile to open in a new tab.
+ */
+function AttachmentsSection({ taskId }: { taskId: string }) {
+  const [items, setItems] = useState<TaskAttachmentRow[]>([]);
+  const [adding, setAdding] = useState<"menu" | "link" | null>(null);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const linkInputRef = useRef<HTMLInputElement>(null);
+
+  // Initial fetch.
+  useEffect(() => {
+    let active = true;
+    const supabase = getSupabaseBrowser();
+    if (!supabase) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("task_attachments")
+      .select("*")
+      .eq("task_id", taskId)
+      .order("created_at", { ascending: true })
+      .then((res: { data: TaskAttachmentRow[] | null }) => {
+        if (!active) return;
+        setItems(res.data ?? []);
+      });
+    return () => {
+      active = false;
+    };
+  }, [taskId]);
+
+  useEffect(() => {
+    if (adding === "link") {
+      setTimeout(() => linkInputRef.current?.focus(), 30);
+    }
+  }, [adding]);
+
+  const pickFile = (accept: string) => {
+    setAdding(null);
+    const el = fileInputRef.current;
+    if (!el) return;
+    el.value = "";
+    el.accept = accept;
+    el.click();
+  };
+
+  const onFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      sileo.error({
+        title: "File too large",
+        description: "Uploads are capped at 5 MB. Paste a link for anything larger.",
+      });
+      return;
+    }
+    setBusy(true);
+    const supabase = getSupabaseBrowser();
+    if (!supabase) {
+      setBusy(false);
+      sileo.error({ title: "Supabase not configured." });
+      return;
+    }
+
+    const isImage = file.type.startsWith("image/");
+    const compressed = isImage
+      ? await compressImage(file)
+      : {
+          blob: file,
+          extension: file.name.split(".").pop() ?? "bin",
+          contentType: file.type || "application/octet-stream",
+          compressed: false,
+        };
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const path = `${taskId}/${Date.now()}-${rand}.${compressed.extension}`;
+    const up = await supabase.storage
+      .from("task-attachments")
+      .upload(path, compressed.blob, {
+        contentType: compressed.contentType,
+        cacheControl: "31536000",
+      });
+    if (up.error) {
+      sileo.error({ title: up.error.message });
+      setBusy(false);
+      return;
+    }
+    const res = await addTaskAttachmentFile(taskId, {
+      storagePath: path,
+      label: file.name,
+      contentType: compressed.contentType,
+      sizeBytes: compressed.blob.size,
+    });
+    setBusy(false);
+    if (res.error || !res.attachment) {
+      sileo.error({ title: res.error ?? "Couldn't attach file." });
+      return;
+    }
+    setItems((prev) => [...prev, res.attachment!]);
+  };
+
+  const submitLink = async () => {
+    const trimmed = linkUrl.trim();
+    if (!trimmed) return;
+    const normalized = /^https?:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
+    let label = normalized;
+    try {
+      label = new URL(normalized).hostname.replace(/^www\./, "");
+    } catch {
+      sileo.error({ title: "That doesn't look like a URL" });
+      return;
+    }
+    setBusy(true);
+    const res = await addTaskAttachmentLink(taskId, normalized, label);
+    setBusy(false);
+    if (res.error || !res.attachment) {
+      sileo.error({ title: res.error ?? "Couldn't attach link." });
+      return;
+    }
+    setItems((prev) => [...prev, res.attachment!]);
+    setLinkUrl("");
+    setAdding(null);
+  };
+
+  const remove = async (id: string) => {
+    const snapshot = items;
+    setItems((prev) => prev.filter((x) => x.id !== id));
+    const res = await removeTaskAttachment(id);
+    if (res.error) {
+      setItems(snapshot);
+      sileo.error({ title: res.error });
+    }
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        icon={<Paperclip size={14} />}
+        label="Attachments"
+        trailing={
+          <span className="text-[11.5px] tabular-nums text-foreground/55">
+            {items.length}
+          </span>
+        }
+      />
+
+      {items.length > 0 && (
+        <ul className="mt-3 flex flex-col gap-1">
+          <AnimatePresence initial={false}>
+            {items.map((a) => (
+              <motion.li
+                key={a.id}
+                layout
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ type: "spring", duration: 0.28, bounce: 0.18 }}
+                className="group flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-foreground/[0.04]"
+              >
+                <a
+                  href={a.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-w-0 flex-1 items-center gap-2.5"
+                >
+                  <AttachmentIcon
+                    kind={a.kind}
+                    contentType={a.content_type}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">
+                    {a.label}
+                  </span>
+                  {a.kind === "file" && a.size_bytes != null && (
+                    <span className="text-[11px] tabular-nums text-muted-foreground/70">
+                      {formatBytes(a.size_bytes)}
+                    </span>
+                  )}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => remove(a.id)}
+                  aria-label="Remove attachment"
+                  className="focus-ring grid size-6 place-items-center rounded text-muted-foreground/60 opacity-0 transition-colors hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
+                >
+                  <X size={12} weight="bold" />
+                </button>
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+      )}
+
+      {/* Adder row — link input is inline; file picker triggers the
+          hidden input. Same two-section pattern as the composer's
+          attach popover so the vocabulary stays consistent. */}
+      {adding === "link" ? (
+        <div className="mt-2 flex items-center gap-2 px-1">
+          <LinkSimple size={14} className="text-muted-foreground" />
+          <input
+            ref={linkInputRef}
+            type="url"
+            value={linkUrl}
+            disabled={busy}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submitLink();
+              } else if (e.key === "Escape") {
+                setLinkUrl("");
+                setAdding(null);
+              }
+            }}
+            placeholder="https://drive.google.com/..."
+            className="focus-ring h-8 flex-1 rounded-md border border-border bg-background px-2 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/55"
+          />
+          <button
+            type="button"
+            onClick={submitLink}
+            disabled={!linkUrl.trim() || busy}
+            className={cn(
+              "focus-ring rounded-md px-2.5 py-1 text-[12px] font-semibold transition-colors",
+              linkUrl.trim() && !busy
+                ? "bg-primary text-primary-foreground hover:brightness-110"
+                : "cursor-not-allowed bg-muted text-muted-foreground"
+            )}
+          >
+            Attach
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setLinkUrl("");
+              setAdding(null);
+            }}
+            aria-label="Cancel"
+            className="focus-ring grid size-6 place-items-center rounded text-muted-foreground/60 hover:text-foreground"
+          >
+            <X size={12} weight="bold" />
+          </button>
+        </div>
+      ) : (
+        <Popover
+          open={adding === "menu"}
+          onOpenChange={(o) => setAdding(o ? "menu" : null)}
+        >
+          <PopoverTrigger
+            disabled={busy}
+            className="focus-ring mt-2 flex items-center gap-2 rounded-md px-1 py-1.5 text-[13px] text-foreground/75 transition-colors hover:text-foreground disabled:opacity-60"
+          >
+            {busy ? (
+              <CircleNotch size={13} className="animate-spin" />
+            ) : (
+              <Plus size={13} weight="bold" />
+            )}
+            {busy ? "Uploading…" : "Add attachment"}
+          </PopoverTrigger>
+          <PopoverContent side="top" align="start" className="w-[220px]">
+            <AttachOption
+              icon={<LinkSimple size={15} className="text-muted-foreground" />}
+              label="Link from URL"
+              hint="No upload"
+              onClick={() => setAdding("link")}
+            />
+            <div className="my-1 h-px bg-border/60" />
+            <AttachOption
+              icon={<Image size={15} className="text-muted-foreground" />}
+              label="Image"
+              onClick={() => pickFile("image/*")}
+            />
+            <AttachOption
+              icon={<FilePdf size={15} className="text-muted-foreground" />}
+              label="PDF"
+              onClick={() => pickFile("application/pdf")}
+            />
+            <AttachOption
+              icon={<FileDoc size={15} className="text-muted-foreground" />}
+              label="Document"
+              onClick={() =>
+                pickFile(
+                  ".doc,.docx,.txt,.md,.rtf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
+              }
+            />
+            <AttachOption
+              icon={<FileHtml size={15} className="text-muted-foreground" />}
+              label="HTML file"
+              onClick={() => pickFile("text/html,.html,.htm")}
+            />
+            <AttachOption
+              icon={<Paperclip size={15} className="text-muted-foreground" />}
+              label="Any file"
+              onClick={() => pickFile("*/*")}
+            />
+            <p className="px-3 pb-1 pt-2 text-[11px] leading-snug text-muted-foreground/70">
+              5 MB max per upload. For bigger files, paste a Drive or
+              Dropbox link.
+            </p>
+          </PopoverContent>
+        </Popover>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={onFileChosen}
+      />
+    </div>
+  );
+}
+
+function AttachmentIcon({
+  kind,
+  contentType,
+}: {
+  kind: "file" | "link";
+  contentType: string | null;
+}) {
+  if (kind === "link") {
+    return <LinkSimple size={16} className="shrink-0 text-primary" />;
+  }
+  if (contentType?.startsWith("image/")) {
+    return <Image size={16} className="shrink-0 text-muted-foreground" />;
+  }
+  if (contentType === "application/pdf") {
+    return <FilePdf size={16} className="shrink-0 text-muted-foreground" />;
+  }
+  if (contentType === "text/html") {
+    return <FileHtml size={16} className="shrink-0 text-muted-foreground" />;
+  }
+  if (contentType?.includes("word") || contentType?.startsWith("text/")) {
+    return <FileDoc size={16} className="shrink-0 text-muted-foreground" />;
+  }
+  return <Paperclip size={16} className="shrink-0 text-muted-foreground" />;
+}
+
+function AttachOption({
+  icon,
+  label,
+  hint,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  hint?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="focus-ring flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04]"
+    >
+      {icon}
+      <span className="flex-1">{label}</span>
+      {hint && (
+        <span className="text-[10.5px] font-medium text-muted-foreground/70">
+          {hint}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 // ── Assignee avatar-stack picker ───────────────────────────────────────────
 
 function AssigneeStackPicker({
@@ -1928,7 +2415,7 @@ function AssigneeStackPicker({
 
   return (
     <Popover>
-      <PopoverTrigger className="focus-ring chip-3d inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-1.5 pr-2.5 text-[12px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40">
+      <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2 pr-2.5 text-[12.5px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40">
         {sorted.length === 0 ? (
           <>
             <UserPlus size={13} className="text-muted-foreground" />
@@ -1964,7 +2451,7 @@ function AssigneeStackPicker({
           </>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-[240px] gap-0 p-1" align="start">
+      <PopoverContent className="w-[240px]" align="start">
         <div className="px-2 pb-1.5 pt-2">
           <p className="text-[12.5px] font-semibold tracking-tight text-foreground">
             Assigned to
@@ -1982,7 +2469,7 @@ function AssigneeStackPicker({
               onClick={() => toggle(m)}
               aria-pressed={isAssigned}
               className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-accent/40",
+                "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] transition-colors hover:bg-foreground/[0.04]",
                 isAssigned && "bg-primary/8 text-primary"
               )}
             >

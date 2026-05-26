@@ -46,16 +46,16 @@ export function PageHeader({
             {icon}
           </span>
         )}
-        <h1 className="truncate text-[15.5px] font-semibold leading-none tracking-[-0.005em] text-foreground">
+        <h1 className="truncate text-[15.5px] font-semibold tracking-[-0.005em] leading-[1.1] text-foreground">
           {title}
         </h1>
         {subtitle && (
           <>
             <span
               aria-hidden
-              className="h-3.5 w-px shrink-0 bg-border"
+              className="h-4 w-px shrink-0 bg-border"
             />
-            <span className="truncate text-[12.5px] leading-none text-muted-foreground">
+            <span className="truncate text-[12.5px] leading-[1.1] text-muted-foreground">
               {subtitle}
             </span>
           </>

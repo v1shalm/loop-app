@@ -308,7 +308,7 @@ export function AddTaskInline({
             aria-label="Assignee suggestions"
             className="absolute left-12 top-full z-50 mt-1.5 min-w-[240px] max-w-[300px] overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-soft-md ring-1 ring-foreground/5"
           >
-            <p className="px-2 pb-1 pt-1.5 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+            <p className="px-2 pb-1 pt-1.5 text-[11.5px] font-medium text-muted-foreground/70">
               {mentionQuery.trim() === ""
                 ? "Mention someone"
                 : `Matches for “${mentionQuery}”`}
@@ -388,8 +388,8 @@ function HintChip({ hint }: { hint: ParseHint }) {
 
   const TONE: Record<ParseHint["kind"], string> = {
     project:
-      "border-blue-500/30 bg-blue-50 text-blue-700 " +
-      "dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-400/30",
+      "border-primary/30 bg-primary/8 text-primary " +
+      "dark:bg-primary/15 dark:text-primary dark:border-primary/40",
     assignee:
       "border-violet-500/30 bg-violet-50 text-violet-700 " +
       "dark:bg-violet-500/15 dark:text-violet-200 dark:border-violet-400/30",

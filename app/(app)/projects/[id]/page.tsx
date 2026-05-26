@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Hash } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
-import { TaskTable } from "@/components/task-table";
 import { SortableTaskList } from "@/components/sortable-task-list";
+import { TaskCardGroup } from "@/components/task-card-group";
 import { EmptyState } from "@/components/empty-state";
 import { ProjectStatusPicker } from "@/components/project-status-picker";
 import { ProjectDescription } from "@/components/project-description";
@@ -90,8 +90,10 @@ export default async function ProjectPage({ params }: PageProps) {
           />
         </section>
 
-        {/* Tasks — single bordered container with hairline dividers
-            between rows and the Add-task footer welded to the bottom. */}
+        {/* Tasks — same card-of-cards chrome as Upcoming's day
+            columns, so a project section visually matches a day
+            section one-to-one. Inner rows render with their default
+            white-card mode. */}
         <section className="mb-10">
           {openTasks.length === 0 ? (
             <EmptyState
@@ -100,9 +102,9 @@ export default async function ProjectPage({ params }: PageProps) {
               hint="Add the first task and tag it to this project."
             />
           ) : (
-            <TaskTable defaultProjectId={project.id} flat>
-              <SortableTaskList tasks={openTasks} flat />
-            </TaskTable>
+            <TaskCardGroup title={project.name} count={openTasks.length}>
+              <SortableTaskList tasks={openTasks} />
+            </TaskCardGroup>
           )}
         </section>
 
@@ -214,7 +216,7 @@ async function RecentActivity({ projectId }: { projectId: string }) {
 
   return (
     <section>
-      <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+      <p className="mb-3 text-[13px] font-semibold text-foreground/80">
         Activity
       </p>
       <ul className="flex flex-col">

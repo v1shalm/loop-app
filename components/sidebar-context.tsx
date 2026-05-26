@@ -31,8 +31,9 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Expose the live sidebar width as a CSS custom property so modals can
-  // center themselves on the content area instead of the full viewport.
+  // Expose the live sidebar width as a CSS custom property so the
+  // bottom add-task bar (and any other fixed surface) can shift in
+  // sync with the sidebar instead of hard-coding 248px.
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--sidebar-w",

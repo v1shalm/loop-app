@@ -119,7 +119,7 @@ export function UpcomingCalendar({ tasks }: CalendarProps) {
       </header>
 
       {/* Weekday strip */}
-      <div className="grid grid-cols-7 border-b border-border/60 px-1 pt-1.5 pb-1 text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground/80">
+      <div className="grid grid-cols-7 border-b border-border/60 px-1 pt-1.5 pb-1 text-[11.5px] font-medium text-muted-foreground/80">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div key={d} className="px-2">
             {d}

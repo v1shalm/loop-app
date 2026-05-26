@@ -208,7 +208,7 @@ export function NotificationsPopover({
             className
           )}
         >
-          <Bell size={18} />
+          <Bell size={17} />
           {hasAnyUnread && (
             <span
               aria-hidden
@@ -268,7 +268,7 @@ export function NotificationsPopover({
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-[400px] gap-0 overflow-hidden rounded-xl border border-border/60 bg-popover p-0 shadow-[var(--shadow-soft-lg)] ring-0"
+        className="w-[400px] gap-0 overflow-hidden p-0"
       >
         {body}
       </PopoverContent>

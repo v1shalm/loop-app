@@ -67,20 +67,19 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* Switzer via Fontshare. preconnect to cdn.fontshare.com cuts
-            the woff2 fetch handshake; the css endpoint at api.fontshare
-            returns the @font-face block pointing at the CDN. Only the
-            four weights the UI actually uses (400/500/600/700) so the
-            font payload stays small. */}
-        <link rel="preconnect" href="https://api.fontshare.com" />
+        {/* Inter via Google Fonts. preconnect to fonts.gstatic.com cuts
+            the woff2 fetch handshake. Only the four weights the UI
+            actually uses (400/500/600/700) so the font payload stays
+            small. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
-          href="https://cdn.fontshare.com"
+          href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
         <link
           rel="stylesheet"
-          href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
         />
         {/* Supabase preconnect — covers REST, auth, AND realtime (all
             share the project's `*.supabase.co` origin). crossOrigin is

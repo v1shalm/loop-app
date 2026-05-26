@@ -95,7 +95,7 @@ export function AddProjectPopover() {
         sideOffset={6}
         className={
           mode === "menu"
-            ? "w-[220px] gap-0 p-1"
+            ? "w-[220px]"
             : "w-[260px] gap-0 p-3"
         }
       >
@@ -104,9 +104,9 @@ export function AddProjectPopover() {
             <button
               type="button"
               onClick={() => setMode("new")}
-              className="focus-ring flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] text-foreground transition-colors hover:bg-accent/40"
+              className="focus-ring flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04]"
             >
-              <Hash size={14} className="text-muted-foreground" />
+              <Hash size={15} className="text-muted-foreground" />
               <span className="flex-1">New project</span>
               <span className="text-[10.5px] font-medium text-muted-foreground/70">
                 Alt P
@@ -115,9 +115,9 @@ export function AddProjectPopover() {
             <Link
               href="/team"
               onClick={() => setOpen(false)}
-              className="focus-ring flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] text-foreground transition-colors hover:bg-accent/40"
+              className="focus-ring flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04]"
             >
-              <UserPlus size={14} className="text-muted-foreground" />
+              <UserPlus size={15} className="text-muted-foreground" />
               <span className="flex-1">Invite people</span>
             </Link>
           </>

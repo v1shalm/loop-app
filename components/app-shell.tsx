@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { MotionConfig } from "motion/react";
-import { Sidebar, type SidebarProps } from "@/components/sidebar";
+import { SidebarV2, type SidebarProps } from "@/components/sidebar-v2";
 import { SidebarProvider } from "@/components/sidebar-context";
 import { TeamProvider } from "@/components/team-provider";
 import { QuickAddProvider } from "@/components/quick-add-context";
@@ -12,6 +12,7 @@ import { AppControlsProvider } from "@/components/app-controls-context";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileFab } from "@/components/mobile-fab";
 import { MobileMenuSheet } from "@/components/mobile-menu-sheet";
+import { BottomAddTaskBar } from "@/components/bottom-add-task-bar";
 
 // Heavy client modules — only ship their code once the user actually triggers
 // them. Each carries motion + popovers + date-picker code that would
@@ -96,9 +97,11 @@ export function AppShell({
           <div className="flex h-dvh w-full overflow-hidden bg-background">
             {/* Desktop sidebar — `contents` keeps it as a direct flex child
                 so the desktop layout is byte-for-byte unchanged. On mobile
-                the whole branch collapses out of the tree. */}
+                the whole branch collapses out of the tree. SidebarV2 owns
+                both the expanded (248px) and the collapsed (64px rail)
+                presentations, switching internally on the context flag. */}
             <div className="contents max-md:hidden">
-              <Sidebar
+              <SidebarV2
                 user={user}
                 workspace={workspace}
                 team={team}
@@ -109,7 +112,7 @@ export function AppShell({
                 onOpenSearch={() => setSearchOpen(true)}
               />
             </div>
-            <main className="flex-1 overflow-y-auto max-md:pb-[calc(env(safe-area-inset-bottom,0px)+64px)]">
+            <main className="flex-1 overflow-y-auto max-md:pb-[calc(env(safe-area-inset-bottom,0px)+64px)] md:pb-28">
               {children}
             </main>
 
@@ -147,6 +150,11 @@ export function AppShell({
               currentUserId={user.id}
             />
             <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} />
+            <BottomAddTaskBar
+              currentUserId={user.id}
+              projects={projects}
+              members={members}
+            />
             {workspace && (
               <RealtimeBridge userId={user.id} workspaceId={workspace.id} />
             )}

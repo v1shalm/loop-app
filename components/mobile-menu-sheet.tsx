@@ -221,7 +221,7 @@ function Section({
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between px-2.5 pb-1">
-        <h3 className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80">
+        <h3 className="text-[12.5px] font-semibold text-foreground/75">
           {title}
         </h3>
         {trailing}

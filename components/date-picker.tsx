@@ -14,7 +14,14 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { CaretLeft, CaretRight, X } from "@/components/icons";
+import { sileo } from "sileo";
+import {
+  ArrowsClockwise,
+  Bell,
+  CaretLeft,
+  CaretRight,
+  Clock,
+} from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 function endOfDayAt6pm(d: Date) {
@@ -23,7 +30,11 @@ function endOfDayAt6pm(d: Date) {
   return x;
 }
 
-const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
+// 3-letter day labels matching the reference. All caps + tracked is
+// a calendar-genre convention (Apple / Google / Notion / Things all
+// do it), so the project's general no-uppercase-eyebrows rule
+// doesn't apply here.
+const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 interface DatePickerProps {
   value: Date | null;
@@ -39,10 +50,12 @@ interface DatePickerProps {
 export function DatePicker({ value, onChange, className }: DatePickerProps) {
   const [view, setView] = useState<Date>(value ?? new Date());
 
+  // Monday-first week to match the reference (and most calendars
+  // outside North America). date-fns defaults to Sunday otherwise.
   const start = startOfMonth(view);
   const end = endOfMonth(view);
-  const gridStart = startOfWeek(start);
-  const gridEnd = endOfWeek(end);
+  const gridStart = startOfWeek(start, { weekStartsOn: 1 });
+  const gridEnd = endOfWeek(end, { weekStartsOn: 1 });
 
   const days = useMemo(() => {
     const out: Date[] = [];
@@ -58,87 +71,75 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
     onChange(endOfDayAt6pm(d));
   };
 
-  const chips: { label: string; build: () => Date | null }[] = [
-    { label: "Today", build: () => endOfDayAt6pm(new Date()) },
-    { label: "Tomorrow", build: () => endOfDayAt6pm(addDays(new Date(), 1)) },
-    { label: "Next week", build: () => endOfDayAt6pm(addDays(new Date(), 7)) },
-  ];
+  // Inline time picker. When the user clicks "Set due time" the row
+  // swaps to a native <input type="time"> so they can type or scrub a
+  // value. Anchored to the current `value` so changing the time
+  // doesn't reset the date.
+  const [timeEditing, setTimeEditing] = useState(false);
+  const currentTimeStr = value
+    ? `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`
+    : "18:00";
+  const setTime = (hhmm: string) => {
+    if (!value) return;
+    const [h, m] = hhmm.split(":").map(Number);
+    const next = new Date(value);
+    next.setHours(h ?? 18, m ?? 0, 0, 0);
+    onChange(next);
+  };
+
+  // Reminders + recurring aren't backed by a schema yet. Surface the
+  // rows because the reference shows them, but be honest on click —
+  // a toast that says what's missing beats silently no-op'ing.
+  const notYet = (feature: string) => () =>
+    sileo.info({
+      title: `${feature} coming soon`,
+      description:
+        "Date-only for now. Reminders and recurrence need a bit more wiring.",
+    });
 
   return (
-    <div className={cn("w-[284px] p-2.5 max-md:w-[336px] max-md:p-3", className)}>
-      {/* Quick chips */}
-      <div className="mb-2 flex flex-wrap items-center gap-1">
-        {chips.map((c) => {
-          const built = c.build();
-          const active = built && value && isSameDay(built, value);
-          return (
-            <button
-              key={c.label}
-              onClick={() => {
-                const d = c.build();
-                if (d) {
-                  setView(d);
-                  onChange(d);
-                }
-              }}
-              className={cn(
-                "focus-ring rounded-full border px-2.5 py-1 text-[11.5px] font-medium transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
-                active
-                  ? "border-primary/60 bg-primary/12 text-primary"
-                  : "border-border bg-card text-foreground hover:border-border/80 hover:bg-accent/50"
-              )}
-            >
-              {c.label}
-            </button>
-          );
-        })}
-        {value && (
-          <button
-            onClick={() => onChange(null)}
-            aria-label="Clear date"
-            className="focus-ring ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-          >
-            <X size={11} weight="bold" />
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Month nav */}
-      <div className="mb-1 flex items-center justify-between">
-        <button
-          onClick={() => setView((v) => subMonths(v, 1))}
-          aria-label="Previous month"
-          className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
-        >
-          <CaretLeft size={13} weight="bold" />
-        </button>
-        <span className="text-[13px] font-semibold tracking-tight text-foreground">
+    <div className={cn("w-[340px] p-3 max-md:w-[336px]", className)}>
+      {/* Month header — title on the left, chevrons clustered on the
+          right. Matches the reference layout; reads less like a paged
+          nav, more like a section title with attached navigation. */}
+      <div className="mb-2 flex items-center">
+        <span className="text-[14px] font-semibold tracking-tight text-foreground">
           {format(view, "MMMM yyyy")}
         </span>
-        <button
-          onClick={() => setView((v) => addMonths(v, 1))}
-          aria-label="Next month"
-          className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
-        >
-          <CaretRight size={13} weight="bold" />
-        </button>
+        <div className="ml-auto flex items-center gap-0.5">
+          <button
+            onClick={() => setView((v) => subMonths(v, 1))}
+            aria-label="Previous month"
+            className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
+          >
+            <CaretLeft size={13} weight="bold" />
+          </button>
+          <button
+            onClick={() => setView((v) => addMonths(v, 1))}
+            aria-label="Next month"
+            className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
+          >
+            <CaretRight size={13} weight="bold" />
+          </button>
+        </div>
       </div>
 
-      {/* Weekday labels */}
-      <div className="grid grid-cols-7 gap-0.5">
+      {/* Weekday labels — 3-letter caps, calendar convention. */}
+      <div className="mb-1 grid grid-cols-7">
         {WEEKDAYS.map((d, i) => (
           <div
             key={i}
-            className="grid h-6 place-items-center text-[10.5px] font-medium text-muted-foreground/70"
+            className="grid h-8 place-items-center text-[10.5px] font-semibold tracking-wide text-muted-foreground/70"
           >
             {d}
           </div>
         ))}
       </div>
 
-      {/* Day grid */}
-      <div className="grid grid-cols-7 gap-0.5">
+      {/* Day grid — circular selection state to match the reference's
+          filled blue dot. Cells are 40px tall so the click target is
+          generous and the grid breathes. */}
+      <div className="grid grid-cols-7">
         {days.map((d) => {
           const inMonth = isSameMonth(d, view);
           const isSel = value && isSameDay(d, value);
@@ -149,28 +150,119 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
               onClick={() => select(d)}
               aria-pressed={isSel ? true : undefined}
               className={cn(
-                "focus-ring relative grid h-8 place-items-center rounded-md text-[12.5px] tabular-nums transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.94] max-md:h-11 max-md:text-[14px]",
+                "focus-ring relative grid h-10 place-items-center text-[13px] tabular-nums transition-[color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.94] max-md:h-11 max-md:text-[14px]",
                 !inMonth && "text-muted-foreground/35",
-                inMonth && !isSel && "text-foreground hover:bg-accent/50",
-                isSel &&
-                  "bg-primary font-semibold text-primary-foreground shadow-[0_1px_2px_oklch(0_0_0/0.08),inset_0_1px_0_oklch(1_0_0/0.18)]",
+                inMonth && !isSel && "text-foreground",
                 !isSel && today && "font-semibold text-primary"
               )}
             >
-              {format(d, "d")}
-              {/* "Today" marker — tiny dot tucked under the number, only
-                  visible when this day isn't the selected one (where the
-                  filled cell already announces "now"). */}
+              {/* Inner circle — sized smaller than the cell so the
+                  selected pill reads as a discrete dot, not a tile.
+                  Hover fills it for non-selected days; selected is
+                  always filled blue. */}
+              <span
+                className={cn(
+                  "grid size-9 place-items-center rounded-full transition-colors",
+                  isSel
+                    ? "bg-primary font-semibold text-primary-foreground shadow-[0_1px_2px_oklch(0_0_0/0.1)]"
+                    : "group-hover:bg-accent/50 hover:bg-accent/50"
+                )}
+              >
+                {format(d, "d")}
+              </span>
+              {/* "Today" marker — tiny dot tucked under the number when
+                  the day isn't the selected one (the filled selection
+                  already announces "now" by itself). */}
               {!isSel && today && (
                 <span
                   aria-hidden
-                  className="absolute bottom-[3px] size-[3px] rounded-full bg-primary"
+                  className="absolute bottom-[2px] size-[3px] rounded-full bg-primary"
                 />
               )}
             </button>
           );
         })}
       </div>
+
+      {/* Action rows — mirror the reference. Set due time is wired
+          to the existing due_at timestamp; Add Reminder and Recurring
+          show "coming soon" toasts until the schema lands. */}
+      <div className="mt-2 flex flex-col">
+        {/* Set due time. Click to reveal a native time input inline.
+            Only meaningful when a date is set, so it goes muted when
+            value is null. */}
+        {timeEditing && value ? (
+          <div className="flex items-center gap-2.5 px-1 py-2">
+            <Clock size={15} className="text-muted-foreground" />
+            <input
+              type="time"
+              value={currentTimeStr}
+              onChange={(e) => setTime(e.target.value)}
+              className="focus-ring h-7 flex-1 rounded-md border border-border bg-background px-2 text-[13px] text-foreground outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => setTimeEditing(false)}
+              className="focus-ring rounded-md px-2 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              if (!value) {
+                sileo.info({ title: "Pick a date first" });
+                return;
+              }
+              setTimeEditing(true);
+            }}
+            className="focus-ring flex w-full items-center gap-2.5 rounded-md px-1 py-2 text-left text-[13px] transition-colors hover:bg-foreground/[0.04]"
+          >
+            <Clock size={15} className="text-muted-foreground" />
+            <span className="flex-1 text-muted-foreground">
+              {value && (value.getHours() !== 18 || value.getMinutes() !== 0)
+                ? `Due at ${format(value, "h:mm a")}`
+                : "Set due time"}
+            </span>
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={notYet("Reminders")}
+          className="focus-ring flex w-full items-center gap-2.5 rounded-md px-1 py-2 text-left text-[13px] text-muted-foreground transition-colors hover:bg-foreground/[0.04]"
+        >
+          <Bell size={15} className="text-muted-foreground" />
+          <span className="flex-1">Add Reminder</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={notYet("Recurring tasks")}
+          className="focus-ring flex w-full items-center gap-2.5 rounded-md px-1 py-2 text-left text-[13px] text-muted-foreground transition-colors hover:bg-foreground/[0.04]"
+        >
+          <ArrowsClockwise size={15} className="text-muted-foreground" />
+          <span className="flex-1">Recurring</span>
+        </button>
+      </div>
+
+      {/* Clear all footer — hairline separated, centered text.
+          Matches the reference. Clears the date (which is the only
+          thing the picker carries today). */}
+      <div className="-mx-3 mt-2 h-px bg-border/60" />
+      <button
+        type="button"
+        onClick={() => {
+          onChange(null);
+          setTimeEditing(false);
+        }}
+        disabled={!value}
+        className="focus-ring mt-1 flex w-full items-center justify-center rounded-md py-2 text-[12.5px] font-medium text-foreground transition-colors hover:bg-foreground/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Clear all
+      </button>
     </div>
   );
 }

@@ -140,9 +140,16 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     // Anchor + query state for the autocomplete popover
+    // openAt carries the popover anchor coords plus a placement flag.
+    // When the cursor sits near the bottom of the viewport (e.g. in
+    // the chat panel composer pinned to the modal's bottom), the
+    // popover flips above the cursor instead of below so it doesn't
+    // get clipped by the parent's overflow:hidden.
     const [openAt, setOpenAt] = useState<{
       top: number;
       left: number;
+      placement: "below" | "above";
+      wrapperHeight: number;
     } | null>(null);
     const [query, setQuery] = useState("");
     const [activeIdx, setActiveIdx] = useState(0);
@@ -201,11 +208,17 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
     /** Measure pixel position of the caret using a hidden mirror div.
      *  Returns coordinates relative to the wrapper, which is the popover's
      *  positioning parent. */
-    const measureCaret = (caretIndex: number): { top: number; left: number } => {
+    const measureCaret = (caretIndex: number): {
+      top: number;
+      left: number;
+      placement: "below" | "above";
+      wrapperHeight: number;
+    } => {
       const ta = textareaRef.current;
       const mirror = mirrorRef.current;
       const wrapper = wrapperRef.current;
-      if (!ta || !mirror || !wrapper) return { top: 0, left: 0 };
+      if (!ta || !mirror || !wrapper)
+        return { top: 0, left: 0, placement: "below", wrapperHeight: 0 };
 
       const cs = window.getComputedStyle(ta);
       const props: (keyof CSSStyleDeclaration)[] = [
@@ -251,9 +264,26 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
       // popover under the caret line.
       const lineHeight =
         parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4 || 20;
+      const left = markerRect.left - wrapperRect.left - ta.scrollLeft;
+      // Estimated popover height for placement decision: title row +
+      // up to 8 suggestion rows × ~36px. Tighter than a measured
+      // value but reliable since the popover's max content is known.
+      const estimatedHeight = 24 + 8 * 36;
+      const roomBelow = window.innerHeight - markerRect.bottom;
+      const placement: "below" | "above" =
+        roomBelow < estimatedHeight ? "above" : "below";
+      const cursorRel = markerRect.top - wrapperRect.top - ta.scrollTop;
       return {
-        top: markerRect.top - wrapperRect.top - ta.scrollTop + lineHeight,
-        left: markerRect.left - wrapperRect.left - ta.scrollLeft,
+        top:
+          placement === "below"
+            ? cursorRel + lineHeight
+            : // For "above" placement we still return a top — the
+              // JSX uses `bottom` instead when placement is "above",
+              // computed from wrapperHeight.
+              cursorRel,
+        left,
+        placement,
+        wrapperHeight: wrapperRect.height,
       };
     };
 
@@ -281,7 +311,11 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
       if (!detected) return;
       const before = value.slice(0, detected.start);
       const after = value.slice(caret);
-      const token = `@[${member.name}](${member.id}) `;
+      // Insert the displayed form `@Name ` only. The uuid used to live
+      // here as `@[Name](uuid)` but it leaked through to the textarea
+      // and the rendered comment, which looked broken. The renderer
+      // now resolves @Name against the members list at display time.
+      const token = `@${member.name} `;
       const next = `${before}${token}${after}`;
       setValue(next);
       setOpenAt(null);
@@ -304,10 +338,12 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
       if (ta.selectionStart !== ta.selectionEnd) return false;
       const caret = ta.selectionStart ?? 0;
       if (caret === 0) return false;
-      // Look back for a `@[name](id)` token whose end is at the caret
-      // (or one space before — we insert a trailing space on accept).
+      // Look back for an `@Name ` token whose end is at the caret.
+      // Also matches the legacy `@[Name](id) ` form so backspace
+      // still works on older comments. The trailing space is part
+      // of the token (we insert it on accept).
       const slice = value.slice(Math.max(0, caret - 200), caret);
-      const re = /@\[[^\]]+\]\([^)]+\)\s?$/;
+      const re = /(?:@\[[^\]]+\]\([^)]+\)|@[A-Za-z][\w'.\- ]*)\s?$/;
       const m = slice.match(re);
       if (!m) return false;
       e.preventDefault();
@@ -416,12 +452,21 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
               role="listbox"
               aria-label="Mention suggestions"
               className="absolute z-50 min-w-[240px] max-w-[300px] overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-soft-md ring-1 ring-foreground/5"
-              style={{
-                top: openAt.top + 4,
-                left: Math.max(0, openAt.left),
-              }}
+              style={
+                openAt.placement === "below"
+                  ? {
+                      top: openAt.top + 4,
+                      left: Math.max(0, openAt.left),
+                    }
+                  : {
+                      // Flipped above the caret: anchor the popover's
+                      // bottom edge a few px above the cursor's row.
+                      bottom: openAt.wrapperHeight - openAt.top + 4,
+                      left: Math.max(0, openAt.left),
+                    }
+              }
             >
-              <p className="px-2 pb-1 pt-1.5 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground/70">
+              <p className="px-2 pb-1 pt-1.5 text-[11.5px] font-medium text-muted-foreground/70">
                 {query.trim() === ""
                   ? "Mention someone"
                   : `Matches for “${query}”`}

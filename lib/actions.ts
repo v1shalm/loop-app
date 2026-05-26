@@ -610,7 +610,7 @@ export async function acceptInvite(
 
 export async function createTask(
   input: CreateTaskInput
-): Promise<{ ok?: true; error?: string }> {
+): Promise<{ ok?: true; taskId?: string; error?: string }> {
   const title = input.title?.trim();
   if (!title) return { error: "Task title required." };
 
@@ -657,12 +657,16 @@ export async function createTask(
   };
   if (useSortOrder) insertPayload.sort_order = Date.now();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await supabase.from("tasks").insert(insertPayload as any);
+  const { data, error } = await (supabase as any)
+    .from("tasks")
+    .insert(insertPayload)
+    .select("id")
+    .single();
 
   if (error) return { error: error.message };
 
   revalidateTaskRoutes(input.projectId ?? null);
-  return { ok: true };
+  return { ok: true, taskId: data?.id as string | undefined };
 }
 
 export interface UpdateTaskInput {
@@ -859,6 +863,160 @@ export async function toggleCommentReaction(
   if (ins.error) return { error: ins.error.message };
   revalidateTaskRoutes();
   return { ok: true, added: true };
+}
+
+// ── Task attachments ─────────────────────────────────────────────────────
+
+export interface TaskAttachmentRow {
+  id: string;
+  task_id: string;
+  kind: "file" | "link";
+  url: string;
+  label: string;
+  content_type: string | null;
+  size_bytes: number | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/**
+ * Persist a link attachment on a task. Links cost ~100 bytes in the DB
+ * and zero in storage, so this is the path we nudge users toward for
+ * anything over 1 MB. The URL is stored verbatim; the caller already
+ * normalized it (https:// prefix added if missing).
+ */
+export async function addTaskAttachmentLink(
+  taskId: string,
+  url: string,
+  label: string
+): Promise<{ ok?: true; attachment?: TaskAttachmentRow; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+  const workspace = await getDefaultWorkspace();
+  if (!workspace) return { error: "No workspace." };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await ((supabase as any)
+    .from("task_attachments")
+    .insert({
+      task_id: taskId,
+      workspace_id: workspace.id,
+      kind: "link",
+      url,
+      label,
+      created_by: profile.id,
+    })
+    .select("*")
+    .single());
+
+  if (error) return { error: error.message };
+  revalidateTaskRoutes();
+  return { ok: true, attachment: data as TaskAttachmentRow };
+}
+
+/**
+ * Persist a file attachment on a task. The client has already uploaded
+ * the blob to the `task-attachments` storage bucket; this action just
+ * records the metadata pointing at it. Two-step flow (upload → record)
+ * means we never proxy bytes through the Next server, which would burn
+ * function execution time + memory for no benefit.
+ */
+export async function addTaskAttachmentFile(
+  taskId: string,
+  input: {
+    storagePath: string;
+    label: string;
+    contentType: string;
+    sizeBytes: number;
+  }
+): Promise<{ ok?: true; attachment?: TaskAttachmentRow; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+  const workspace = await getDefaultWorkspace();
+  if (!workspace) return { error: "No workspace." };
+
+  // Compute the public URL so the caller doesn't have to construct it.
+  // Public bucket means no signing — reads are free of egress charges.
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("task-attachments").getPublicUrl(input.storagePath);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await ((supabase as any)
+    .from("task_attachments")
+    .insert({
+      task_id: taskId,
+      workspace_id: workspace.id,
+      kind: "file",
+      url: publicUrl,
+      label: input.label,
+      content_type: input.contentType,
+      size_bytes: input.sizeBytes,
+      created_by: profile.id,
+    })
+    .select("*")
+    .single());
+
+  if (error) return { error: error.message };
+  revalidateTaskRoutes();
+  return { ok: true, attachment: data as TaskAttachmentRow };
+}
+
+/**
+ * Remove an attachment. For files, also deletes the underlying storage
+ * object so we reclaim quota. For links there's no object to delete.
+ *
+ * RLS in 0027 enforces that only the uploader or the task's author /
+ * assignee can call this, so we don't re-check authorization here.
+ */
+export async function removeTaskAttachment(
+  id: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  // Read the row first so we know whether to chase the storage object.
+  // Failing to read = the user isn't allowed to delete it; surface that
+  // up as a clean error.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: row, error: readErr } = await ((supabase as any)
+    .from("task_attachments")
+    .select("kind, url")
+    .eq("id", id)
+    .maybeSingle()) as {
+    data: { kind: "file" | "link"; url: string } | null;
+    error: { message: string } | null;
+  };
+  if (readErr) return { error: readErr.message };
+  if (!row) return { error: "Attachment not found." };
+
+  if (row.kind === "file") {
+    // The `url` column is the public URL. Extract the path inside the
+    // bucket (everything after "/task-attachments/") so we can call
+    // storage.remove() with a clean key.
+    const marker = "/task-attachments/";
+    const idx = row.url.indexOf(marker);
+    if (idx >= 0) {
+      const path = row.url.slice(idx + marker.length);
+      // Best-effort: if the storage delete fails (object already gone,
+      // RLS denial), still proceed to drop the metadata row so the UI
+      // doesn't keep showing a broken attachment.
+      await supabase.storage.from("task-attachments").remove([path]);
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from("task_attachments")
+    .delete()
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidateTaskRoutes();
+  return { ok: true };
 }
 
 // ── Bulk actions ─────────────────────────────────────────────────────────

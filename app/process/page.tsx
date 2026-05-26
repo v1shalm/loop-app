@@ -456,7 +456,7 @@ function DemoAccounts() {
       <div className="mt-5 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-border/60 text-left text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <tr className="border-b border-border/60 text-left text-[12.5px] font-semibold text-muted-foreground">
               <th className="px-5 py-3">Name</th>
               <th className="px-5 py-3">Team</th>
               <th className="px-5 py-3">Role</th>

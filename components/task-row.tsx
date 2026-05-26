@@ -31,8 +31,12 @@ import {
   ChatCircle,
   Check,
   CheckCircle,
+  Copy,
   DotsThree,
+  Eye,
   Flag,
+  Paperclip,
+  Trash,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { deleteTask, setTaskStatus, updateTask } from "@/lib/actions";
@@ -118,6 +122,7 @@ export function TaskRow({
   const due = optDueAt ? new Date(optDueAt) : null;
   const overdue = due ? isPast(due) && !isToday(due) && !done : false;
   const commentCount = task.comments?.[0]?.count ?? 0;
+  const attachmentCount = task.attachments?.[0]?.count ?? 0;
   // Co-assignees beyond the primary. task_assignees includes the
   // primary too, so the "extras" count subtracts 1 for the primary if
   // it's present in the array.
@@ -163,6 +168,17 @@ export function TaskRow({
     const next = new URLSearchParams(params.toString());
     next.set("task", task.id);
     router.push(`${pathname}?${next.toString()}`, { scroll: false });
+  };
+
+  const copyLink = () => {
+    // Deep link to this task: current page + ?task=<id> so the
+    // recipient lands on the same view with the drawer pre-opened.
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}${pathname}?task=${task.id}`;
+    void navigator.clipboard.writeText(url).then(
+      () => sileo.success({ title: "Link copied" }),
+      () => sileo.error({ title: "Couldn't copy link" })
+    );
   };
 
   const reassign = (assigneeId: string) => {
@@ -361,7 +377,7 @@ export function TaskRow({
               "group transition-shadow duration-150 ease-[var(--ease-out)] focus-ring",
               flat
                 ? "bg-transparent px-4 py-3"
-                : "cursor-pointer rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs hover:shadow-soft-sm",
+                : "cursor-pointer rounded-md border border-border/40 bg-card px-4 py-3.5 shadow-soft-sm hover:shadow-soft-md",
               isMobile && "cursor-grab active:cursor-grabbing"
             )}
           >
@@ -393,7 +409,7 @@ export function TaskRow({
                 handling so keyboard users still open the drawer
                 without a separate focus stop on the title. */}
             <div className="min-w-0 flex-1">
-              <span className="block truncate text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2 group-hover:underline">
+              <span className="block line-clamp-2 text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2 group-hover:underline">
                 <MentionText text={task.title} />
               </span>
 
@@ -414,7 +430,7 @@ export function TaskRow({
                     />
                     {PRIORITY_LABELS[priority]}
                   </PopoverTrigger>
-                  <PopoverContent className="w-[180px] gap-0 p-1" align="start">
+                  <PopoverContent className="w-[180px]" align="start">
                     {([1, 2, 3, 4] as Priority[]).map((p) => (
                       <PopoverItem
                         key={p}
@@ -457,7 +473,7 @@ export function TaskRow({
                       {dateText}
                     </span>
                   </PopoverTrigger>
-                  <PopoverContent className="gap-0 p-0" align="start">
+                  <PopoverContent className="w-auto gap-0 p-0" align="start">
                     <DatePicker value={due} onChange={setDue} />
                   </PopoverContent>
                 </Popover>
@@ -485,15 +501,12 @@ export function TaskRow({
                 fixed left-to-right order: comment count → assignee →
                 dots menu. Every slot is always in the DOM; visibility
                 is gated via opacity so the width budget is constant. */}
-            <div className="flex w-[84px] shrink-0 items-center justify-end gap-1.5 self-center">
-              {/* Comment count — always rendered. When there are zero
-                  comments we hide it with opacity-0 + pointer-events-none
-                  rather than `{n > 0 && …}` so the slot keeps its width
-                  and the avatar to the right doesn't shift. */}
+            <div className="flex w-[150px] shrink-0 items-center justify-end gap-3 self-center">
               {/* Comment count — non-interactive label now that the
-                  whole card opens the drawer on click. Keeps the
-                  72px right-cluster width budget intact via
-                  pointer-events-none + opacity-0 when count is 0. */}
+                  whole card opens the drawer on click. Slot kept
+                  constant via pointer-events-none + opacity-0 when
+                  the count is zero, so adding/removing comments
+                  doesn't shift the avatar. */}
               <span
                 aria-label={
                   commentCount > 0
@@ -502,12 +515,31 @@ export function TaskRow({
                 }
                 aria-hidden={commentCount === 0 || undefined}
                 className={cn(
-                  "inline-flex items-center gap-0.5 text-[12px] text-muted-foreground",
+                  "inline-flex items-center gap-1 text-[12px] text-muted-foreground",
                   commentCount > 0 ? "opacity-100" : "pointer-events-none opacity-0"
                 )}
               >
                 <ChatCircle size={12} />
                 <span className="tabular-nums">{commentCount || 0}</span>
+              </span>
+
+              {/* Attachment count — same width-stable pattern as the
+                  comment count. Tells you a task has files/links
+                  without opening the drawer. */}
+              <span
+                aria-label={
+                  attachmentCount > 0
+                    ? `${attachmentCount} ${attachmentCount === 1 ? "attachment" : "attachments"}`
+                    : undefined
+                }
+                aria-hidden={attachmentCount === 0 || undefined}
+                className={cn(
+                  "inline-flex items-center gap-1 text-[12px] text-muted-foreground",
+                  attachmentCount > 0 ? "opacity-100" : "pointer-events-none opacity-0"
+                )}
+              >
+                <Paperclip size={12} />
+                <span className="tabular-nums">{attachmentCount || 0}</span>
               </span>
 
               {/* Assignee — fixed 22px circle. touch-expand bumps the hit
@@ -549,7 +581,7 @@ export function TaskRow({
                     </span>
                   )}
                 </PopoverTrigger>
-                <PopoverContent className="w-[220px] gap-0 p-1" align="end">
+                <PopoverContent className="w-[220px]" align="end">
                   {members.length === 0 ? (
                     <p className="px-2 py-1.5 text-[12px] text-muted-foreground">
                       No teammates yet.
@@ -590,11 +622,17 @@ export function TaskRow({
                 >
                   <DotsThree size={16} weight="bold" />
                 </PopoverTrigger>
-                <PopoverContent className="w-[180px] gap-0 p-1" align="end">
+                <PopoverContent className="w-[200px]" align="end">
                   <PopoverItem onSelect={openDrawer}>
+                    <Eye size={14} weight="regular" className="text-muted-foreground" />
                     <span>Open details</span>
                   </PopoverItem>
+                  <PopoverItem onSelect={copyLink}>
+                    <Copy size={14} weight="regular" className="text-muted-foreground" />
+                    <span>Copy link</span>
+                  </PopoverItem>
                   <PopoverItem onSelect={remove} destructive>
+                    <Trash size={14} className="text-rose-600" />
                     <span>Delete task</span>
                   </PopoverItem>
                 </PopoverContent>
@@ -631,12 +669,12 @@ function PopoverItem({
     <button
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] transition-colors",
         destructive
           ? "text-rose-600 hover:bg-rose-50"
           : selected
           ? "bg-primary/8 font-medium text-primary"
-          : "text-foreground hover:bg-accent/40 hover:text-foreground"
+          : "text-foreground hover:bg-foreground/[0.04] hover:text-foreground"
       )}
     >
       {children}

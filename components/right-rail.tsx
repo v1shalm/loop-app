@@ -58,7 +58,7 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-baseline justify-between">
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+      <h3 className="text-[13px] font-semibold text-foreground/80">
         {title}
       </h3>
       {href && (

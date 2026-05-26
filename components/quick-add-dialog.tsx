@@ -80,7 +80,7 @@ const PRIORITY_OPTIONS: {
 ];
 
 const sectionLabel =
-  "text-[11.5px] font-semibold uppercase tracking-[0.06em] text-foreground/70";
+  "text-[12.5px] font-semibold text-foreground/80";
 
 export function QuickAddDialog({
   open,
@@ -231,7 +231,7 @@ export function QuickAddDialog({
               <span>{project ? project.name : "Inbox"}</span>
               <CaretDown size={11} weight="bold" className="text-muted-foreground/70" />
             </PopoverTrigger>
-            <PopoverContent className="w-[240px] gap-0 p-1" align="start">
+            <PopoverContent className="w-[240px]" align="start">
               <PopoverItem
                 selected={projectId === null}
                 onSelect={() => setProjectId(null)}
@@ -357,7 +357,7 @@ export function QuickAddDialog({
                   ? format(due, "EEE, d MMM")
                   : "Pick date"}
               </PopoverTrigger>
-              <PopoverContent className="gap-0 p-0" align="start">
+              <PopoverContent className="w-auto gap-0 p-0" align="start">
                 <DatePicker value={due} onChange={setDue} />
               </PopoverContent>
             </Popover>
@@ -438,7 +438,7 @@ export function QuickAddDialog({
                 >
                   {overflowCount > 0 ? `+${overflowCount}` : "+"}
                 </PopoverTrigger>
-                <PopoverContent className="w-[240px] gap-0 p-1" align="start">
+                <PopoverContent className="w-[240px]" align="start">
                   {sortedMembers.length === 0 ? (
                     <p className="px-2 py-1 text-[12px] text-muted-foreground">
                       Just you in here for now.
