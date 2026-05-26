@@ -1,21 +1,17 @@
 "use client";
 
+import { useId } from "react";
 import { motion, type Variants } from "motion/react";
 
 /**
  * Animated sidebar nav icons.
  *
- * Phosphor ships each icon as one compound filled path, so its internals
- * can't be moved independently. These are faithful reconstructions of the
- * Phosphor *regular* geometry (256 viewBox, 16-unit stroke, round caps)
- * rebuilt from separate SVG primitives — so the resting shape reads as the
- * exact Phosphor icon, but individual parts can animate: the sun's rays
- * twinkle and the disc rotates, a chevron drops into the inbox tray, the
- * calendar's binding tabs bob while a day cell pops, and the check draws
- * itself on.
- *
- * Hover accents (the dropping chevron, the calendar day) are invisible at
- * rest, so a row that isn't hovered shows the plain Phosphor glyph.
+ * Each icon is built from separate SVG primitives (256 viewBox, 16-unit
+ * stroke — the same relative weight as the HugeIcons set used elsewhere)
+ * so individual parts can animate: the sun's rays twinkle and the disc
+ * rotates, the inbox document's three list lines draw in left-to-right
+ * with a sheen sweep, the calendar's date flips like a slot-machine tick
+ * while the frame squishes, and the check draws itself on.
  *
  * Motion is driven by variant propagation: the NavRow sets
  * `whileHover="hover"` and these elements resolve the "rest" / "hover"
@@ -114,93 +110,177 @@ export function MyDayIcon({ size = 18, active }: IconProps) {
   );
 }
 
-// ── Inbox: tray. Resting = plain Phosphor tray. On hover a chevron drops
-//    into the mouth and the lip gives a small catch-bob. ────────────────
+// ── Inbox: document with three list lines. On hover the lines redraw
+//    left-to-right with a stagger, then a sheen sweeps across them once.
+//    Resting = a plain document/list glyph. ─────────────────────────────
+const INBOX_LINES = [
+  { x: 76, y: 96, w: 104 },
+  { x: 76, y: 128, w: 104 },
+  { x: 76, y: 160, w: 68 },
+] as const;
+
+const inboxLineVariants: Variants = {
+  rest: { scaleX: 1 },
+  hover: (i: number) => ({
+    scaleX: [0, 1],
+    transition: { duration: 0.24, delay: i * 0.08, ease: [0.25, 1, 0.5, 1] },
+  }),
+};
+
 export function InboxIcon({ size = 18, active }: IconProps) {
+  const uid = useId();
+  const clipId = `inbox-lines-${uid}`;
+  const sheenId = `inbox-sheen-${uid}`;
+
   return (
     <motion.svg {...svgBase(size)}>
-      {/* Chevron that drops in — hidden at rest. */}
-      <motion.path
-        d="M104 56 L128 78 L152 56"
-        variants={{
-          rest: { y: 0, opacity: 0 },
-          hover: {
-            y: [-18, 0],
-            opacity: [0, 1, 1, 0],
-            transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-          },
-        }}
+      <defs>
+        <linearGradient id={sheenId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#fff" stopOpacity="0" />
+          <stop offset="0.5" stopColor="#fff" stopOpacity="0.4" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <clipPath id={clipId}>
+          {INBOX_LINES.map((l, i) => (
+            <rect key={i} x={l.x} y={l.y} width={l.w} height="16" rx="8" />
+          ))}
+        </clipPath>
+      </defs>
+
+      {/* Document frame. */}
+      <rect
+        x="40"
+        y="40"
+        width="176"
+        height="176"
+        rx="32"
+        fill={active ? "currentColor" : "none"}
+        fillOpacity={active ? 0.16 : 0}
       />
-      {/* Tray outer frame. */}
-      <rect x="40" y="40" width="176" height="176" rx="14" />
-      {/* Tray mouth — the inner lip with the central dip. Gives a small
-          downward catch-bob on hover, as if receiving the chevron. */}
-      <motion.polyline
-        points="40,152 77,152 96,172 148,172 168,152 216,152"
-        variants={{
-          rest: { y: 0 },
-          hover: {
-            y: [0, 5, 0],
-            transition: { duration: 0.5, delay: 0.16, ease: "easeOut" },
-          },
-        }}
-      />
-      {active && (
-        <path
-          d="M40,152 H77 L96,172 H148 L168,152 H216 V202 a14 14 0 0 1 -14 14 H54 a14 14 0 0 1 -14 -14 Z"
+
+      {/* Three list lines — filled pills so they can be both scaleX-drawn
+          and used as the sheen clip. Each grows from its left edge. */}
+      {INBOX_LINES.map((l, i) => (
+        <motion.rect
+          key={i}
+          x={l.x}
+          y={l.y}
+          width={l.w}
+          height="16"
+          rx="8"
           fill="currentColor"
-          fillOpacity={0.16}
           stroke="none"
+          custom={i}
+          variants={inboxLineVariants}
+          style={{ transformBox: "fill-box", transformOrigin: "0% 50%" }}
         />
-      )}
+      ))}
+
+      {/* Sheen sweep, clipped to the lines, fires once after they draw. */}
+      <g clipPath={`url(#${clipId})`}>
+        <motion.rect
+          x="0"
+          y="84"
+          width="256"
+          height="96"
+          fill={`url(#${sheenId})`}
+          variants={{
+            rest: { x: -256 },
+            hover: {
+              x: [-256, 384],
+              transition: { duration: 0.4, delay: 0.45, ease: "linear" },
+            },
+          }}
+        />
+      </g>
     </motion.svg>
   );
 }
 
-// ── Upcoming: calendar. Binding tabs bob; a day cell pops in on hover
-//    (hidden at rest, so resting = plain blank Phosphor calendar). ──────
+// ── Upcoming: calendar with a date that flips. On hover the current
+//    number slides out left + fades while a fresh one enters from the
+//    right (slot-machine tick), and the frame gives a slight Y squish.
+//    Shows today's date. ────────────────────────────────────────────────
+const numberStyle = {
+  fontSize: 92,
+  fontWeight: 600,
+  fontFamily:
+    "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  fontVariantNumeric: "tabular-nums" as const,
+  textAnchor: "middle" as const,
+  dominantBaseline: "central" as const,
+  fill: "currentColor",
+  stroke: "none",
+};
+
 export function UpcomingIcon({ size = 18, active }: IconProps) {
+  const uid = useId();
+  const bodyClip = `cal-body-${uid}`;
+  const day = String(new Date().getDate());
+
   return (
     <motion.svg {...svgBase(size)}>
-      {/* Binding tabs. */}
-      <motion.line
-        x1="88"
-        y1="28"
-        x2="88"
-        y2="60"
-        variants={{ hover: { y: [0, -7, 0] } }}
-        transition={{ duration: 0.45, ease: "easeOut" }}
-      />
-      <motion.line
-        x1="168"
-        y1="28"
-        x2="168"
-        y2="60"
-        variants={{ hover: { y: [0, -7, 0] } }}
-        transition={{ duration: 0.45, delay: 0.07, ease: "easeOut" }}
-      />
-      {/* Body + header rule. */}
-      <rect x="40" y="56" width="176" height="160" rx="14" />
-      <line x1="40" y1="96" x2="216" y2="96" />
-      {/* Day cell — pops in on hover, hidden at rest unless active. */}
-      <motion.rect
-        x="76"
-        y="124"
-        width="34"
-        height="34"
-        rx="6"
-        fill="currentColor"
-        stroke="none"
-        variants={{
-          rest: { scale: active ? 1 : 0.1, opacity: active ? 0.9 : 0 },
-          hover: {
-            scale: [0.1, 1.18, 1],
-            opacity: [0, 1, 1],
-            transition: { duration: 0.45, delay: 0.12, ease: "easeOut" },
-          },
-        }}
+      <defs>
+        <clipPath id={bodyClip}>
+          <rect x="40" y="56" width="176" height="160" rx="24" />
+        </clipPath>
+      </defs>
+
+      {/* Frame + tabs + header rule. Squishes vertically on hover. */}
+      <motion.g
+        variants={{ hover: { scaleY: [1, 0.92, 1] } }}
+        transition={{ duration: 0.34, times: [0, 0.45, 1], ease: "easeOut" }}
         style={selfOrigin}
-      />
+      >
+        <line x1="96" y1="30" x2="96" y2="60" />
+        <line x1="160" y1="30" x2="160" y2="60" />
+        <rect
+          x="40"
+          y="56"
+          width="176"
+          height="160"
+          rx="24"
+          fill={active ? "currentColor" : "none"}
+          fillOpacity={active ? 0.16 : 0}
+        />
+        <line x1="40" y1="96" x2="216" y2="96" />
+      </motion.g>
+
+      {/* The date — two copies, clipped to the body so they slide in and
+          out through the calendar's edges. At rest only the centred one
+          shows; on hover it ticks left as the next ticks in from right. */}
+      <g clipPath={`url(#${bodyClip})`}>
+        <motion.text
+          x="128"
+          y="160"
+          {...numberStyle}
+          variants={{
+            rest: { x: 0, opacity: 1 },
+            hover: {
+              x: -100,
+              opacity: 0,
+              transition: { duration: 0.18, ease: "easeIn" },
+            },
+          }}
+        >
+          {day}
+        </motion.text>
+        <motion.text
+          x="128"
+          y="160"
+          {...numberStyle}
+          variants={{
+            rest: { x: 100, opacity: 0 },
+            hover: {
+              x: 0,
+              opacity: 1,
+              transition: { duration: 0.18, ease: "easeOut" },
+            },
+          }}
+        >
+          {day}
+        </motion.text>
+      </g>
     </motion.svg>
   );
 }
