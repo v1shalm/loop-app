@@ -165,7 +165,10 @@ export function QuickAddDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[640px] gap-0 p-0 shadow-soft-md sm:rounded-xl"
+        // sm:max-w-[…] (not bare max-w) so it overrides the base
+        // DialogContent's sm:max-w-sm — otherwise the modal was clamped
+        // to 384px on desktop.
+        className="gap-0 p-0 shadow-soft-md sm:max-w-[720px] sm:rounded-xl"
       >
         {/* Header. Lighter than the edit drawer's header. Just a close
             button on the right. Visual hierarchy lives in the title

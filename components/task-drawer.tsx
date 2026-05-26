@@ -367,6 +367,13 @@ function DrawerInner({
     scrollRef.current?.scrollTo({ top: 0 });
   }, [taskId]);
 
+  // The task came back missing — it was just deleted, or the ?task deep
+  // link points at something gone. Don't strand the user on a dead-end
+  // "deleted" screen; quietly dismiss the drawer.
+  useEffect(() => {
+    if (!loading && !task) onClose();
+  }, [loading, task, onClose]);
+
   // Escape to close
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -512,23 +519,9 @@ function DrawerInner({
     return <DrawerSkeleton onClose={onClose} />;
   }
 
-  if (!task) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header onClose={onClose} pending={false} />
-        <div className="grid flex-1 place-items-center text-center text-muted-foreground">
-          <div>
-            <span className="mx-auto grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
-              <Tray size={20} />
-            </span>
-            <p className="mt-3 text-[13.5px]">
-              This task may have been deleted.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Missing task: render nothing — the effect above dismisses the drawer
+  // on the next tick, so we don't flash a "deleted" dead-end.
+  if (!task) return null;
 
   const priorityOpt = PRIORITY_OPTIONS.find((o) => o.p === task.priority)!;
   const due = task.due_at ? new Date(task.due_at) : null;
@@ -745,7 +738,7 @@ function DrawerInner({
             onBlur={saveDescription}
             placeholder="Add a description…"
             minRows={4}
-            className="focus-ring w-full resize-none rounded-lg border border-border/70 bg-foreground/[0.015] px-3.5 py-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors placeholder:text-foreground/45 hover:border-border hover:bg-foreground/[0.03] dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
+            className="focus-ring w-full resize-none rounded-lg border border-border/70 bg-transparent px-3.5 py-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors placeholder:text-foreground/45 hover:border-border"
           />
         </section>
 

@@ -46,6 +46,7 @@ import type { TaskWithRelations } from "@/lib/queries";
 import { useTeamContext } from "@/components/team-provider";
 import { Avatar } from "@/components/avatar";
 import { useOptimisticDeletes } from "@/components/optimistic-deletes";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 type Priority = 1 | 2 | 3 | 4;
 
@@ -97,6 +98,7 @@ function TaskRowInner({
 }) {
   const [done, setDone] = useState(task.status === "done");
   const [pending, startTransition] = useTransition();
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const pathname = usePathname();
   const params = useSearchParams();
   const { members, currentUserId } = useTeamContext();
@@ -238,7 +240,10 @@ function TaskRowInner({
     });
   };
 
-  const remove = () => {
+  // Delete asks first — the menu item opens the destructive confirm
+  // dialog; actuallyRemove runs only after the user confirms.
+  const remove = () => setConfirmDeleteOpen(true);
+  const actuallyRemove = () => {
     // Optimistic: hide the row immediately so the user sees an instant
     // response, then run the server delete in a transition. The
     // AnimatePresence exit animation runs during the server round-trip
@@ -309,6 +314,7 @@ function TaskRowInner({
       : "text-muted-foreground/70";
 
   return (
+    <>
     <AnimatePresence initial={false}>
       {!done && !isOptimisticallyDeleted && (
         <motion.div
@@ -682,6 +688,23 @@ function TaskRowInner({
         </motion.div>
       )}
     </AnimatePresence>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        title="Delete this task?"
+        description={
+          <>
+            <span className="font-medium text-foreground">
+              {task.title || "Untitled task"}
+            </span>{" "}
+            will be permanently deleted. This can&apos;t be undone.
+          </>
+        }
+        confirmLabel="Delete"
+        onConfirm={actuallyRemove}
+      />
+    </>
   );
 }
 
