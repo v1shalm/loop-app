@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { MotionConfig } from "motion/react";
 import { SidebarV2, type SidebarProps } from "@/components/sidebar-v2";
 import { SidebarProvider } from "@/components/sidebar-context";
+import { NotificationsProvider } from "@/components/notifications-context";
+import { NotificationsDrawer } from "@/components/notifications-drawer";
 import { TeamProvider } from "@/components/team-provider";
 import { QuickAddProvider } from "@/components/quick-add-context";
 import { OptimisticDeletesProvider } from "@/components/optimistic-deletes";
@@ -80,6 +82,7 @@ export function AppShell({
     // setting on. Without this they animate the same on every device.
     <MotionConfig reducedMotion="user">
     <SidebarProvider>
+      <NotificationsProvider currentUserId={user.id}>
       <TeamProvider
         members={members}
         projects={projects}
@@ -115,6 +118,13 @@ export function AppShell({
             <main className="flex-1 overflow-y-auto max-md:pb-[calc(env(safe-area-inset-bottom,0px)+64px)] md:pb-28">
               {children}
             </main>
+
+            {/* Notifications drawer — third flex column on desktop.
+                Width animates 0 → 340px via --notif-w when the bell
+                toggles open, naturally pushing the main canvas. On
+                mobile the component returns null and the bell renders
+                a MobileSheet from the topbar instead. */}
+            <NotificationsDrawer />
 
             {/* Mobile shell — every piece is itself `md:hidden`, so on
                 desktop the DOM still renders these elements but they have
@@ -163,6 +173,7 @@ export function AppShell({
           </OptimisticDeletesProvider>
         </QuickAddProvider>
       </TeamProvider>
+      </NotificationsProvider>
     </SidebarProvider>
     </MotionConfig>
   );

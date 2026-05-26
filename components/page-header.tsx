@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "@/components/icons";
-import { NotificationsPopover } from "@/components/notifications-popover";
+import { NotificationsBell } from "@/components/notifications-drawer";
 import { useAppControls } from "@/components/app-controls-context";
 import { useQuickAdd } from "@/components/quick-add-context";
 import { cn } from "@/lib/utils";
@@ -73,13 +73,11 @@ export function PageHeader({
               />
             )}
             <AddTaskTrigger onClick={quickAdd.open} />
-            {/* Notifications: on desktop, the bell lives in the sidebar
-                header next to the collapse icon. On mobile the sidebar
-                is hidden, so the bell stays here and degrades to the
-                MobileSheet branch the component renders for touch. */}
-            <div className="md:hidden">
-              <NotificationsPopover currentUserId={controls.currentUserId} />
-            </div>
+            {/* Notifications. Sits right next to the Add task CTA on
+                every route. Click toggles the slide-in drawer on
+                desktop; on mobile it opens a bottom sheet from the same
+                trigger. */}
+            <NotificationsBell />
           </>
         )}
       </div>

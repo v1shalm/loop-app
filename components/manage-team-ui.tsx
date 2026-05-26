@@ -366,7 +366,7 @@ function MemberList({ members }: { members: TeamMember[] }) {
           <span className="grid size-10 place-items-center rounded-full bg-muted">
             <UsersThree size={18} />
           </span>
-          <p className="mt-3 text-[13px]">Nobody here yet.</p>
+          <p className="mt-3 text-[13px]">No teammates yet.</p>
         </div>
       ) : (
         <ul className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-soft-xs">

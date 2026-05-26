@@ -183,7 +183,16 @@ export function TaskDrawer({
               ease: [0.32, 0.72, 0, 1],
             }}
             className="pointer-events-none absolute left-1/2 top-1/2 hidden w-full -translate-x-1/2 -translate-y-1/2 flex-col px-4 md:flex"
-            style={{ maxHeight: "min(86dvh, 880px)" }}
+            // Modal sizes to the LEFT-SIDE task body content, up to a
+            // cap. The chat panel is decoupled from row height-sizing
+            // (its content is absolute-positioned, see the chat panel
+            // slot below) so adding comments scrolls inside the panel
+            // instead of growing the modal. minHeight gives the modal
+            // visible presence when the task body is sparse.
+            style={{
+              maxHeight: "min(82dvh, 800px)",
+              minHeight: "min(420px, 70dvh)",
+            }}
           >
             <div className="pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-popover shadow-[var(--shadow-soft-xl)]">
               <DrawerInner
@@ -777,24 +786,26 @@ function DrawerInner({
         </div>
         </div>
 
-        {/* Right-side Chat panel. Carries comments out of the body
-            into its own surface so the task details stay focused.
-            Desktop only — onToggleChat is undefined on mobile.
-            CommentsSection in "panel" mode owns its own flex column
-            layout: scrollable feed on top, composer pinned to the
-            bottom. No outer header — the chat-bubble icon in the
-            modal header already labels this surface. */}
+        {/* Right-side Chat panel. The outer slot is a 340px wide
+            position:relative column with NO natural height — its inner
+            content is absolutely positioned so its content height
+            never feeds back into the body-row's height calculation.
+            That decouples the modal's overall height from the number
+            of comments: the modal sizes to the task body on the left,
+            and the comments feed scrolls inside the panel regardless. */}
         {chatOpen && task && (
-          <div className="hidden w-[340px] shrink-0 flex-col border-l border-border/60 bg-popover md:flex">
-            <CommentsSection
-              taskId={task.id}
-              comments={comments}
-              setComments={setComments}
-              currentUser={currentUser}
-              currentUserId={currentUserId}
-              members={members}
-              variant="panel"
-            />
+          <div className="relative hidden w-[340px] shrink-0 border-l border-border/60 bg-popover md:block">
+            <div className="absolute inset-0 flex flex-col">
+              <CommentsSection
+                taskId={task.id}
+                comments={comments}
+                setComments={setComments}
+                currentUser={currentUser}
+                currentUserId={currentUserId}
+                members={members}
+                variant="panel"
+              />
+            </div>
           </div>
         )}
       </div>

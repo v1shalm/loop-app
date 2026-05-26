@@ -82,7 +82,7 @@ function DayColumn({
           Nothing scheduled.
         </p>
       ) : (
-        tasks.map((t) => <TaskRow key={t.id} task={t} />)
+        tasks.map((t) => <TaskRow key={t.id} task={t} compact />)
       )}
     </TaskCardGroup>
   );

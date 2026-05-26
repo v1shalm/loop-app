@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
 import { sileo } from "sileo";
 import {
   ArrowUp,
@@ -78,7 +79,7 @@ function deriveContext(pathname: string, currentUserId: string): Context {
       dueAt: eod.toISOString(),
       assigneeId: currentUserId,
       projectId: null,
-      placeholder: "Add a task. Try \"review designs tomorrow p1\"",
+      placeholder: "Add a task for today",
     };
   }
   if (pathname === "/inbox") {
@@ -86,7 +87,7 @@ function deriveContext(pathname: string, currentUserId: string): Context {
       dueAt: null,
       assigneeId: currentUserId,
       projectId: null,
-      placeholder: "Add to Inbox. Try \"@maya draft post #blog\"",
+      placeholder: "Add to Inbox",
     };
   }
   if (pathname === "/upcoming") {
@@ -94,7 +95,7 @@ function deriveContext(pathname: string, currentUserId: string): Context {
       dueAt: null,
       assigneeId: currentUserId,
       projectId: null,
-      placeholder: "Add an upcoming task. Try \"sync meeting next week\"",
+      placeholder: "Add a task with a date",
     };
   }
   if (pathname.startsWith("/projects/")) {
@@ -103,14 +104,14 @@ function deriveContext(pathname: string, currentUserId: string): Context {
       dueAt: null,
       assigneeId: currentUserId,
       projectId,
-      placeholder: "Add a task. Try \"ship hero copy friday\"",
+      placeholder: "Add a task to this project",
     };
   }
   return {
     dueAt: null,
     assigneeId: currentUserId,
     projectId: null,
-    placeholder: "Add a task…",
+    placeholder: "Add a task",
   };
 }
 
@@ -324,8 +325,11 @@ export function BottomAddTaskBar({
 
   return (
     <div
-      className="pointer-events-none fixed bottom-6 right-0 z-30 hidden flex-col items-center px-4 md:flex"
-      style={{ left: "var(--sidebar-w, 248px)" }}
+      className="pointer-events-none fixed bottom-6 z-30 hidden flex-col items-center px-4 transition-[left,right] duration-300 ease-[var(--ease-out)] md:flex"
+      style={{
+        left: "var(--sidebar-w, 248px)",
+        right: "var(--notif-w, 0px)",
+      }}
     >
       {/* Parse hints: appear above the bar when the parser detected
           a token. Same chip vocabulary as the drawer details, scaled
@@ -372,14 +376,24 @@ export function BottomAddTaskBar({
         </div>
       )}
 
-      <div className="relative w-full max-w-[640px]">
-        {/* Soft radial blue wash behind the pill so it doesn't read
-            as white-on-white. Extends well past the bar's footprint,
-            heavy blur for a fog-of-glow effect rather than a defined
-            halo. pointer-events-none + -z-10 keeps it purely visual. */}
+      <motion.div
+        initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        className="relative w-full max-w-[640px]"
+      >
+        {/* Two halo layers behind the pill. The blue wash gives it
+            personality (and stops the bar reading as white-on-white);
+            the neutral shadow halo is what actually lifts it off the
+            page. Both pointer-events-none + -z-10 so they're purely
+            visual. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -inset-x-24 -inset-y-16 -z-10 rounded-[80px] bg-[radial-gradient(ellipse_at_center,color-mix(in_oklch,var(--primary)_7%,transparent)_0%,color-mix(in_oklch,var(--primary)_3%,transparent)_45%,transparent_70%)] blur-2xl"
+          className="pointer-events-none absolute -inset-x-28 -inset-y-20 -z-10 rounded-[80px] bg-[radial-gradient(ellipse_at_center,color-mix(in_oklch,var(--primary)_10%,transparent)_0%,color-mix(in_oklch,var(--primary)_4%,transparent)_45%,transparent_72%)] blur-2xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-x-10 -inset-y-7 -z-10 rounded-[60px] bg-[radial-gradient(ellipse_at_center,oklch(0_0_0/0.08)_0%,oklch(0_0_0/0.03)_55%,transparent_75%)] blur-xl dark:bg-[radial-gradient(ellipse_at_center,oklch(0_0_0/0.5)_0%,oklch(0_0_0/0.2)_55%,transparent_75%)]"
         />
       <div className="pointer-events-auto flex w-full max-w-[640px] items-center gap-3 rounded-[28px] border-0 bg-popover px-6 py-3.5 shadow-[0_24px_80px_-12px_oklch(0.25_0.06_265_/_0.22),0_8px_24px_-6px_oklch(0.25_0.06_265_/_0.08),0_0_0_1px_oklch(0.25_0.06_265_/_0.04)]">
         {/* + button: opens an attachment-type popover. Each option
@@ -550,7 +564,7 @@ export function BottomAddTaskBar({
           )}
         </button>
       </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

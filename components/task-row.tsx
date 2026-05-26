@@ -82,6 +82,7 @@ const PRIORITY_FLAG: Record<Priority, string> = {
 export function TaskRow({
   task,
   flat,
+  compact,
 }: {
   task: TaskWithRelations;
   /** When true, drops the card chrome (border, shadow, rounded-xl) so
@@ -89,6 +90,10 @@ export function TaskRow({
    *  divider language. Used on the project page where rows are wrapped
    *  in a single table-like card. */
   flat?: boolean;
+  /** For narrow containers (e.g. the Upcoming day columns). Drops the
+   *  fixed 150px right cluster + slot reservation so the title gets the
+   *  room it needs at narrow widths. */
+  compact?: boolean;
 }) {
   const [done, setDone] = useState(task.status === "done");
   const [pending, startTransition] = useTransition();
@@ -409,11 +414,20 @@ export function TaskRow({
                 handling so keyboard users still open the drawer
                 without a separate focus stop on the title. */}
             <div className="min-w-0 flex-1">
-              <span className="block line-clamp-2 text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2 group-hover:underline">
+              <span className="line-clamp-2 text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2 [overflow-wrap:anywhere] group-hover:underline">
                 <MentionText text={task.title} />
               </span>
 
-              <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px]">
+              <div
+                className={cn(
+                  "mt-1 flex items-center gap-x-2.5 gap-y-1 text-[11px]",
+                  // Compact (Upcoming day columns) keeps priority + date on
+                  // one row so they read as a single meta line. Default
+                  // mode wraps so longer date strings + author chip don't
+                  // overflow.
+                  compact ? "flex-nowrap" : "flex-wrap"
+                )}
+              >
                 {/* Priority — 5px colored dot + tertiary text label */}
                 <Popover>
                   <PopoverTrigger
@@ -465,9 +479,11 @@ export function TaskRow({
                     {/* Server and client may compute "Today" vs "Tomorrow"
                         differently when the user's clock crosses midnight
                         local but the server is still on UTC. Suppress the
-                        hydration warning; the client-rendered value wins. */}
+                        hydration warning; the client-rendered value wins.
+                        whitespace-nowrap keeps "Today, 6:00 PM" on one
+                        line inside narrow compact-mode rows. */}
                     <span
-                      className="tabular-nums"
+                      className="whitespace-nowrap tabular-nums"
                       suppressHydrationWarning
                     >
                       {dateText}
@@ -495,52 +511,64 @@ export function TaskRow({
               </div>
             </div>
 
-            {/* Right cluster — fixed-width slot reservation so the
-                title + meta on the left never reflow when the comment
-                count appears or disappears. The three slots render in a
-                fixed left-to-right order: comment count → assignee →
-                dots menu. Every slot is always in the DOM; visibility
-                is gated via opacity so the width budget is constant. */}
-            <div className="flex w-[150px] shrink-0 items-center justify-end gap-3 self-center">
-              {/* Comment count — non-interactive label now that the
-                  whole card opens the drawer on click. Slot kept
-                  constant via pointer-events-none + opacity-0 when
-                  the count is zero, so adding/removing comments
-                  doesn't shift the avatar. */}
-              <span
-                aria-label={
-                  commentCount > 0
-                    ? `${commentCount} ${commentCount === 1 ? "comment" : "comments"}`
-                    : undefined
-                }
-                aria-hidden={commentCount === 0 || undefined}
-                className={cn(
-                  "inline-flex items-center gap-1 text-[12px] text-muted-foreground",
-                  commentCount > 0 ? "opacity-100" : "pointer-events-none opacity-0"
-                )}
-              >
-                <ChatCircle size={12} />
-                <span className="tabular-nums">{commentCount || 0}</span>
-              </span>
+            {/* Right cluster. Default mode reserves a fixed 150px slot
+                with always-rendered counts (opacity-gated) so width never
+                shifts. Compact mode (narrow columns like Upcoming) drops
+                the reservation: counts only render when non-zero, and the
+                cluster sizes to its content so the title gets the room. */}
+            <div
+              className={cn(
+                "flex shrink-0 items-center justify-end",
+                // Compact: align with the title (top of the row) so the
+                // avatar + dots sit on the same line as the task name,
+                // matching the reference for narrow day-column cards.
+                // Default mode keeps the cluster vertically centered with
+                // the title+meta block.
+                compact
+                  ? "mt-0.5 w-auto gap-2 self-start"
+                  : "w-[150px] gap-3 self-center"
+              )}
+            >
+              {/* Comment count. In default mode the slot is reserved
+                  (pointer-events-none + opacity-0 when zero) so adding
+                  a comment doesn't shift the avatar. In compact mode
+                  the badge only renders when count > 0. */}
+              {(compact ? commentCount > 0 : true) && (
+                <span
+                  aria-label={
+                    commentCount > 0
+                      ? `${commentCount} ${commentCount === 1 ? "comment" : "comments"}`
+                      : undefined
+                  }
+                  aria-hidden={commentCount === 0 || undefined}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[12px] text-muted-foreground",
+                    commentCount > 0 ? "opacity-100" : "pointer-events-none opacity-0"
+                  )}
+                >
+                  <ChatCircle size={12} />
+                  <span className="tabular-nums">{commentCount || 0}</span>
+                </span>
+              )}
 
-              {/* Attachment count — same width-stable pattern as the
-                  comment count. Tells you a task has files/links
-                  without opening the drawer. */}
-              <span
-                aria-label={
-                  attachmentCount > 0
-                    ? `${attachmentCount} ${attachmentCount === 1 ? "attachment" : "attachments"}`
-                    : undefined
-                }
-                aria-hidden={attachmentCount === 0 || undefined}
-                className={cn(
-                  "inline-flex items-center gap-1 text-[12px] text-muted-foreground",
-                  attachmentCount > 0 ? "opacity-100" : "pointer-events-none opacity-0"
-                )}
-              >
-                <Paperclip size={12} />
-                <span className="tabular-nums">{attachmentCount || 0}</span>
-              </span>
+              {/* Attachment count. Same pattern as comment count. */}
+              {(compact ? attachmentCount > 0 : true) && (
+                <span
+                  aria-label={
+                    attachmentCount > 0
+                      ? `${attachmentCount} ${attachmentCount === 1 ? "attachment" : "attachments"}`
+                      : undefined
+                  }
+                  aria-hidden={attachmentCount === 0 || undefined}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[12px] text-muted-foreground",
+                    attachmentCount > 0 ? "opacity-100" : "pointer-events-none opacity-0"
+                  )}
+                >
+                  <Paperclip size={12} />
+                  <span className="tabular-nums">{attachmentCount || 0}</span>
+                </span>
+              )}
 
               {/* Assignee — fixed 22px circle. touch-expand bumps the hit
                   area for mobile without changing the visible size, so

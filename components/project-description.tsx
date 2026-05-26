@@ -45,7 +45,7 @@ export function ProjectDescription({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={save}
-        placeholder="Add a short description so this project tells its own story on the index..."
+        placeholder="Add a description"
         minRows={2}
         // Disable native spellcheck + Grammarly so the description
         // reads as a plain paragraph at rest. Words like "Supabase"

@@ -26,7 +26,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { NotificationsPopover } from "@/components/notifications-popover";
 import { ProfileMenu } from "@/components/profile-menu";
 import { projectColor } from "@/components/project-dot";
 import { AddProjectPopover } from "@/components/add-project-popover";
@@ -194,7 +193,6 @@ export function SidebarV2({
           >
             <MagnifyingGlass size={17} />
           </button>
-          <NotificationsPopover currentUserId={user.id} className="size-7" />
           <button
             onClick={toggle}
             aria-label="Collapse sidebar"
@@ -374,9 +372,9 @@ function SidebarRail({
 
   return (
     <aside className="flex h-full w-[64px] shrink-0 flex-col items-center border-r border-border/40 bg-white dark:bg-[oklch(0.185_0.005_250)]">
-      {/* Utility cluster: collapse toggle, search, bell.
-          Same three icons as the expanded sidebar's top-right
-          cluster, just stacked vertically. */}
+      {/* Utility cluster: collapse toggle + search. The bell used to
+          live here too; it now sits in the topbar next to the Add task
+          CTA so the inbox is a route-agnostic primary affordance. */}
       <div className="flex flex-col items-center gap-0.5 pt-3">
         <RailButton label="Expand sidebar" side="right" onClick={toggle}>
           <SidebarSimple size={18} />
@@ -384,12 +382,6 @@ function SidebarRail({
         <RailButton label="Search" side="right" onClick={onOpenSearch}>
           <MagnifyingGlass size={18} />
         </RailButton>
-        <Tooltip>
-          <TooltipTrigger
-            render={<NotificationsPopover currentUserId={user.id} className="size-9" />}
-          />
-          <TooltipContent side="right">Notifications</TooltipContent>
-        </Tooltip>
       </div>
 
       {/* Divider — same hairline as the expanded sidebar's section

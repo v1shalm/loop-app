@@ -38,8 +38,8 @@ export default async function CompletedPage() {
         {visible.length === 0 ? (
           <EmptyState
             icon={<Check size={32} weight="fill" />}
-            title="Nothing here yet"
-            hint="Tasks you mark complete will collect here, grouped by the day you finished them."
+            title="Nothing completed yet"
+            hint="Tasks you finish land here, grouped by the day."
           />
         ) : (
           visible.map((g) => (

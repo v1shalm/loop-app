@@ -441,7 +441,7 @@ export function QuickAddDialog({
                 <PopoverContent className="w-[240px]" align="start">
                   {sortedMembers.length === 0 ? (
                     <p className="px-2 py-1 text-[12px] text-muted-foreground">
-                      Just you in here for now.
+                      Just you for now.
                     </p>
                   ) : (
                     sortedMembers.map((m) => (
@@ -480,7 +480,7 @@ export function QuickAddDialog({
             onClick={() => onOpenChange(false)}
             className="focus-ring rounded-md px-3 py-2 text-[13.5px] font-medium text-foreground transition-colors hover:bg-accent/40"
           >
-            Nevermind
+            Cancel
           </button>
           <button
             onClick={submit}

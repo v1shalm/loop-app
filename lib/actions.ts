@@ -1508,3 +1508,25 @@ export async function setMyStatus(
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+/**
+ * Bumps the current user's notifications read cursor to now(). Everything
+ * created after this point reads as "unread" until they open the inbox
+ * again. Backed by a security-definer RPC so the client never has to
+ * send the user id.
+ */
+export async function markNotificationsRead(): Promise<{
+  ok?: true;
+  readAt?: string;
+  error?: string;
+}> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)(
+    "mark_notifications_read"
+  );
+  if (error) return { error: error.message };
+  return { ok: true, readAt: typeof data === "string" ? data : undefined };
+}
