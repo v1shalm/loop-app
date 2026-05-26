@@ -109,7 +109,6 @@ export function AppShell({
                 projects={projects}
                 members={members}
                 counts={counts}
-                onOpenQuickAdd={() => setQuickOpen(true)}
                 onOpenSearch={() => setSearchOpen(true)}
               />
             </div>

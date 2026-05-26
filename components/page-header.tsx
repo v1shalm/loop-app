@@ -72,7 +72,7 @@ export function PageHeader({
                 className="mx-1 h-4 w-px shrink-0 bg-border/70 max-md:hidden"
               />
             )}
-            <QuickAddTrigger onClick={quickAdd.open} />
+            <AddTaskTrigger onClick={quickAdd.open} />
             {/* Notifications: on desktop, the bell lives in the sidebar
                 header next to the collapse icon. On mobile the sidebar
                 is hidden, so the bell stays here and degrades to the
@@ -88,22 +88,23 @@ export function PageHeader({
 }
 
 /**
- * Desktop-only Quick Add trigger. The sidebar still owns the brand CTA
- * and mobile has the FAB; this is a second, closer-to-hand entry point
- * for users whose attention is on a list rather than the sidebar.
- * Uses the secondary CTA shadow recipe so it reads as an action
- * without competing with the sidebar's primary pink button.
+ * Desktop-only Add task CTA. The sidebar used to own the brand
+ * pink button at the bottom of the rail; it now lives here so the
+ * primary affordance sits next to the page context the user is
+ * actually looking at. Mobile keeps the FAB. Uses the full
+ * --shadow-cta recipe so it reads as the page's most prominent
+ * action rather than a soft secondary button.
  */
-function QuickAddTrigger({ onClick }: { onClick: () => void }) {
+function AddTaskTrigger({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label="Quick add task"
-      className="focus-ring hidden h-8 items-center gap-1.5 rounded-md border border-border/70 bg-card px-2.5 text-[12.5px] font-medium text-foreground shadow-[var(--shadow-cta-secondary)] transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 active:scale-[0.985] md:inline-flex"
+      aria-label="Add task"
+      className="focus-ring surface-brand surface-brand-hover hidden h-8 items-center gap-1.5 rounded-md px-3 text-[12.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] md:inline-flex"
     >
-      <Plus size={13} weight="bold" className="text-muted-foreground" />
-      <span>Quick add</span>
+      <Plus size={13} weight="bold" />
+      <span>Add task</span>
     </button>
   );
 }

@@ -11,7 +11,6 @@ import {
   Check,
   Crosshair,
   MagnifyingGlass,
-  Plus,
   PushPin,
   SidebarSimple,
   Tray,
@@ -52,7 +51,6 @@ export interface SidebarProps {
   projects: Project[];
   members: MemberPulse[];
   counts: SidebarCounts;
-  onOpenQuickAdd?: () => void;
   onOpenSearch?: () => void;
 }
 
@@ -82,7 +80,6 @@ export function Sidebar({
   teamRole,
   projects,
   counts,
-  onOpenQuickAdd,
   onOpenSearch,
 }: SidebarProps) {
   const pathname = usePathname();
@@ -301,34 +298,6 @@ export function Sidebar({
             ));
           })()}
         </Section>
-      </div>
-
-      {/* ── Add task dock — anchored above the profile ───────── */}
-      <div
-        className={cn(
-          collapsed ? "flex justify-center px-2 pb-2" : "px-3 pb-3"
-        )}
-      >
-        {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger
-              onClick={onOpenQuickAdd}
-              aria-label="Add task"
-              className="focus-ring surface-brand surface-brand-hover grid size-9 place-items-center rounded-md text-white shadow-soft-xs transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.94]"
-            >
-              <Plus size={16} weight="bold" />
-            </TooltipTrigger>
-            <TooltipContent side="right">Add task</TooltipContent>
-          </Tooltip>
-        ) : (
-          <button
-            onClick={onOpenQuickAdd}
-            className="focus-ring surface-brand surface-brand-hover flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-[13.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
-          >
-            <Plus size={15} weight="bold" />
-            Add task
-          </button>
-        )}
       </div>
 
       {/* ── Profile dock ──────────────────────────────────────── */}
