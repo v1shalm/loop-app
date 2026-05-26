@@ -347,21 +347,33 @@ export function TaskRow({
                 bounce: 0.18,
               });
             }}
+            onClick={openDrawer}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openDrawer();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label={`Open ${task.title}`}
             className={cn(
-              "group transition-shadow duration-150 ease-[var(--ease-out)]",
+              "group transition-shadow duration-150 ease-[var(--ease-out)] focus-ring",
               flat
                 ? "bg-transparent px-4 py-3"
-                : "rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs hover:shadow-soft-sm",
+                : "cursor-pointer rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs hover:shadow-soft-sm",
               isMobile && "cursor-grab active:cursor-grabbing"
             )}
           >
           <div className="flex items-start gap-3">
             {/* Completion checkbox — single purpose, always marks
-                complete. The list-level bulk-select feature was
-                dropped, so every interactive control here does one
-                thing now. */}
+                complete. stopPropagation so the click doesn't bubble
+                up to the article and also fire the drawer open. */}
             <button
-              onClick={toggle}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggle();
+              }}
               disabled={pending}
               aria-label={`Mark "${task.title}" complete`}
               className={cn(
@@ -375,23 +387,22 @@ export function TaskRow({
               />
             </button>
 
-            {/* Title + meta row */}
+            {/* Title + meta row. The title is plain text — the whole
+                card is the click target now, no inner button needed.
+                The article carries role="button" + tabIndex + Enter
+                handling so keyboard users still open the drawer
+                without a separate focus stop on the title. */}
             <div className="min-w-0 flex-1">
-              <button
-                onClick={openDrawer}
-                aria-label={`Open ${task.title}`}
-                className="focus-ring group/title flex w-full min-w-0 items-center text-left"
-              >
-                <span className="truncate text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2 group-hover/title:underline">
-                  <MentionText text={task.title} />
-                </span>
-              </button>
+              <span className="block truncate text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2 group-hover:underline">
+                <MentionText text={task.title} />
+              </span>
 
               <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px]">
                 {/* Priority — 5px colored dot + tertiary text label */}
                 <Popover>
                   <PopoverTrigger
                     aria-label="Priority"
+                    onClick={(e) => e.stopPropagation()}
                     className="focus-ring -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-muted-foreground transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground"
                   >
                     <span
@@ -428,6 +439,7 @@ export function TaskRow({
                 <Popover>
                   <PopoverTrigger
                     aria-label="Due date"
+                    onClick={(e) => e.stopPropagation()}
                     className={cn(
                       "focus-ring -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40",
                       dateTone
@@ -473,31 +485,30 @@ export function TaskRow({
                 fixed left-to-right order: comment count → assignee →
                 dots menu. Every slot is always in the DOM; visibility
                 is gated via opacity so the width budget is constant. */}
-            <div className="flex w-[72px] shrink-0 items-center justify-end gap-2 self-center">
+            <div className="flex w-[84px] shrink-0 items-center justify-end gap-1.5 self-center">
               {/* Comment count — always rendered. When there are zero
                   comments we hide it with opacity-0 + pointer-events-none
                   rather than `{n > 0 && …}` so the slot keeps its width
                   and the avatar to the right doesn't shift. */}
-              <button
-                type="button"
-                onClick={openDrawer}
+              {/* Comment count — non-interactive label now that the
+                  whole card opens the drawer on click. Keeps the
+                  72px right-cluster width budget intact via
+                  pointer-events-none + opacity-0 when count is 0. */}
+              <span
                 aria-label={
                   commentCount > 0
                     ? `${commentCount} ${commentCount === 1 ? "comment" : "comments"}`
                     : undefined
                 }
                 aria-hidden={commentCount === 0 || undefined}
-                tabIndex={commentCount === 0 ? -1 : undefined}
                 className={cn(
-                  "focus-ring inline-flex items-center gap-0.5 text-[12px] text-muted-foreground transition-opacity hover:text-foreground",
-                  commentCount > 0
-                    ? "opacity-100"
-                    : "pointer-events-none opacity-0"
+                  "inline-flex items-center gap-0.5 text-[12px] text-muted-foreground",
+                  commentCount > 0 ? "opacity-100" : "pointer-events-none opacity-0"
                 )}
               >
                 <ChatCircle size={12} />
                 <span className="tabular-nums">{commentCount || 0}</span>
-              </button>
+              </span>
 
               {/* Assignee — fixed 22px circle. touch-expand bumps the hit
                   area for mobile without changing the visible size, so
@@ -514,6 +525,7 @@ export function TaskRow({
                       ? `Assignee and ${extraAssigneeCount} more`
                       : "Assignee"
                   }
+                  onClick={(e) => e.stopPropagation()}
                   className="focus-ring touch-expand relative grid size-[22px] shrink-0 place-items-center rounded-full transition-[filter] hover:brightness-95"
                 >
                   {optAssignee ? (
@@ -573,9 +585,10 @@ export function TaskRow({
               <Popover>
                 <PopoverTrigger
                   aria-label="More actions"
-                  className="focus-ring touch-expand grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-[background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground"
+                  onClick={(e) => e.stopPropagation()}
+                  className="focus-ring touch-expand grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-[background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground"
                 >
-                  <DotsThree size={14} weight="bold" />
+                  <DotsThree size={16} weight="bold" />
                 </PopoverTrigger>
                 <PopoverContent className="w-[180px] gap-0 p-1" align="end">
                   <PopoverItem onSelect={openDrawer}>
