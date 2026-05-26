@@ -27,7 +27,7 @@ function getPatch(): AudioPatch | null {
  *   uncomplete  send, low + half volume — soft "tuck back" reverse
  *   streak      success arpeggio (root / third / fifth) at +volume
  *   reaction    send, very high + half volume — bright pop
- *   dropped     send, low + low volume — quiet "settle" thud
+ *   dropped     send ×2, high-then-mid detune — tactile dial detent click
  *   pin         send, sparkly high + low volume — crisp click
  *   deleted     send, deep down-shift + low volume — "tucked away forever"
  *   error       error
@@ -79,8 +79,15 @@ export function play(name: SoundName, ...args: unknown[]): void {
       return;
 
     case "dropped":
-      // Soft thud on drag release — low detune, quiet.
-      p.play("send", { detune: -240, volume: 0.4 });
+      // Tactile dial-click on drop. Two send-patch hits layered ~40ms
+      // apart: a bright high "tick" followed by a softer mid "settle,"
+      // so the release lands like a knob clicking into its next detent
+      // instead of a soft thud disappearing into the carpet.
+      p.play("send", { detune: 340, volume: 0.6 });
+      setTimeout(
+        () => p.play("send", { detune: 160, volume: 0.32 }),
+        42
+      );
       return;
 
     case "pin":
