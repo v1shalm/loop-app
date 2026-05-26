@@ -91,6 +91,18 @@
     0 1px 1.5px oklch(0 0 0 / 0.12),
     0 3px 6px -1px oklch(0 0 0 / 0.14);
 
+  /* Success CTA — same tactile bevel as the brand CTA, tinted to the
+     emerald used for completion across the app (drawer Mark complete,
+     row checkbox done state, completed-today rows). Mirrors the brand
+     recipe layer-for-layer so the green primary button has the same
+     three-dimensional read as the pink one. */
+  --shadow-cta-success:
+    inset 0 1px 0 oklch(1 0 0 / 0.38),
+    inset 0 -1px 0 oklch(0 0 0 / 0.18),
+    0 0 0 1px color-mix(in oklch, oklch(0.55 0.17 158) 75%, black),
+    0 1px 1.5px oklch(0 0 0 / 0.12),
+    0 3px 6px -1px oklch(0 0 0 / 0.14);
+
   /* Secondary CTA — same tactile bevel pattern as primary but on a
      neutral card surface. Use for "Cancel" / "Snooze" / dialog
      dismissals so the secondary button isn't just a flat outline. */

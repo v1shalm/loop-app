@@ -155,7 +155,7 @@ export function TaskDrawer({
             }}
             className="pointer-events-none absolute inset-y-3 right-3 hidden w-full max-w-[480px] flex-col md:flex"
           >
-            <div className="pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-popover shadow-[0_24px_64px_-12px_rgba(15,23,42,0.32),0_8px_16px_-8px_rgba(15,23,42,0.18)]">
+            <div className="pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-popover shadow-[var(--shadow-soft-xl)]">
               <DrawerInner
                 taskId={taskId}
                 projects={projects}
@@ -191,7 +191,7 @@ export function TaskDrawer({
             }}
             className="absolute inset-x-0 bottom-0 top-14 flex flex-col md:hidden"
           >
-            <div className="flex h-full flex-col overflow-hidden rounded-t-2xl border-t border-border/60 bg-popover shadow-[0_-12px_40px_-12px_rgba(15,23,42,0.32)]">
+            <div className="flex h-full flex-col overflow-hidden rounded-t-2xl border-t border-border/60 bg-popover shadow-[var(--shadow-soft-xl)]">
               {/* Drag handle — the ONLY surface that starts the drag.
                   Touch-action: none here prevents the browser's vertical
                   scroll from intercepting; the rest of the sheet keeps
@@ -895,8 +895,8 @@ function DrawerFooter({
         className={cn(
           "focus-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md text-[13.5px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100",
           done
-            ? "border border-border bg-card text-foreground hover:bg-accent/40"
-            : "bg-emerald-600 text-white shadow-[0_1px_2px_oklch(0_0_0/0.08),inset_0_1px_0_oklch(1_0_0/0.18)] hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+            ? "border border-border bg-card text-foreground shadow-[var(--shadow-cta-secondary)] hover:bg-accent/40"
+            : "bg-emerald-600 text-white shadow-[var(--shadow-cta-success)] hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
         )}
       >
         <CheckCircle
