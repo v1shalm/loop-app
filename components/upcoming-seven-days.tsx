@@ -41,16 +41,21 @@ export function UpcomingSevenDays({
     return buckets;
   }, [today, tasks]);
 
+  // One clean horizontal strip that scrolls, matching the projects
+  // board. The previous flex-wrap packed the seven fixed-width columns
+  // into an uneven multi-row grid (3 + 3 + 1) that read as broken.
   return (
-    <div className="flex flex-wrap items-start gap-x-5 gap-y-6">
-      {columns.map((col) => (
-        <DayColumn
-          key={col.date.toISOString()}
-          date={col.date}
-          tasks={col.tasks}
-          isToday={isSameDay(col.date, today)}
-        />
-      ))}
+    <div className="-mx-8 overflow-x-auto px-8 pb-2">
+      <div className="flex min-w-max items-start gap-5">
+        {columns.map((col) => (
+          <DayColumn
+            key={col.date.toISOString()}
+            date={col.date}
+            tasks={col.tasks}
+            isToday={isSameDay(col.date, today)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
