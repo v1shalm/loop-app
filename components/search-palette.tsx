@@ -225,7 +225,11 @@ export function SearchPalette({
     } else if (row.kind === "task") {
       const next = new URLSearchParams(params.toString());
       next.set("task", row.id);
-      router.push(`${pathname}?${next.toString()}`, { scroll: false });
+      // Soft URL sync via the history API skips the route's RSC refetch
+      // that router.push would trigger — no server component reads
+      // ?task, so the refetch was wasted time. Drawer reacts via
+      // useSearchParams.
+      window.history.pushState(null, "", `${pathname}?${next.toString()}`);
     } else if (row.kind === "project") {
       router.push(`/projects/${row.id}`);
     } else if (row.kind === "person") {

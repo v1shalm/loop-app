@@ -92,7 +92,11 @@ export function RealtimeBridge({
 
   const openTaskAction = (taskId: string) => ({
     title: "View",
-    onClick: () => navRef.current.router.push(taskUrl(taskId)),
+    onClick: () => {
+      // history.pushState integrates with useSearchParams and skips the
+      // RSC refetch router.push would trigger for the same ?task swap.
+      window.history.pushState(null, "", taskUrl(taskId));
+    },
   });
 
   const wasRecentlyToasted = (taskId: string): boolean => {

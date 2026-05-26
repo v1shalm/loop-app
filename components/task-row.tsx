@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState, useTransition } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   animate,
   motion,
@@ -97,7 +97,6 @@ function TaskRowInner({
 }) {
   const [done, setDone] = useState(task.status === "done");
   const [pending, startTransition] = useTransition();
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const { members, currentUserId } = useTeamContext();
@@ -172,7 +171,11 @@ function TaskRowInner({
   const openDrawer = () => {
     const next = new URLSearchParams(params.toString());
     next.set("task", task.id);
-    router.push(`${pathname}?${next.toString()}`, { scroll: false });
+    // history.pushState updates the URL without a Next router push.
+    // No server component on these routes reads ?task, so the router
+    // push would just refetch the RSC payload for nothing and stall
+    // the click. useSearchParams in the drawer picks up the change.
+    window.history.pushState(null, "", `${pathname}?${next.toString()}`);
   };
 
   const copyLink = () => {

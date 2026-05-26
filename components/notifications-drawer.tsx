@@ -159,18 +159,26 @@ function NotificationRow({
   const isNew =
     !!readAt && new Date(item.at).getTime() > new Date(readAt).getTime();
 
-  const href = (() => {
-    const base =
-      pathname && pathname.length > 1
-        ? pathname
-        : item.projectId
-          ? `/projects/${item.projectId}`
-          : "/my-tasks";
-    return `${base}?task=${item.taskId}`;
-  })();
+  const base =
+    pathname && pathname.length > 1
+      ? pathname
+      : item.projectId
+        ? `/projects/${item.projectId}`
+        : "/my-tasks";
+  const href = `${base}?task=${item.taskId}`;
 
   const onClick = () => {
-    router.push(href, { scroll: false });
+    // Same-route case: just sync the URL via the native history API
+    // and let the drawer react to the search-param change. router.push
+    // would refetch the route's RSC payload here, but no server
+    // component on these pages reads ?task — so the refetch is dead
+    // weight, and on a heavy page it stalls the click by hundreds of
+    // ms. Cross-route falls back to the router so layout segments swap.
+    if (base === pathname) {
+      window.history.pushState(null, "", href);
+    } else {
+      router.push(href, { scroll: false });
+    }
     onClose();
   };
 

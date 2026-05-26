@@ -10,7 +10,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { format, isPast, isToday } from "date-fns";
@@ -110,7 +110,6 @@ export function TaskDrawer({
   currentUserId: string;
 }) {
   const params = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const taskId = params.get("task");
   const [mounted, setMounted] = useState(false);
@@ -130,7 +129,12 @@ export function TaskDrawer({
     const next = new URLSearchParams(params.toString());
     next.delete("task");
     const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    // history.replaceState updates the URL without a Next router push.
+    // No server component on these routes reads ?task, so router.replace
+    // would refetch the route's RSC payload for nothing. useSearchParams
+    // (and the AnimatePresence on taskId) picks up the change.
+    const href = qs ? `${pathname}?${qs}` : (pathname ?? "/");
+    window.history.replaceState(null, "", href);
   };
 
   if (!mounted) return null;
