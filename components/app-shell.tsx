@@ -7,8 +7,6 @@ import { Sidebar, type SidebarProps } from "@/components/sidebar";
 import { SidebarProvider } from "@/components/sidebar-context";
 import { TeamProvider } from "@/components/team-provider";
 import { QuickAddProvider } from "@/components/quick-add-context";
-import { BulkSelectionProvider } from "@/components/bulk-selection";
-import { BulkActionBar } from "@/components/bulk-action-bar";
 import { OptimisticDeletesProvider } from "@/components/optimistic-deletes";
 import { AppControlsProvider } from "@/components/app-controls-context";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
@@ -87,7 +85,6 @@ export function AppShell({
         currentUserId={user.id}
       >
         <QuickAddProvider open={() => setQuickOpen(true)}>
-         <BulkSelectionProvider>
           <OptimisticDeletesProvider>
           <AppControlsProvider
             value={{
@@ -153,11 +150,9 @@ export function AppShell({
             {workspace && (
               <RealtimeBridge userId={user.id} workspaceId={workspace.id} />
             )}
-            <BulkActionBar members={members} />
           </div>
           </AppControlsProvider>
           </OptimisticDeletesProvider>
-         </BulkSelectionProvider>
         </QuickAddProvider>
       </TeamProvider>
     </SidebarProvider>

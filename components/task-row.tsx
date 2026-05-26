@@ -41,7 +41,6 @@ import { MentionText } from "@/components/mention-text";
 import type { TaskWithRelations } from "@/lib/queries";
 import { useTeamContext } from "@/components/team-provider";
 import { Avatar } from "@/components/avatar";
-import { useBulkSelection } from "@/components/bulk-selection";
 import { useOptimisticDeletes } from "@/components/optimistic-deletes";
 
 type Priority = 1 | 2 | 3 | 4;
@@ -99,18 +98,11 @@ export function TaskRow({
   const dragX = useMotionValue(0);
   const completeOpacity = useTransform(dragX, [0, 60, 100], [0, 0.7, 1]);
   const rescheduleOpacity = useTransform(dragX, [-100, -60, 0], [1, 0.7, 0]);
-  const {
-    mode: selectionMode,
-    ids: selectedIds,
-    toggle: toggleSelection,
-    setMode: setSelectionMode,
-  } = useBulkSelection();
   // Shared optimistic-delete store. Lets the drawer's "Delete task"
   // also hide this row instantly (without the drawer, the row would
   // hang around until the server revalidation lands).
   const optimisticDeletes = useOptimisticDeletes();
   const isOptimisticallyDeleted = optimisticDeletes.isHidden(task.id);
-  const selected = selectedIds.has(task.id);
 
   const [optPriority, setOptPriority] = useState<Priority>(
     task.priority as Priority
@@ -356,25 +348,18 @@ export function TaskRow({
               });
             }}
             className={cn(
-              "group transition-[box-shadow,border-color,background-color] duration-150 ease-[var(--ease-out)]",
+              "group transition-shadow duration-150 ease-[var(--ease-out)]",
               flat
                 ? "bg-transparent px-4 py-3"
                 : "rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs hover:shadow-soft-sm",
-              // Selected state: tinted background + primary border so
-              // the row is visibly "in the set" without messing with
-              // the completion checkbox.
-              selectionMode && selected && !flat && "border-primary/50 bg-primary/[0.04]",
               isMobile && "cursor-grab active:cursor-grabbing"
             )}
           >
           <div className="flex items-start gap-3">
-            {/* Completion checkbox — single responsibility. Always
-                marks the task complete, regardless of bulk-selection
-                state. Conflating "complete" and "select" into one
-                control was confusing: the checkbox glyph reads as
-                completion everywhere else in the app, so we keep it
-                meaning that one thing here too. Selection toggles
-                from the title body instead (see below). */}
+            {/* Completion checkbox — single purpose, always marks
+                complete. The list-level bulk-select feature was
+                dropped, so every interactive control here does one
+                thing now. */}
             <button
               onClick={toggle}
               disabled={pending}
@@ -390,35 +375,14 @@ export function TaskRow({
               />
             </button>
 
-            {/* Title + meta row. The title button doubles as the
-                selection target when bulk-selection is on — clicking
-                it toggles the row's membership in the selection set
-                instead of opening the drawer. Outside selection mode
-                it opens the drawer as before. The row's selected
-                state is shown via a tinted ring on the article (see
-                the className on motion.article above), not by
-                hijacking the checkbox glyph. */}
+            {/* Title + meta row */}
             <div className="min-w-0 flex-1">
               <button
-                onClick={() =>
-                  selectionMode ? toggleSelection(task.id) : openDrawer()
-                }
-                aria-label={
-                  selectionMode
-                    ? selected
-                      ? `Deselect ${task.title}`
-                      : `Select ${task.title}`
-                    : `Open ${task.title}`
-                }
-                aria-pressed={selectionMode ? selected : undefined}
+                onClick={openDrawer}
+                aria-label={`Open ${task.title}`}
                 className="focus-ring group/title flex w-full min-w-0 items-center text-left"
               >
-                <span
-                  className={cn(
-                    "truncate text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2",
-                    !selectionMode && "group-hover/title:underline"
-                  )}
-                >
+                <span className="truncate text-[14px] font-semibold leading-snug text-foreground decoration-foreground/40 underline-offset-2 group-hover/title:underline">
                   <MentionText text={task.title} />
                 </span>
               </button>
@@ -616,18 +580,6 @@ export function TaskRow({
                 <PopoverContent className="w-[180px] gap-0 p-1" align="end">
                   <PopoverItem onSelect={openDrawer}>
                     <span>Open details</span>
-                  </PopoverItem>
-                  <PopoverItem
-                    onSelect={() => {
-                      // Enter bulk-select mode and pre-select this row so
-                      // the user is one click away from the next pick or
-                      // a bulk action. Removes the need for an extra
-                      // top-bar "Select" toggle.
-                      setSelectionMode(true);
-                      toggleSelection(task.id);
-                    }}
-                  >
-                    <span>Select tasks</span>
                   </PopoverItem>
                   <PopoverItem onSelect={remove} destructive>
                     <span>Delete task</span>
