@@ -13,7 +13,7 @@ export default function ProjectLoading() {
   return (
     <div className="min-h-full">
       <SkeletonPageHeader />
-      <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-8">
+      <div className="mx-auto w-full max-w-[820px] px-8 pb-24 pt-8">
         {/* Progress block */}
         <section className="mb-8 rounded-2xl border border-border/60 bg-card p-5">
           <div className="mb-4 flex items-baseline justify-between">

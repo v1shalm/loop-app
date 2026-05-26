@@ -17,9 +17,10 @@ export default function AssignedToMeLoading() {
   return (
     <div className="min-h-full">
       <SkeletonPageHeader />
-      <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-8">
-        {/* Greeting header */}
-        <header className="mb-6">
+      <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-10">
+        {/* Greeting header. Margins mirror the real page (mb-10) so the
+            sections don't jump when the data swaps in. */}
+        <header className="mb-10">
           <SkeletonBar className="h-7 w-48" />
           <SkeletonBar className="mt-2 h-3 w-64" delay={80} />
         </header>
