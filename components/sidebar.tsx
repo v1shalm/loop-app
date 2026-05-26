@@ -7,7 +7,6 @@ import { sileo } from "sileo";
 import { motion } from "motion/react";
 import {
   CalendarDots,
-  CaretDown,
   Check,
   Crosshair,
   MagnifyingGlass,
@@ -236,31 +235,13 @@ export function Sidebar({
         ))}
       </nav>
 
-      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
-        {(() => {
-          const pinIds = user.pinned_project_ids ?? [];
-          if (pinIds.length === 0) return null;
-          const byId = new Map(projects.map((p) => [p.id, p]));
-          const pinned = pinIds
-            .map((id) => byId.get(id))
-            .filter((p): p is Project => Boolean(p));
-          if (pinned.length === 0) return null;
-          return (
-            <Section title="Pinned" collapsed={collapsed}>
-              {pinned.map((p) => (
-                <ProjectRow
-                  key={p.id}
-                  project={p}
-                  pinned
-                  badge={counts.projectCounts[p.id] || undefined}
-                  active={pathname === `/projects/${p.id}`}
-                  collapsed={collapsed}
-                />
-              ))}
-            </Section>
-          );
-        })()}
-
+      {/* Projects — one section. Pinned no longer lives in its own
+          section header; pinned projects float to the top of this
+          list with the pin icon kept visible, matching how Linear
+          and Notion treat "favourited" workspace children. Removes
+          a second section header from the rail and shortens the
+          vertical rhythm. */}
+      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
         <Section
           title="Projects"
           collapsed={collapsed}
@@ -286,11 +267,18 @@ export function Sidebar({
           )}
           {(() => {
             const pinIds = new Set(user.pinned_project_ids ?? []);
-            const unpinned = projects.filter((p) => !pinIds.has(p.id));
-            return unpinned.map((p) => (
+            // Pinned first, then the rest in their natural order. Sorting
+            // a copy so we don't mutate the prop array.
+            const sorted = [...projects].sort((a, b) => {
+              const aP = pinIds.has(a.id) ? 0 : 1;
+              const bP = pinIds.has(b.id) ? 0 : 1;
+              return aP - bP;
+            });
+            return sorted.map((p) => (
               <ProjectRow
                 key={p.id}
                 project={p}
+                pinned={pinIds.has(p.id)}
                 badge={counts.projectCounts[p.id] || undefined}
                 active={pathname === `/projects/${p.id}`}
                 collapsed={collapsed}
@@ -320,22 +308,23 @@ export function Sidebar({
   );
 }
 
-/* ── Section: smooth chevron + inline actions ─────────────────── */
+/* ── Section: static label + inline actions ───────────────────
+   Header is non-interactive and chevron-less, matching the "Work"
+   label above the primary nav. The old collapsible behaviour was
+   inconsistent (Work label couldn't collapse, Pinned/Projects
+   could) and Loop's audience has few enough projects that hiding
+   them behind a chevron costs more than it saves. */
 function Section({
   title,
   children,
   collapsed,
-  defaultOpen = true,
   headerAction,
 }: {
   title: string;
   children: React.ReactNode;
   collapsed: boolean;
-  defaultOpen?: boolean;
   headerAction?: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
-
   if (collapsed) {
     return (
       <div className="flex flex-col items-center gap-0.5 px-2">{children}</div>
@@ -344,24 +333,13 @@ function Section({
 
   return (
     <div className="px-2">
-      <div className="flex h-7 items-center gap-1 pr-1">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="focus-ring flex h-7 flex-1 items-center gap-1 rounded px-2 text-[11.5px] font-semibold tracking-tight text-muted-foreground/80 transition-colors duration-150 ease-[var(--ease-out)] hover:text-foreground"
-        >
-          <CaretDown
-            size={11}
-            weight="bold"
-            className={cn(
-              "transition-transform duration-200 ease-[var(--ease-out)]",
-              !open && "-rotate-90"
-            )}
-          />
-          <span>{title}</span>
-        </button>
+      <div className="flex h-7 items-center gap-1 px-2 pr-1">
+        <span className="flex-1 text-[11.5px] font-semibold tracking-tight text-muted-foreground/80">
+          {title}
+        </span>
         {headerAction}
       </div>
-      {open && <div className="mt-0.5 flex flex-col">{children}</div>}
+      <div className="mt-0.5 flex flex-col">{children}</div>
     </div>
   );
 }
