@@ -37,8 +37,8 @@ export default async function InboxPage() {
           <div className="min-w-0">
             {tasks.length === 0 ? (
               <EmptyState
-                tone="blue"
-                icon={<Tray size={20} weight="bold" />}
+                illustrationSrc="/illustrations/Empty-inbox.png"
+                illustrationSize={240}
                 title="Inbox is empty"
                 hint="New assignments from teammates land here. Nothing to triage right now."
                 actionLabel="Assign your first task"
