@@ -29,7 +29,8 @@ export default async function UpcomingPage() {
         {tasks.length === 0 ? (
           <div className="mx-auto w-full max-w-[1100px]">
             <EmptyState
-              icon={<CalendarDots size={32} weight="fill" />}
+              tone="green"
+              icon={<CalendarDots size={20} weight="bold" />}
               title="Nothing scheduled"
               hint="Schedule something for later this week or pass work to a teammate."
               actionLabel="Add a task"

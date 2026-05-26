@@ -37,8 +37,9 @@ export default async function InboxPage() {
           <div className="min-w-0">
             {tasks.length === 0 ? (
               <EmptyState
-                icon={<Tray size={32} weight="fill" />}
-                title="All caught up"
+                tone="blue"
+                icon={<Tray size={20} weight="bold" />}
+                title="Inbox is empty"
                 hint="New assignments from teammates land here. Nothing to triage right now."
                 actionLabel="Assign your first task"
                 secondarySlot={<InviteCTA />}

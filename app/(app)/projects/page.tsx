@@ -39,7 +39,8 @@ export default async function ProjectsBoardPage() {
       {columns.length === 0 ? (
         <div className="mx-auto w-full max-w-[760px] px-8 pt-8">
           <EmptyState
-            icon={<Folder size={32} weight="fill" />}
+            tone="purple"
+            icon={<Folder size={20} weight="bold" />}
             title="No projects yet"
             hint="Group related tasks under a project to track them as one piece of work."
             actionLabel="Add a task"

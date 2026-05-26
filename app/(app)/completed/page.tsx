@@ -37,7 +37,8 @@ export default async function CompletedPage() {
       <div className="mx-auto w-full max-w-[1100px] px-8 pb-24 pt-10">
         {visible.length === 0 ? (
           <EmptyState
-            icon={<Check size={32} weight="fill" />}
+            tone="pink"
+            icon={<Check size={20} weight="bold" />}
             title="Nothing completed yet"
             hint="Tasks you finish land here, grouped by the day."
           />

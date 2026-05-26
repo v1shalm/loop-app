@@ -6,14 +6,14 @@ import { motion } from "motion/react";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import {
   CalendarBlank,
-  CalendarDots,
   CaretDown,
-  Circle,
+  CheckCircle,
   Folder,
-  List,
   MagnifyingGlass,
   PushPin,
   SidebarSimple,
+  Sun,
+  Tray,
 } from "@/components/icons";
 import {
   Popover,
@@ -107,7 +107,7 @@ export function SidebarV2({
   const navItems = [
     {
       href: "/assigned-to-me",
-      icon: Circle,
+      icon: Sun,
       label: "My Day",
       count: counts.today,
       active:
@@ -117,21 +117,21 @@ export function SidebarV2({
     },
     {
       href: "/inbox",
-      icon: List,
+      icon: Tray,
       label: "Inbox",
       count: counts.inbox,
       active: pathname === "/inbox",
     },
     {
       href: "/upcoming",
-      icon: CalendarDots,
+      icon: CalendarBlank,
       label: "Upcoming",
       count: 0,
       active: pathname === "/upcoming",
     },
     {
       href: "/completed",
-      icon: CalendarBlank,
+      icon: CheckCircle,
       label: "Completed",
       count: 0,
       active: pathname === "/completed",
@@ -268,6 +268,7 @@ function NavRow({
   count?: number;
   active: boolean;
 }) {
+  const showCount = count !== undefined && count > 0;
   return (
     <Link
       href={href}
@@ -279,10 +280,7 @@ function NavRow({
       )}
     >
       {/* Hover (non-active) = soft gray pill + blue text + blue icon.
-          Active = blue text + icon only, no pill. The pill is a hover
-          affordance; the active row keeps a quieter signal so the
-          eye doesn't double-process "you're here" and "you can click
-          this." */}
+          Active = blue text + icon only, no pill. */}
       {!active && (
         <span
           aria-hidden
@@ -297,16 +295,26 @@ function NavRow({
       >
         <Icon size={17} weight={active ? "fill" : "regular"} />
       </motion.span>
-      <span className="relative z-[1] flex-1">{label}</span>
-      {count !== undefined && count > 0 && (
-        <span
+      <span className="relative z-[1]">{label}</span>
+      {/* Count sits inline next to the label (not pushed to the right
+          edge) so the eye reads "label + how many" as one phrase. The
+          motion.span runs a small scale-up whenever the number
+          changes — animated key forces re-mount on count delta. */}
+      {showCount && (
+        <motion.span
+          key={count}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 520, damping: 22 }}
           className={cn(
             "relative z-[1] grid h-[20px] min-w-[20px] place-items-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
-            active ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            active
+              ? "bg-primary text-primary-foreground"
+              : "bg-foreground/[0.06] text-muted-foreground"
           )}
         >
           {count}
-        </span>
+        </motion.span>
       )}
     </Link>
   );
@@ -339,7 +347,7 @@ function SidebarRail({
   const navItems = [
     {
       href: "/assigned-to-me",
-      icon: Circle,
+      icon: Sun,
       label: "My Day",
       active:
         pathname === "/assigned-to-me" ||
@@ -349,21 +357,21 @@ function SidebarRail({
     },
     {
       href: "/inbox",
-      icon: List,
+      icon: Tray,
       label: "Inbox",
       active: pathname === "/inbox",
       count: counts.inbox,
     },
     {
       href: "/upcoming",
-      icon: CalendarDots,
+      icon: CalendarBlank,
       label: "Upcoming",
       active: pathname === "/upcoming",
       count: 0,
     },
     {
       href: "/completed",
-      icon: CalendarBlank,
+      icon: CheckCircle,
       label: "Completed",
       active: pathname === "/completed",
       count: 0,

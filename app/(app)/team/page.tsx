@@ -41,7 +41,8 @@ export default async function TeamPage() {
 
         {members.length === 0 ? (
           <EmptyState
-            icon={<UsersThree size={32} weight="fill" />}
+            tone="blue"
+            icon={<UsersThree size={20} weight="bold" />}
             title="Just you for now"
             hint="Invite teammates to assign work. They'll see anything you assign in their Inbox."
             showAction={false}
