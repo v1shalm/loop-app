@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { Plus, UserPlus, CheckCircle, FunnelSimple } from "@/components/icons";
@@ -21,8 +22,15 @@ interface EmptyStateProps {
   /** Optional glyph badge floating next to the blob. A small icon
    *  (check, plus, bell, calendar). Skip for a clean blob-only state. */
   icon?: React.ReactNode;
-  /** Colour tone of the blob illustration. Defaults to "blue". */
+  /** Colour tone of the blob illustration. Defaults to "blue". Ignored
+   *  when illustrationSrc is provided. */
   tone?: IllustrationTone;
+  /** Optional custom illustration (PNG/SVG path under /public). When
+   *  provided, replaces the generated blob — useful for hand-illustrated
+   *  states that need more art direction than the SVG blob can give. */
+  illustrationSrc?: string;
+  /** Pixel size of the illustration. Defaults to 200. */
+  illustrationSize?: number;
   title: string;
   hint: string;
   actionLabel?: string;
@@ -52,6 +60,8 @@ const enterMotion = {
 export function EmptyState({
   icon,
   tone = "blue",
+  illustrationSrc,
+  illustrationSize = 200,
   title,
   hint,
   actionLabel = "Add task",
@@ -104,7 +114,27 @@ export function EmptyState({
       {...enterMotion}
       className="mx-auto flex w-full max-w-[520px] flex-col items-center pt-8 text-center"
     >
-      <EmptyStateIllustration tone={tone} glyph={icon} />
+      {illustrationSrc ? (
+        // Custom illustration. Renders the bitmap free on the canvas
+        // (no container, no background) so it sits like the SVG blob.
+        // Slight rise + fade entry handled by the parent motion.div.
+        <Image
+          src={illustrationSrc}
+          alt=""
+          aria-hidden
+          width={illustrationSize}
+          height={illustrationSize}
+          priority
+          className="select-none"
+          style={{ width: illustrationSize, height: "auto" }}
+        />
+      ) : (
+        <EmptyStateIllustration
+          tone={tone}
+          glyph={icon}
+          size={illustrationSize}
+        />
+      )}
 
       <h3 className="mt-6 text-[20px] font-semibold tracking-tight text-foreground">
         {title}

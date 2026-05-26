@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { Avatar } from "@/components/avatar";
 import { Bell, ChatCircle, CircleNotch, X } from "@/components/icons";
+import { EmptyStateIllustration } from "@/components/empty-state-illustration";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { RelativeTime } from "@/components/relative-time";
 import { useIsMobile } from "@/lib/use-is-mobile";
@@ -128,14 +129,16 @@ function NotificationsBody({
 
 function EmptyState() {
   return (
-    <div className="grid place-items-center px-6 py-16 text-center">
-      <span className="grid size-11 place-items-center rounded-full bg-muted/60 text-muted-foreground shadow-[var(--shadow-soft-xs)]">
-        <Bell size={20} weight="duotone" />
-      </span>
-      <p className="mt-3 text-[13.5px] font-semibold tracking-tight text-foreground">
+    <div className="flex flex-col items-center px-6 py-10 text-center">
+      <EmptyStateIllustration
+        tone="blue"
+        size={150}
+        glyph={<Bell size={18} weight="bold" />}
+      />
+      <p className="mt-4 text-[14px] font-semibold tracking-tight text-foreground">
         Nothing new
       </p>
-      <p className="mt-1 max-w-[220px] text-[11.5px] text-muted-foreground">
+      <p className="mt-1 max-w-[220px] text-[12px] text-muted-foreground">
         Assignments and comments on your tasks show up here.
       </p>
     </div>
