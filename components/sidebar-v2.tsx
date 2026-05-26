@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import {
-  CalendarBlank,
   CaretDown,
-  CheckCircle,
   Folder,
   MagnifyingGlass,
   PushPin,
   SidebarSimple,
-  Sun,
-  Tray,
 } from "@/components/icons";
+import {
+  CompletedIcon,
+  InboxIcon,
+  MyDayIcon,
+  UpcomingIcon,
+  type AnimatedNavIcon,
+} from "@/components/animated-nav-icons";
 import {
   Popover,
   PopoverContent,
@@ -38,6 +40,10 @@ import type {
   Team,
   Workspace,
 } from "@/lib/queries";
+
+// Link as a motion component so a row hover can drive variant labels
+// ("rest" / "hover") down to the animated icon's internal SVG elements.
+const MotionLink = motion.create(Link);
 
 export interface SidebarProps {
   user: Profile;
@@ -107,7 +113,7 @@ export function SidebarV2({
   const navItems = [
     {
       href: "/assigned-to-me",
-      icon: Sun,
+      icon: MyDayIcon,
       label: "My Day",
       count: counts.today,
       active:
@@ -117,21 +123,21 @@ export function SidebarV2({
     },
     {
       href: "/inbox",
-      icon: Tray,
+      icon: InboxIcon,
       label: "Inbox",
       count: counts.inbox,
       active: pathname === "/inbox",
     },
     {
       href: "/upcoming",
-      icon: CalendarBlank,
+      icon: UpcomingIcon,
       label: "Upcoming",
       count: 0,
       active: pathname === "/upcoming",
     },
     {
       href: "/completed",
-      icon: CheckCircle,
+      icon: CompletedIcon,
       label: "Completed",
       count: 0,
       active: pathname === "/completed",
@@ -263,16 +269,22 @@ function NavRow({
   active,
 }: {
   href: string;
-  icon: PhosphorIcon;
+  icon: AnimatedNavIcon;
   label: string;
   count?: number;
   active: boolean;
 }) {
   const showCount = count !== undefined && count > 0;
   return (
-    <Link
+    <MotionLink
       href={href}
       prefetch={false}
+      // Hovering anywhere on the row drives the icon's internal motion
+      // (rays pulse, letter drops, page lifts, check draws) via variant
+      // propagation — not a per-icon hover.
+      initial="rest"
+      animate="rest"
+      whileHover="hover"
       className={cn(
         "group/row focus-ring relative flex h-9 items-center gap-3 rounded-md px-3 text-[14px] transition-colors",
         active
@@ -291,10 +303,10 @@ function NavRow({
       <motion.span
         aria-hidden
         className="relative z-[1] grid size-5 shrink-0 place-items-center"
-        whileHover={{ scale: 1.18, rotate: -6 }}
-        transition={{ type: "spring", stiffness: 420, damping: 14 }}
+        variants={{ rest: { scale: 1 }, hover: { scale: 1.08 } }}
+        transition={{ type: "spring", stiffness: 420, damping: 16 }}
       >
-        <Icon size={17} weight={active ? "fill" : "regular"} />
+        <Icon size={18} active={active} />
       </motion.span>
       <span className="relative z-[1]">{label}</span>
       {/* Count sits inline next to the label (not pushed to the right
@@ -317,7 +329,7 @@ function NavRow({
           {count}
         </motion.span>
       )}
-    </Link>
+    </MotionLink>
   );
 }
 
@@ -348,7 +360,7 @@ function SidebarRail({
   const navItems = [
     {
       href: "/assigned-to-me",
-      icon: Sun,
+      icon: MyDayIcon,
       label: "My Day",
       active:
         pathname === "/assigned-to-me" ||
@@ -358,21 +370,21 @@ function SidebarRail({
     },
     {
       href: "/inbox",
-      icon: Tray,
+      icon: InboxIcon,
       label: "Inbox",
       active: pathname === "/inbox",
       count: counts.inbox,
     },
     {
       href: "/upcoming",
-      icon: CalendarBlank,
+      icon: UpcomingIcon,
       label: "Upcoming",
       active: pathname === "/upcoming",
       count: 0,
     },
     {
       href: "/completed",
-      icon: CheckCircle,
+      icon: CompletedIcon,
       label: "Completed",
       active: pathname === "/completed",
       count: 0,
@@ -475,7 +487,7 @@ function RailNavLink({
   count,
 }: {
   href: string;
-  icon: PhosphorIcon;
+  icon: AnimatedNavIcon;
   label: string;
   active: boolean;
   count?: number;
@@ -484,10 +496,13 @@ function RailNavLink({
     <Tooltip>
       <TooltipTrigger
         render={
-          <Link
+          <MotionLink
             href={href}
             prefetch={false}
             aria-label={label}
+            initial="rest"
+            animate="rest"
+            whileHover="hover"
             className={cn(
               "focus-ring relative grid size-9 place-items-center rounded-md transition-colors",
               active
@@ -495,14 +510,14 @@ function RailNavLink({
                 : "text-foreground/85 hover:bg-foreground/[0.04] hover:text-foreground"
             )}
           >
-            <Icon size={18} weight={active ? "fill" : "regular"} />
+            <Icon size={18} active={active} />
             {active && (
               <span
                 aria-hidden
                 className="absolute -bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary-readable"
               />
             )}
-          </Link>
+          </MotionLink>
         }
       />
       <TooltipContent side="right">
