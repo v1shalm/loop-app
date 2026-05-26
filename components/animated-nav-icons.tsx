@@ -202,7 +202,7 @@ export function InboxIcon({ size = 18, active }: IconProps) {
 //    right (slot-machine tick), and the frame gives a slight Y squish.
 //    Shows today's date. ────────────────────────────────────────────────
 const numberStyle = {
-  fontSize: 92,
+  fontSize: 112,
   fontWeight: 600,
   fontFamily:
     "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
@@ -222,28 +222,30 @@ export function UpcomingIcon({ size = 18, active }: IconProps) {
     <motion.svg {...svgBase(size)}>
       <defs>
         <clipPath id={bodyClip}>
-          <rect x="40" y="56" width="176" height="160" rx="24" />
+          <rect x="40" y="64" width="176" height="152" rx="28" />
         </clipPath>
       </defs>
 
-      {/* Frame + tabs + header rule. Squishes vertically on hover. */}
+      {/* Frame + tabs + header rule. Squishes vertically on hover. Tabs
+          sit at the thirds and stay short; the header rule hugs the top
+          so the date gets the roomy lower two-thirds. */}
       <motion.g
         variants={{ hover: { scaleY: [1, 0.92, 1] } }}
         transition={{ duration: 0.34, times: [0, 0.45, 1], ease: "easeOut" }}
         style={selfOrigin}
       >
-        <line x1="96" y1="30" x2="96" y2="60" />
-        <line x1="160" y1="30" x2="160" y2="60" />
+        <line x1="100" y1="36" x2="100" y2="68" />
+        <line x1="156" y1="36" x2="156" y2="68" />
         <rect
           x="40"
-          y="56"
+          y="64"
           width="176"
-          height="160"
-          rx="24"
+          height="152"
+          rx="28"
           fill={active ? "currentColor" : "none"}
           fillOpacity={active ? 0.16 : 0}
         />
-        <line x1="40" y1="96" x2="216" y2="96" />
+        <line x1="40" y1="102" x2="216" y2="102" />
       </motion.g>
 
       {/* The date — two copies, clipped to the body so they slide in and
@@ -252,7 +254,7 @@ export function UpcomingIcon({ size = 18, active }: IconProps) {
       <g clipPath={`url(#${bodyClip})`}>
         <motion.text
           x="128"
-          y="160"
+          y="162"
           {...numberStyle}
           variants={{
             rest: { x: 0, opacity: 1 },
@@ -267,7 +269,7 @@ export function UpcomingIcon({ size = 18, active }: IconProps) {
         </motion.text>
         <motion.text
           x="128"
-          y="160"
+          y="162"
           {...numberStyle}
           variants={{
             rest: { x: 100, opacity: 0 },
