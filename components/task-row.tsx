@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { memo, useEffect, useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   animate,
@@ -79,7 +79,7 @@ const PRIORITY_FLAG: Record<Priority, string> = {
   4: "text-muted-foreground/50",
 };
 
-export function TaskRow({
+function TaskRowInner({
   task,
   flat,
   compact,
@@ -673,6 +673,14 @@ export function TaskRow({
     </AnimatePresence>
   );
 }
+
+// React.memo wrapper. Task lists render dozens of rows; without memo,
+// every parent re-render (e.g. a sibling task's status flip, a new
+// task created) would re-run every row's heavy render path (motion
+// children, date formatting, multiple popover triggers). With memo +
+// reference-stable task props from the parent's array, only the row
+// whose data changed re-renders.
+export const TaskRow = memo(TaskRowInner);
 
 function Dot() {
   return (

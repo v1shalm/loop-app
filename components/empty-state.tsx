@@ -120,13 +120,17 @@ export function EmptyState({
         // Slight rise + fade entry handled by the parent motion.div.
         // scale-90 on mobile keeps the art from dominating narrow
         // viewports; sm:scale-100 restores full size on tablet+.
+        // No `priority` — empty states are off the critical path
+        // (the page only shows them when the list is empty, by
+        // which point the rest of the page has already rendered).
         <Image
           src={illustrationSrc}
           alt=""
           aria-hidden
           width={illustrationSize}
           height={illustrationSize}
-          priority
+          loading="lazy"
+          sizes={`(max-width: 640px) ${Math.round(illustrationSize * 0.9)}px, ${illustrationSize}px`}
           className="select-none scale-90 sm:scale-100"
           style={{ width: illustrationSize, height: "auto" }}
         />

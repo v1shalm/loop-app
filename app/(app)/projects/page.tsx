@@ -39,7 +39,7 @@ export default async function ProjectsBoardPage() {
       {columns.length === 0 ? (
         <div className="mx-auto w-full max-w-[760px] px-8 pt-8">
           <EmptyState
-            illustrationSrc="/illustrations/No projects.png"
+            illustrationSrc="/illustrations/No projects.webp"
             illustrationSize={240}
             title="No projects yet"
             hint="Group related tasks under a project to track them as one piece of work."
