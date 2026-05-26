@@ -18,10 +18,27 @@ import { Avatar } from "@/components/avatar";
 import { cn } from "@/lib/utils";
 import { searchAll, type SearchResults } from "@/lib/actions";
 
+/**
+ * Loop's search modal. Intentionally not a command palette.
+ *
+ * The earlier version was a Linear-style ⌘K with grouped headers,
+ * keyboard-hint chips, and Quick Actions — too developer-toolly for a
+ * task tracker aimed at non-engineers. This rewrite drops the chrome:
+ * one input row, one flat list of results, no group titles, no footer.
+ * Result rows speak in two lines (title + subtitle) so a mixed list of
+ * tasks, projects, people, and page jumps reads consistently the way
+ * Spotlight / Brief / Notion's quick find do.
+ *
+ * Keyboard navigation is kept (Arrow + Enter + Esc) because that's
+ * universal muscle memory, not because we're trying to be a command
+ * palette — there are simply no visible kbd hints to advertise it.
+ */
+
 type JumpItem = {
   kind: "jump";
   id: string;
   label: string;
+  sublabel: string;
   href: string;
   Icon: React.ElementType;
 };
@@ -51,19 +68,53 @@ type ResultRow =
       role: string | null;
     };
 
-type Group = { label: string; rows: ResultRow[] };
-
+// Page jumps live alongside tasks/projects/people in the same flat
+// list — typing "in" finds Inbox the same way it finds a project
+// called "Internal site". Sublabels keep the row two-line so the
+// visual rhythm matches the other result types.
 const JUMP_TARGETS: JumpItem[] = [
-  { kind: "jump", id: "inbox", label: "Inbox", href: "/inbox", Icon: Tray },
-  { kind: "jump", id: "my-work", label: "My Day", href: "/assigned-to-me", Icon: Crosshair },
-  { kind: "jump", id: "upcoming", label: "Upcoming", href: "/upcoming", Icon: CalendarDots },
-  { kind: "jump", id: "completed", label: "Completed", href: "/completed", Icon: Check },
-  { kind: "jump", id: "team", label: "Team", href: "/team", Icon: UsersThree },
+  {
+    kind: "jump",
+    id: "my-day",
+    label: "My Day",
+    sublabel: "Page · your daily list",
+    href: "/assigned-to-me",
+    Icon: Crosshair,
+  },
+  {
+    kind: "jump",
+    id: "inbox",
+    label: "Inbox",
+    sublabel: "Page · tasks teammates sent you",
+    href: "/inbox",
+    Icon: Tray,
+  },
+  {
+    kind: "jump",
+    id: "upcoming",
+    label: "Upcoming",
+    sublabel: "Page · next two weeks",
+    href: "/upcoming",
+    Icon: CalendarDots,
+  },
+  {
+    kind: "jump",
+    id: "completed",
+    label: "Completed",
+    sublabel: "Page · what you've shipped",
+    href: "/completed",
+    Icon: Check,
+  },
+  {
+    kind: "jump",
+    id: "team",
+    label: "Team",
+    sublabel: "Page · everyone in the workspace",
+    href: "/team",
+    Icon: UsersThree,
+  },
 ];
 
-// Recents — five most-recent palette picks per browser. Stored as the
-// flat row payload so we can render without a re-fetch (Notion-style
-// "Recently viewed" when the query box is empty).
 const RECENTS_KEY = "loop:search-recents";
 const RECENTS_MAX = 5;
 
@@ -85,7 +136,7 @@ function loadRecents(): ResultRow[] {
 
 function pushRecent(row: ResultRow) {
   if (typeof window === "undefined") return;
-  if (row.kind === "jump") return; // jumps are already listed below
+  if (row.kind === "jump") return;
   const key = (r: ResultRow) => `${r.kind}:${"id" in r ? r.id : ""}`;
   const existing = loadRecents();
   const next = [row, ...existing.filter((r) => key(r) !== key(row))].slice(
@@ -146,69 +197,59 @@ export function SearchPalette({
     return () => clearTimeout(t);
   }, [query, open]);
 
-  // Build the flat row order for keyboard navigation + render
-  const groups: Group[] = useMemo(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      const out: Group[] = [];
-      if (recents.length > 0) {
-        out.push({ label: "Recent", rows: recents });
-      }
-      out.push({ label: "Jump to", rows: JUMP_TARGETS });
-      return out;
-    }
-    const out: Group[] = [];
-    if (results.tasks.length > 0) {
-      out.push({
-        label: "Tasks",
-        rows: results.tasks.map((t) => ({
-          kind: "task" as const,
-          id: t.id,
-          title: t.title,
-          status: t.status,
-          project: t.project_name,
-          projectEmoji: t.project_emoji,
-          assignee: t.assignee_name,
-          assigneeColor: t.assignee_color,
-          assigneeInitials: t.assignee_initials,
-          assigneeAvatarUrl: t.assignee_avatar_url,
-        })),
-      });
-    }
-    if (results.projects.length > 0) {
-      out.push({
-        label: "Projects",
-        rows: results.projects.map((p) => ({
-          kind: "project" as const,
-          id: p.id,
-          name: p.name,
-          emoji: p.emoji,
-          openCount: p.open_count,
-        })),
-      });
-    }
-    if (results.people.length > 0) {
-      out.push({
-        label: "Team",
-        rows: results.people.map((p) => ({
-          kind: "person" as const,
-          id: p.id,
-          name: p.name,
-          initials: p.initials,
-          avatarColor: p.avatar_color,
-          avatarUrl: p.avatar_url,
-          role: p.role,
-        })),
-      });
-    }
-    return out;
-  }, [query, results]);
+  // Flat list — no group sections. Order: search results first (tasks,
+  // projects, people), then page jumps that match the query, then any
+  // remaining jumps when the user hasn't typed yet so the modal opens
+  // with something actionable.
+  const rows: ResultRow[] = useMemo(() => {
+    const q = query.trim().toLowerCase();
 
-  const flatRows: ResultRow[] = useMemo(
-    () => groups.flatMap((g) => g.rows),
-    [groups]
-  );
-  const totalRows = flatRows.length;
+    const taskRows: ResultRow[] = results.tasks.map((t) => ({
+      kind: "task" as const,
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      project: t.project_name,
+      projectEmoji: t.project_emoji,
+      assignee: t.assignee_name,
+      assigneeColor: t.assignee_color,
+      assigneeInitials: t.assignee_initials,
+      assigneeAvatarUrl: t.assignee_avatar_url,
+    }));
+    const projectRows: ResultRow[] = results.projects.map((p) => ({
+      kind: "project" as const,
+      id: p.id,
+      name: p.name,
+      emoji: p.emoji,
+      openCount: p.open_count,
+    }));
+    const peopleRows: ResultRow[] = results.people.map((p) => ({
+      kind: "person" as const,
+      id: p.id,
+      name: p.name,
+      initials: p.initials,
+      avatarColor: p.avatar_color,
+      avatarUrl: p.avatar_url,
+      role: p.role,
+    }));
+
+    if (q.length < 2) {
+      // Empty state: show recents first (if any), then page jumps.
+      // Mirrors Notion / Linear's "recently viewed + workspace" idle
+      // pane without dragging in group headers.
+      return [...recents, ...JUMP_TARGETS];
+    }
+
+    // Active query: filter jumps inline so typing "comp" surfaces the
+    // Completed page next to any matching tasks/projects.
+    const matchingJumps = JUMP_TARGETS.filter((j) =>
+      j.label.toLowerCase().includes(q)
+    );
+
+    return [...taskRows, ...projectRows, ...peopleRows, ...matchingJumps];
+  }, [query, results, recents]);
+
+  const totalRows = rows.length;
 
   const go = (row: ResultRow) => {
     pushRecent(row);
@@ -235,7 +276,7 @@ export function SearchPalette({
       setActive((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const row = flatRows[active];
+      const row = rows[active];
       if (row) go(row);
     }
   };
@@ -247,12 +288,19 @@ export function SearchPalette({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[600px] gap-0 p-0 shadow-soft-md sm:rounded-xl"
+        className="block w-full max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-2xl border border-border/60 bg-popover p-0 shadow-[var(--shadow-soft-xl)] sm:max-w-[600px]"
       >
-        {/* Input */}
-        <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">
+        {/* Input — single row, no border below until results appear so
+            the empty modal reads as a quiet search field rather than a
+            split panel. */}
+        <div
+          className={cn(
+            "flex items-center gap-3 px-5 py-4",
+            totalRows > 0 && "border-b border-border/60"
+          )}
+        >
           <MagnifyingGlass
-            size={16}
+            size={18}
             className="shrink-0 text-muted-foreground"
           />
           <input
@@ -262,7 +310,7 @@ export function SearchPalette({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Search tasks, projects, teammates…"
-            className="flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground/70"
+            className="flex-1 bg-transparent text-[14.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
           />
           {pending && (
             <CircleNotch
@@ -272,47 +320,29 @@ export function SearchPalette({
           )}
         </div>
 
-        {/* Body */}
-        <div className="max-h-[440px] overflow-y-auto p-2">
-          {noResults ? (
-            <Hint>No matches for &ldquo;{query.trim()}&rdquo;.</Hint>
-          ) : (
-            (() => {
-              let runningIdx = 0;
-              return groups.map((g, i) => (
-                <section
-                  key={g.label}
-                  className={cn("flex flex-col", i > 0 && "mt-3")}
-                >
-                  <p className="px-2 pb-1 pt-1 text-[11.5px] font-medium text-muted-foreground">
-                    {g.label}
-                  </p>
-                  {g.rows.map((row) => {
-                    const idx = runningIdx++;
-                    return (
-                      <Row
-                        key={`${row.kind}-${"id" in row ? row.id : idx}`}
-                        row={row}
-                        active={idx === active}
-                        onHover={() => setActive(idx)}
-                        onClick={() => go(row)}
-                      />
-                    );
-                  })}
-                </section>
-              ));
-            })()
-          )}
-        </div>
+        {/* Body — one flat list, no group headers. Mirrors the
+            Brief/Notion-style "find anything" experience: mixed result
+            types share the same row shape so the eye scans the title
+            column without re-orienting between sections. */}
+        {totalRows > 0 && (
+          <div className="max-h-[440px] overflow-y-auto p-1.5">
+            {rows.map((row, idx) => (
+              <Row
+                key={`${row.kind}-${"id" in row ? row.id : idx}`}
+                row={row}
+                active={idx === active}
+                onHover={() => setActive(idx)}
+                onClick={() => go(row)}
+              />
+            ))}
+          </div>
+        )}
 
-        {/* Footer — keyboard hints are desktop-only chrome. On touch there
-            is no Esc/Enter/Arrow keyboard, so the strip just steals vertical
-            space and makes the palette feel cramped against the bottom nav. */}
-        <div className="flex items-center gap-4 border-t border-border/60 bg-muted/30 px-4 py-2.5 text-[11.5px] text-muted-foreground max-md:hidden">
-          <KeyHint k="↑↓" label="Navigate" />
-          <KeyHint k="↵" label="Open" />
-          <KeyHint k="Esc" label="Close" />
-        </div>
+        {noResults && (
+          <p className="px-5 py-8 text-center text-[13px] text-muted-foreground">
+            No matches for &ldquo;{query.trim()}&rdquo;.
+          </p>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -335,160 +365,92 @@ function Row({
       onClick={onClick}
       data-active={active || undefined}
       className={cn(
-        "group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sidebar-foreground/90 transition-colors duration-150 ease-[var(--ease-out)]",
-        active
-          ? "bg-primary/8 font-medium text-primary"
-          : "hover:bg-accent/40 hover:text-foreground"
+        "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 ease-[var(--ease-out)]",
+        active ? "bg-accent/60" : "hover:bg-accent/40"
       )}
     >
-      {renderLeading(row, active)}
-      {renderBody(row, active)}
-      {renderTrailing(row)}
+      <Leading row={row} />
+      <Body row={row} />
     </button>
   );
 }
 
-function renderLeading(row: ResultRow, active: boolean) {
-  if (row.kind === "jump") {
-    const Icon = row.Icon;
+function Leading({ row }: { row: ResultRow }) {
+  if (row.kind === "person") {
     return (
-      <Icon
-        size={16}
-        className={cn(
-          "shrink-0",
-          active ? "text-primary" : "text-muted-foreground/90"
-        )}
+      <Avatar
+        src={row.avatarUrl}
+        initials={row.initials}
+        color={row.avatarColor}
+        size={28}
       />
     );
   }
-  if (row.kind === "task") {
-    return row.status === "done" ? (
-      <CheckCircle
-        size={16}
-        weight="fill"
-        className="shrink-0 text-emerald-600"
-      />
-    ) : (
-      <span
-        className={cn(
-          "grid size-4 shrink-0 place-items-center rounded-full border",
-          active ? "border-primary/40" : "border-border"
-        )}
-      />
-    );
-  }
-  if (row.kind === "project") {
-    return (
-      <Hash
-        size={16}
-        className={cn(
-          "shrink-0",
-          active ? "text-primary" : "text-muted-foreground/90"
-        )}
-      />
-    );
-  }
-  // person
-  return (
-    <Avatar
-      src={row.avatarUrl}
-      initials={row.initials}
-      color={row.avatarColor}
-      size={24}
-    />
-  );
-}
 
-function renderBody(row: ResultRow, active: boolean) {
-  if (row.kind === "jump") {
-    return (
-      <span className="flex-1 truncate text-[13.5px] font-medium">
-        {row.label}
-      </span>
-    );
-  }
+  // Tasks, projects, jumps — a 28px tinted square with the type's
+  // glyph. Mirrors the actor-disc treatment in the notifications
+  // popover so the search results share that visual vocabulary.
+  let icon: React.ReactNode;
   if (row.kind === "task") {
-    return (
-      <span
-        className={cn(
-          "flex-1 truncate text-[13.5px]",
-          row.status === "done" && "text-muted-foreground line-through"
-        )}
-      >
-        {row.title}
-      </span>
-    );
+    icon =
+      row.status === "done" ? (
+        <CheckCircle size={14} weight="fill" />
+      ) : (
+        <Crosshair size={14} weight="regular" />
+      );
+  } else if (row.kind === "project") {
+    icon = <Hash size={14} weight="bold" />;
+  } else {
+    const Icon = row.Icon;
+    icon = <Icon size={14} weight="regular" />;
   }
-  if (row.kind === "project") {
-    return (
-      <span className="flex-1 truncate text-[13.5px] font-medium">
-        {row.name}
-      </span>
-    );
-  }
+
   return (
-    <span className="flex min-w-0 flex-1 flex-col">
-      <span className="truncate text-[13.5px] font-medium">{row.name}</span>
-      {row.role && (
-        <span
-          className={cn(
-            "truncate text-[11.5px]",
-            active ? "text-primary/70" : "text-muted-foreground"
-          )}
-        >
-          {row.role}
-        </span>
-      )}
+    <span className="grid size-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground shadow-[var(--shadow-soft-xs)]">
+      {icon}
     </span>
   );
 }
 
-function renderTrailing(row: ResultRow) {
-  if (row.kind === "task") {
-    return (
-      <>
-        {row.project && (
-          <span className="inline-flex shrink-0 items-center gap-1 text-[12px] text-muted-foreground">
-            <Hash size={11} className="text-muted-foreground/70" />
-            {row.project}
-          </span>
-        )}
-        {row.assignee && row.assigneeColor && row.assigneeInitials && (
-          <Avatar
-            src={row.assigneeAvatarUrl}
-            initials={row.assigneeInitials}
-            color={row.assigneeColor}
-            size={20}
-          />
-        )}
-      </>
-    );
+function Body({ row }: { row: ResultRow }) {
+  let title: string;
+  let subtitle: string | null = null;
+
+  if (row.kind === "jump") {
+    title = row.label;
+    subtitle = row.sublabel;
+  } else if (row.kind === "task") {
+    title = row.title;
+    const bits: string[] = [];
+    if (row.project) bits.push(row.project);
+    if (row.status === "done") bits.push("Completed");
+    if (row.assignee) bits.push(row.assignee);
+    subtitle = bits.length > 0 ? bits.join(" · ") : "Task";
+  } else if (row.kind === "project") {
+    title = row.name;
+    subtitle = `${row.openCount} open ${row.openCount === 1 ? "task" : "tasks"}`;
+  } else {
+    title = row.name;
+    subtitle = row.role ?? "Teammate";
   }
-  if (row.kind === "project") {
-    return (
-      <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground">
-        {row.openCount} open
+
+  return (
+    <span className="flex min-w-0 flex-1 flex-col">
+      <span
+        className={cn(
+          "truncate text-[13.5px] font-medium text-foreground",
+          row.kind === "task" && row.status === "done"
+            ? "text-muted-foreground line-through"
+            : ""
+        )}
+      >
+        {title}
       </span>
-    );
-  }
-  return null;
-}
-
-function Hint({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="px-3 py-8 text-center text-[13px] text-muted-foreground">
-      {children}
-    </p>
-  );
-}
-
-function KeyHint({ k, label }: { k: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <kbd className="chip-3d inline-flex h-[19px] min-w-[19px] items-center justify-center rounded-[5px] border border-border bg-card px-1.5 text-[11px] font-semibold text-foreground/80">
-        {k}
-      </kbd>
-      <span>{label}</span>
+      {subtitle && (
+        <span className="truncate text-[11.5px] text-muted-foreground">
+          {subtitle}
+        </span>
+      )}
     </span>
   );
 }
