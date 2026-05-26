@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CircleNotch, Warning } from "@/components/icons";
+import { CircleNotch } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,7 +21,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = "Delete",
-  cancelLabel = "Cancel",
+  cancelLabel = "Dismiss",
   variant = "destructive",
   onConfirm,
 }: {
@@ -47,54 +47,50 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[420px] gap-0 p-0 shadow-soft-md sm:rounded-xl"
+        aria-label={title}
+        className="max-w-[400px] gap-0 p-0 shadow-soft-md sm:rounded-2xl"
       >
-        <div className="flex items-start gap-3 p-5">
-          {variant === "destructive" && (
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-rose-500/12 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300">
-              <Warning size={18} weight="fill" />
-            </span>
+        <div className="px-6 pb-6 pt-7 text-center">
+          <h2 className="text-[17px] font-bold tracking-tight text-foreground">
+            {title}
+          </h2>
+          {description && (
+            <div className="mx-auto mt-2.5 max-w-[320px] text-[13.5px] leading-relaxed text-foreground/70">
+              {description}
+            </div>
           )}
-          <div className="min-w-0 flex-1 pt-0.5">
-            <h2 className="text-[15px] font-semibold leading-tight tracking-[-0.005em] text-foreground">
-              {title}
-            </h2>
-            {description && (
-              <div className="mt-1.5 text-[13.5px] leading-relaxed text-foreground/65">
-                {description}
-              </div>
-            )}
+
+          {/* Two equal-width pills. Dismiss is a quiet white/grey pill,
+              confirm is the solid action colour (red when destructive).
+              Dismiss sits first and autofocuses on destructive dialogs
+              so Enter dismisses rather than fires the irreversible
+              action. */}
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              disabled={pending}
+              autoFocus={variant === "destructive"}
+              className="focus-ring inline-flex h-11 flex-1 items-center justify-center rounded-full border-[1.5px] border-border bg-card text-[14px] font-semibold text-foreground transition-colors hover:bg-accent/50 disabled:opacity-60"
+            >
+              {cancelLabel}
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={pending}
+              autoFocus={variant !== "destructive"}
+              className={cn(
+                "focus-ring inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold transition-[background-color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100",
+                variant === "destructive"
+                  ? "bg-rose-600 text-white shadow-[0_1px_2px_oklch(0_0_0/0.08),inset_0_1px_0_oklch(1_0_0/0.18)] hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-400"
+                  : "surface-brand surface-brand-hover text-primary-foreground shadow-[var(--shadow-cta)]"
+              )}
+            >
+              {pending && <CircleNotch size={14} className="animate-spin" />}
+              {pending ? "Saving…" : confirmLabel}
+            </button>
           </div>
-        </div>
-        <div className="flex items-center justify-end gap-2 border-t border-border/60 bg-muted/30 px-5 py-3">
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            disabled={pending}
-            // Destructive confirms autofocus Cancel — pressing Enter
-            // after the dialog opens then dismisses safely instead of
-            // executing the irreversible action. Non-destructive
-            // dialogs autofocus the primary button instead.
-            autoFocus={variant === "destructive"}
-            className="focus-ring inline-flex h-9 items-center rounded-md px-3.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent/60 disabled:opacity-60"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={pending}
-            autoFocus={variant !== "destructive"}
-            className={cn(
-              "focus-ring inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-[13px] font-semibold transition-[background-color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100",
-              variant === "destructive"
-                ? "bg-rose-600 text-white shadow-[0_1px_2px_oklch(0_0_0/0.08),inset_0_1px_0_oklch(1_0_0/0.18)] hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-400"
-                : "surface-brand surface-brand-hover text-primary-foreground shadow-[var(--shadow-cta)]"
-            )}
-          >
-            {pending && <CircleNotch size={13} className="animate-spin" />}
-            {pending ? "Saving…" : confirmLabel}
-          </button>
         </div>
       </DialogContent>
     </Dialog>
