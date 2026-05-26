@@ -16,7 +16,7 @@
 export function SectionCount({ n }: { n: number }) {
   if (n <= 0) return null;
   return (
-    <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-semibold tabular-nums text-muted-foreground">
+    <span className="chip-3d inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-semibold tabular-nums text-muted-foreground ring-1 ring-inset ring-border/60">
       {n}
     </span>
   );

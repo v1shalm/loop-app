@@ -516,14 +516,19 @@
     }
   }
 
-  /* Tactile chip — top inset highlight + bottom inner shadow + tiny drop.
-     Stacks on top of `ring-1 ring-inset ring-<color>` or `border` for the
-     outer hairline. Use on pills, status chips, kbd shortcuts. */
+  /* Tactile chip — top edge highlight, soft inner shadow below it that
+     gives the chip a subtle "pressed surface" feel, deeper inset darken
+     at the bottom for the curl-of-the-edge, then the contact + drop
+     shadows. Layered so the depth reads from far away as well as up
+     close. Stacks on top of `ring-1 ring-inset ring-<color>` or
+     `border` for the outer hairline. Use on pills, status chips, count
+     badges, kbd shortcuts. */
   .chip-3d {
     box-shadow:
-      inset 0 1px 0 oklch(1 0 0 / 0.55),
-      inset 0 -1px 0 oklch(0 0 0 / 0.05),
-      0 1px 1.5px oklch(0 0 0 / 0.06),
+      inset 0 1px 0 oklch(1 0 0 / 0.6),
+      inset 0 1px 1.5px -0.5px oklch(0 0 0 / 0.08),
+      inset 0 -1px 0 oklch(0 0 0 / 0.08),
+      0 1px 1.5px oklch(0 0 0 / 0.07),
       0 2px 4px -1px oklch(0 0 0 / 0.05);
   }
 

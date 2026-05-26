@@ -32,6 +32,7 @@ import {
   CircleNotch,
   DotsThree,
   Flag,
+  Folder,
   Plus,
   Trash,
   Tray,
@@ -64,7 +65,7 @@ import type { Profile, Project, TaskWithRelations } from "@/lib/queries";
 import { Avatar } from "@/components/avatar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useOptimisticDeletes } from "@/components/optimistic-deletes";
-import { ProjectDot } from "@/components/project-dot";
+import { projectColor } from "@/components/project-dot";
 import { Button } from "@/components/ui/button";
 
 // Inlined to avoid pulling lib/queries.ts (which imports server-only code)
@@ -539,16 +540,21 @@ function DrawerInner({
             <DetailLabel>Project</DetailLabel>
             <dd>
               <Popover>
-                {/* Project is plain text by default — the colour dot
-                    already carries identity, so wrapping it in a
-                    chip-shaped block added redundant visual weight.
+                {/* Project is plain text by default — the folder
+                    glyph carries identity (same icon + colour the
+                    sidebar uses for each project), so wrapping it
+                    in a chip-shaped block adds redundant weight.
                     Hover lifts a soft background so the affordance
                     is still discoverable, no resting block. */}
                 <PopoverTrigger
                   className="focus-ring -mx-1.5 inline-flex h-7 items-center gap-2 rounded-md px-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40"
                 >
                   {task.project ? (
-                    <ProjectDot project={task.project as Project} size={9} />
+                    <Folder
+                      size={13}
+                      weight="fill"
+                      style={{ color: projectColor(task.project as Project) }}
+                    />
                   ) : (
                     <Tray size={13} className="text-muted-foreground" />
                   )}
@@ -568,7 +574,11 @@ function DrawerInner({
                       selected={task.project_id === p.id}
                       onSelect={() => patch({ projectId: p.id })}
                     >
-                      <ProjectDot project={p} size={9} />
+                      <Folder
+                        size={14}
+                        weight="fill"
+                        style={{ color: projectColor(p) }}
+                      />
                       <span className="truncate">{p.name}</span>
                     </PopoverItem>
                   ))}
