@@ -10,11 +10,13 @@ import {
   CaretDown,
   Check,
   Crosshair,
+  MagnifyingGlass,
   Plus,
   PushPin,
   SidebarSimple,
   Tray,
 } from "@/components/icons";
+import { NotificationsPopover } from "@/components/notifications-popover";
 import { togglePinnedProject } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
 import {
@@ -51,6 +53,7 @@ export interface SidebarProps {
   members: MemberPulse[];
   counts: SidebarCounts;
   onOpenQuickAdd?: () => void;
+  onOpenSearch?: () => void;
 }
 
 /**
@@ -80,6 +83,7 @@ export function Sidebar({
   projects,
   counts,
   onOpenQuickAdd,
+  onOpenSearch,
 }: SidebarProps) {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
@@ -127,9 +131,14 @@ export function Sidebar({
         collapsed ? "w-[64px]" : "w-[248px]"
       )}
     >
-      {/* ── Header: workspace pill + utility icons + search bar ─ */}
+      {/* ── Header: workspace pill, search, notifications, collapse ─
+          Search and notifications live up here next to the collapse
+          icon (per audit) — they're utility actions on the workspace,
+          not page chrome, so they belong with the workspace pill
+          rather than floating off in the top bar. The top bar is now
+          free to read as the page's own context line. */}
       {collapsed ? (
-        <div className="flex h-12 items-center justify-center px-2">
+        <div className="flex flex-col items-center gap-1 px-2 pt-2">
           <Tooltip>
             <TooltipTrigger
               onClick={toggle}
@@ -140,6 +149,23 @@ export function Sidebar({
             </TooltipTrigger>
             <TooltipContent side="right">Expand sidebar</TooltipContent>
           </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              onClick={onOpenSearch}
+              aria-label="Search"
+              className="focus-ring grid size-9 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.94]"
+            >
+              <MagnifyingGlass size={16} />
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              Search
+              <span className="ml-2 text-background/60">⌘K</span>
+            </TooltipContent>
+          </Tooltip>
+          <NotificationsPopover
+            currentUserId={user.id}
+            className="size-9"
+          />
         </div>
       ) : (
         <div className="flex h-12 items-center gap-1 px-3">
@@ -150,16 +176,35 @@ export function Sidebar({
               isAdmin={isAdmin}
             />
           )}
-          <Tooltip>
-            <TooltipTrigger
-              onClick={toggle}
-              aria-label="Collapse sidebar"
-              className="focus-ring ml-auto grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.92]"
-            >
-              <SidebarSimple size={14} />
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Collapse sidebar</TooltipContent>
-          </Tooltip>
+          <div className="ml-auto flex items-center gap-0.5">
+            <Tooltip>
+              <TooltipTrigger
+                onClick={onOpenSearch}
+                aria-label="Search"
+                className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.92]"
+              >
+                <MagnifyingGlass size={14} />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                Search
+                <span className="ml-2 text-background/60">⌘K</span>
+              </TooltipContent>
+            </Tooltip>
+            <NotificationsPopover
+              currentUserId={user.id}
+              className="size-7"
+            />
+            <Tooltip>
+              <TooltipTrigger
+                onClick={toggle}
+                aria-label="Collapse sidebar"
+                className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/50 hover:text-foreground active:scale-[0.92]"
+              >
+                <SidebarSimple size={14} />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Collapse sidebar</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       )}
 

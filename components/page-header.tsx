@@ -1,6 +1,6 @@
 "use client";
 
-import { MagnifyingGlass, Plus } from "@/components/icons";
+import { Plus } from "@/components/icons";
 import { NotificationsPopover } from "@/components/notifications-popover";
 import { useAppControls } from "@/components/app-controls-context";
 import { useQuickAdd } from "@/components/quick-add-context";
@@ -73,30 +73,17 @@ export function PageHeader({
               />
             )}
             <QuickAddTrigger onClick={quickAdd.open} />
-            <SearchTrigger onClick={controls.openSearch} />
-            <NotificationsPopover currentUserId={controls.currentUserId} />
+            {/* Notifications: on desktop, the bell lives in the sidebar
+                header next to the collapse icon. On mobile the sidebar
+                is hidden, so the bell stays here and degrades to the
+                MobileSheet branch the component renders for touch. */}
+            <div className="md:hidden">
+              <NotificationsPopover currentUserId={controls.currentUserId} />
+            </div>
           </>
         )}
       </div>
     </header>
-  );
-}
-
-function SearchTrigger({ onClick }: { onClick: () => void }) {
-  // Desktop only — mobile already has a Search tab in the bottom nav
-  // (components/mobile-bottom-nav.tsx). Rendering a second search
-  // trigger here would be a duplicate affordance and crowd the top bar
-  // out of room for the page title.
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Search"
-      className="focus-ring hidden h-8 items-center gap-2 rounded-md border border-border/70 bg-card/60 px-2.5 text-left text-[12.5px] text-muted-foreground transition-[border-color,background-color,transform] duration-150 ease-[var(--ease-out)] hover:border-border hover:bg-card active:scale-[0.992] md:inline-flex md:w-[220px]"
-    >
-      <MagnifyingGlass size={13} className="text-muted-foreground/70" />
-      <span className="flex-1 truncate">Search or jump to…</span>
-    </button>
   );
 }
 

@@ -110,6 +110,7 @@ export function AppShell({
                 members={members}
                 counts={counts}
                 onOpenQuickAdd={() => setQuickOpen(true)}
+                onOpenSearch={() => setSearchOpen(true)}
               />
             </div>
             <main className="flex-1 overflow-y-auto max-md:pb-[calc(env(safe-area-inset-bottom,0px)+64px)]">
