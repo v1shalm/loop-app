@@ -734,19 +734,18 @@ function DrawerInner({
           </p>
         </section>
 
-        {/* Description: plain editable text, no card wrapper or
-            section header. Mirrors the reference, where the body
-            copy reads as continuous content of the task. The
-            textarea still focus-rings on edit so the writable region
-            is discoverable. */}
+        {/* Description: a visible, bordered field so the writable region
+            reads as an input even when empty (a borderless textarea just
+            floated placeholder text and left the modal feeling hollow).
+            Roomy min height fills the space above Subtasks. */}
         <section className="px-6 pb-5">
           <AutoTextarea
             ref={descRef}
             defaultValue={task.description ?? ""}
             onBlur={saveDescription}
             placeholder="Add a description…"
-            minRows={2}
-            className="focus-ring w-full resize-none rounded-md bg-transparent px-1 py-1 text-[13.5px] leading-relaxed text-foreground outline-none placeholder:text-foreground/40"
+            minRows={4}
+            className="focus-ring w-full resize-none rounded-lg border border-border/70 bg-foreground/[0.015] px-3.5 py-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors placeholder:text-foreground/45 hover:border-border hover:bg-foreground/[0.03] dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
           />
         </section>
 
