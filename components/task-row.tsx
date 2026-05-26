@@ -288,7 +288,7 @@ function TaskRowInner({
     });
   };
 
-  const dateText = formatTaskDate(due, overdue);
+  const dateText = formatTaskDate(due, overdue, compact);
   // Three tiers of date urgency:
   //   overdue (past due) → rose. You missed the deadline.
   //   today (due today)  → amber. Deadline is today; it's the
@@ -431,41 +431,47 @@ function TaskRowInner({
                   compact ? "flex-nowrap" : "flex-wrap"
                 )}
               >
-                {/* Priority — 5px colored dot + tertiary text label */}
-                <Popover>
-                  <PopoverTrigger
-                    aria-label={`Priority: ${PRIORITY_LABELS[priority]}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="focus-ring -mx-1 inline-flex h-6 items-center gap-1.5 rounded px-1 py-0.5 text-muted-foreground transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground"
-                  >
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "inline-block size-[5px] shrink-0 rounded-full",
-                        PRIORITY_DOT[priority]
-                      )}
-                    />
-                    {PRIORITY_LABELS[priority]}
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[180px]" align="start">
-                    {([1, 2, 3, 4] as Priority[]).map((p) => (
-                      <PopoverItem
-                        key={p}
-                        selected={priority === p}
-                        onSelect={() => setPriority(p)}
+                {/* Priority — 5px colored dot + tertiary text label.
+                    Hidden in compact day columns when the task has no
+                    priority, so a bare "None" doesn't clutter the card. */}
+                {(!compact || priority !== 4) && (
+                  <>
+                    <Popover>
+                      <PopoverTrigger
+                        aria-label={`Priority: ${PRIORITY_LABELS[priority]}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="focus-ring -mx-1 inline-flex h-6 items-center gap-1.5 rounded px-1 py-0.5 text-muted-foreground transition-colors duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground"
                       >
-                        <Flag
-                          size={13}
-                          weight={p === 4 ? "regular" : "fill"}
-                          className={PRIORITY_FLAG[p]}
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "inline-block size-[5px] shrink-0 rounded-full",
+                            PRIORITY_DOT[priority]
+                          )}
                         />
-                        <span>{PRIORITY_LABELS_LONG[p]}</span>
-                      </PopoverItem>
-                    ))}
-                  </PopoverContent>
-                </Popover>
+                        {PRIORITY_LABELS[priority]}
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[180px]" align="start">
+                        {([1, 2, 3, 4] as Priority[]).map((p) => (
+                          <PopoverItem
+                            key={p}
+                            selected={priority === p}
+                            onSelect={() => setPriority(p)}
+                          >
+                            <Flag
+                              size={13}
+                              weight={p === 4 ? "regular" : "fill"}
+                              className={PRIORITY_FLAG[p]}
+                            />
+                            <span>{PRIORITY_LABELS_LONG[p]}</span>
+                          </PopoverItem>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
 
-                <Dot />
+                    <Dot />
+                  </>
+                )}
 
                 {/* Date — clickable popover. Red + medium weight when
                     overdue or today; otherwise tertiary. */}
@@ -726,7 +732,11 @@ function PopoverItem({
 
 // ── Date formatting ─────────────────────────────────────────────────────────
 
-function formatTaskDate(due: Date | null, overdue: boolean): string {
+function formatTaskDate(
+  due: Date | null,
+  overdue: boolean,
+  compact = false
+): string {
   if (!due) return "No date";
 
   if (overdue) {
@@ -736,6 +746,13 @@ function formatTaskDate(due: Date | null, overdue: boolean): string {
   }
 
   const hasTime = !(due.getHours() === 23 && due.getMinutes() === 59);
+
+  // Compact (Upcoming day columns): the column header already names the
+  // day, so the card only needs the time. Avoids "Sat, 30 May, 6:00 PM"
+  // crowding a 320px card and repeating the column's own date.
+  if (compact) {
+    return hasTime ? format(due, "h:mm a") : "All day";
+  }
 
   if (isToday(due)) {
     return hasTime ? `Today, ${format(due, "h:mm a")}` : "Today";

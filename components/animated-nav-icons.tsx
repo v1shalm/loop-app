@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { motion, type Variants } from "motion/react";
+import Calendar03 from "@hugeicons/core-free-icons/Calendar03Icon";
 
 /**
  * Animated sidebar nav icons.
@@ -10,8 +11,8 @@ import { motion, type Variants } from "motion/react";
  * stroke — the same relative weight as the HugeIcons set used elsewhere)
  * so individual parts can animate: the sun's rays twinkle and the disc
  * rotates, the inbox document's three list lines draw in left-to-right
- * with a sheen sweep, the calendar's date flips like a slot-machine tick
- * while the frame squishes, and the check draws itself on.
+ * with a sheen sweep, and the check draws itself on. Upcoming uses the
+ * real HugeIcons calendar with a subtle breathe + tab bob on hover.
  *
  * Motion is driven by variant propagation: the NavRow sets
  * `whileHover="hover"` and these elements resolve the "rest" / "hover"
@@ -197,92 +198,46 @@ export function InboxIcon({ size = 18, active }: IconProps) {
   );
 }
 
-// ── Upcoming: calendar with a date that flips. On hover the current
-//    number slides out left + fades while a fresh one enters from the
-//    right (slot-machine tick), and the frame gives a slight Y squish.
-//    Shows today's date. ────────────────────────────────────────────────
-const numberStyle = {
-  fontSize: 112,
-  fontWeight: 600,
-  fontFamily:
-    "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-  fontVariantNumeric: "tabular-nums" as const,
-  textAnchor: "middle" as const,
-  dominantBaseline: "central" as const,
-  fill: "currentColor",
-  stroke: "none",
-};
-
+// ── Upcoming: a normal HugeIcons calendar (Calendar03). Subtle on hover:
+//    the whole glyph gives a soft scale breathe, the binding tabs bob a
+//    hair, and the day dots pulse once. ─────────────────────────────────
 export function UpcomingIcon({ size = 18, active }: IconProps) {
-  const uid = useId();
-  const bodyClip = `cal-body-${uid}`;
-  const day = String(new Date().getDate());
-
+  // Calendar03 ships as [tabs, body, header, dots].
+  const [tabs, body, header, dots] = Calendar03;
   return (
-    <motion.svg {...svgBase(size)}>
-      <defs>
-        <clipPath id={bodyClip}>
-          <rect x="40" y="64" width="176" height="152" rx="28" />
-        </clipPath>
-      </defs>
-
-      {/* Frame + tabs + header rule. Squishes vertically on hover. Tabs
-          sit at the thirds and stay short; the header rule hugs the top
-          so the date gets the roomy lower two-thirds. */}
+    <motion.svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <motion.g
-        variants={{ hover: { scaleY: [1, 0.92, 1] } }}
-        transition={{ duration: 0.34, times: [0, 0.45, 1], ease: "easeOut" }}
+        variants={{ hover: { scale: [1, 1.06, 1] } }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
         style={selfOrigin}
       >
-        <line x1="100" y1="36" x2="100" y2="68" />
-        <line x1="156" y1="36" x2="156" y2="68" />
-        <rect
-          x="40"
-          y="64"
-          width="176"
-          height="152"
-          rx="28"
+        <path
+          d={body[1].d}
           fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.16 : 0}
+          fillOpacity={active ? 0.14 : 0}
         />
-        <line x1="40" y1="102" x2="216" y2="102" />
+        <motion.path
+          d={tabs[1].d}
+          variants={{ hover: { y: [0, -1.4, 0] } }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        />
+        <path d={header[1].d} />
+        <motion.path
+          d={dots[1].d}
+          variants={{ hover: { opacity: [1, 0.5, 1] } }}
+          transition={{ duration: 0.45, delay: 0.05, ease: "easeOut" }}
+        />
       </motion.g>
-
-      {/* The date — two copies, clipped to the body so they slide in and
-          out through the calendar's edges. At rest only the centred one
-          shows; on hover it ticks left as the next ticks in from right. */}
-      <g clipPath={`url(#${bodyClip})`}>
-        <motion.text
-          x="128"
-          y="162"
-          {...numberStyle}
-          variants={{
-            rest: { x: 0, opacity: 1 },
-            hover: {
-              x: -100,
-              opacity: 0,
-              transition: { duration: 0.18, ease: "easeIn" },
-            },
-          }}
-        >
-          {day}
-        </motion.text>
-        <motion.text
-          x="128"
-          y="162"
-          {...numberStyle}
-          variants={{
-            rest: { x: 100, opacity: 0 },
-            hover: {
-              x: 0,
-              opacity: 1,
-              transition: { duration: 0.18, ease: "easeOut" },
-            },
-          }}
-        >
-          {day}
-        </motion.text>
-      </g>
     </motion.svg>
   );
 }
