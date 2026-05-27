@@ -4,6 +4,7 @@ import {
   getCurrentProfile,
   getDefaultWorkspace,
   getMyTeam,
+  getMyTeams,
   getMyTeamRole,
   getProjects,
   getMembersWithPulse,
@@ -20,10 +21,11 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  const [workspace, team, teamRole, projects, members, counts] =
+  const [workspace, team, teams, teamRole, projects, members, counts] =
     await Promise.all([
       getDefaultWorkspace(),
       getMyTeam(),
+      getMyTeams(),
       getMyTeamRole(),
       getProjects(),
       getMembersWithPulse(),
@@ -43,6 +45,7 @@ export default async function AppLayout({
       user={profile}
       workspace={workspace}
       team={team}
+      teams={teams}
       teamRole={teamRole}
       projects={projects}
       members={members}

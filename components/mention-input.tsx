@@ -70,7 +70,7 @@ export function renderMentionChip(name: string) {
   return (
     <span
       data-mention
-      className="inline-flex items-center rounded px-1 py-px text-[12.5px] font-medium text-primary bg-primary/12 dark:bg-primary/20 dark:text-primary"
+      className="inline-flex items-center rounded px-1 py-px text-[12px] font-medium text-primary bg-primary/12 dark:bg-primary/20 dark:text-primary"
     >
       @{name}
     </span>
@@ -429,7 +429,7 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
           aria-label={ariaLabel}
           rows={minRows}
           className={cn(
-            "block w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-foreground outline-none placeholder:text-muted-foreground/60",
+            "block w-full resize-none bg-transparent text-[13px] leading-[1.5] text-foreground outline-none placeholder:text-muted-foreground/60",
             className
           )}
           style={{ fieldSizing: "content" } as React.CSSProperties}
@@ -466,13 +466,13 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(
                     }
               }
             >
-              <p className="px-2 pb-1 pt-1.5 text-[11.5px] font-medium text-muted-foreground/70">
+              <p className="px-2 pb-1 pt-1.5 text-[11px] font-medium text-muted-foreground/70">
                 {query.trim() === ""
                   ? "Mention someone"
                   : `Matches for “${query}”`}
               </p>
               {filtered.length === 0 ? (
-                <div className="px-2 py-2.5 text-[12.5px] text-muted-foreground">
+                <div className="px-2 py-2.5 text-[12px] text-muted-foreground">
                   No people found
                 </div>
               ) : (

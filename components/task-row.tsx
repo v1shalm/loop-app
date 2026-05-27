@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useState, useTransition } from "react";
+import { memo, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   animate,
@@ -27,6 +27,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  ArrowsClockwise,
   CalendarBlank,
   ChatCircle,
   Check,
@@ -40,6 +41,7 @@ import {
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { deleteTask, setTaskStatus, updateTask } from "@/lib/actions";
+import { isRecurrence, nextOccurrence, recurrenceLabel } from "@/lib/recurrence";
 import { playSound } from "@/lib/sounds";
 import { MentionText } from "@/components/mention-text";
 import type { TaskWithRelations } from "@/lib/queries";
@@ -97,6 +99,17 @@ function TaskRowInner({
   compact?: boolean;
 }) {
   const [done, setDone] = useState(task.status === "done");
+  // Separate from `done`: drives the checkbox spring-fill + check-draw.
+  // We flip this first so the satisfying animation plays, then collapse
+  // the row out a beat later (setDone) instead of vanishing instantly.
+  const [checked, setChecked] = useState(false);
+  const completeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (completeTimer.current) clearTimeout(completeTimer.current);
+    },
+    []
+  );
   const [pending, startTransition] = useTransition();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const pathname = usePathname();
@@ -139,8 +152,22 @@ function TaskRowInner({
   );
   const priority = optPriority;
 
-  const undoComplete = () => {
+  // Fill the box + draw the check, then collapse the row out a beat
+  // later — so the completion animation is actually seen instead of the
+  // row vanishing the instant you click.
+  const animateOut = () => {
+    setChecked(true);
+    completeTimer.current = setTimeout(() => setDone(true), 260);
+  };
+  // Roll the optimistic completion back (server error, or Undo).
+  const cancelComplete = () => {
+    if (completeTimer.current) clearTimeout(completeTimer.current);
+    setChecked(false);
     setDone(false);
+  };
+
+  const undoComplete = () => {
+    cancelComplete();
     playSound("uncomplete");
     startTransition(async () => {
       const res = await setTaskStatus(task.id, "todo");
@@ -152,19 +179,64 @@ function TaskRowInner({
   };
 
   const toggle = () => {
-    setDone(true);
+    // Recurring task: completing it doesn't finish it — it rolls forward
+    // to the next occurrence. We still play the satisfying check + exit
+    // (on date-filtered lists it correctly leaves "today"); the row comes
+    // back rescheduled on revalidation.
+    if (isRecurrence(task.recurrence)) {
+      const prevDue = optDueAt;
+      const base = optDueAt ? new Date(optDueAt) : new Date();
+      const next = nextOccurrence(task.recurrence, base);
+      animateOut();
+      setOptDueAt(next.toISOString());
+      playSound("completed", priority);
+      startTransition(async () => {
+        const res = await updateTask(task.id, { dueAt: next.toISOString() });
+        if (res.error) {
+          sileo.error({ title: res.error });
+          cancelComplete();
+          setOptDueAt(prevDue);
+          return;
+        }
+        const id = sileo.success({
+          title: `Repeats ${formatTaskDate(next, false)}`,
+          description: task.title,
+          button: {
+            title: "Undo",
+            onClick: () => {
+              sileo.dismiss(id);
+              cancelComplete();
+              setOptDueAt(prevDue);
+              startTransition(async () => {
+                await updateTask(task.id, { dueAt: prevDue });
+              });
+            },
+          },
+          duration: 6000,
+        });
+      });
+      return;
+    }
+
+    animateOut();
     playSound("completed", priority);
     startTransition(async () => {
       const res = await setTaskStatus(task.id, "done");
       if (res.error) {
         sileo.error({ title: res.error });
-        setDone(false);
+        cancelComplete();
         return;
       }
-      sileo.success({
+      const id = sileo.success({
         title: "Marked complete",
         description: task.title,
-        button: { title: "Undo", onClick: undoComplete },
+        button: {
+          title: "Undo",
+          onClick: () => {
+            sileo.dismiss(id);
+            undoComplete();
+          },
+        },
         duration: 6000,
       });
     });
@@ -276,12 +348,13 @@ function TaskRowInner({
         setOptDueAt(prev);
         return;
       }
-      sileo.success({
+      const id = sileo.success({
         title: "Scheduled for tomorrow",
         description: task.title,
         button: {
           title: "Undo",
           onClick: () => {
+            sileo.dismiss(id);
             setOptDueAt(prev);
             startTransition(async () => {
               await updateTask(task.id, { dueAt: prev });
@@ -338,7 +411,7 @@ function TaskRowInner({
             >
               <motion.div
                 style={{ opacity: completeOpacity }}
-                className="flex items-center gap-2 text-[13px] font-semibold text-emerald-600"
+                className="flex items-center gap-2 text-[13px] font-semibold text-primary"
               >
                 <CheckCircle size={20} weight="fill" />
                 <span>Complete</span>
@@ -407,14 +480,49 @@ function TaskRowInner({
               disabled={pending}
               aria-label={`Mark "${task.title}" complete`}
               className={cn(
-                "focus-ring mt-0.5 grid size-6 shrink-0 place-items-center rounded-[6px] border border-border bg-background transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] hover:border-foreground/40 active:scale-95"
+                "focus-ring relative mt-0.5 grid size-6 shrink-0 place-items-center rounded-[6px] border border-border bg-background transition-[border-color,transform] duration-150 ease-[var(--ease-out)] hover:border-foreground/40 active:scale-90"
               )}
             >
+              {/* Empty-state hover hint: a faint check on the open circle. */}
               <Check
-                size={13}
+                size={12}
                 weight="bold"
                 className="text-foreground/0 transition-colors group-hover:text-muted-foreground/40"
               />
+              {/* Completed: brand-blue fill springs in, then the check
+                  draws. Lives a beat before the row collapses out
+                  (animateOut), so the whole gesture is visible. */}
+              <AnimatePresence>
+                {checked && (
+                  <motion.span
+                    key="fill"
+                    initial={{ scale: 0.4, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.6, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 520, damping: 20 }}
+                    className="absolute inset-0 grid place-items-center rounded-[6px] bg-primary"
+                  >
+                    <motion.svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
+                    >
+                      <motion.path
+                        d="M5 12.5l4.2 4.2L19 7"
+                        stroke="var(--primary-foreground)"
+                        strokeWidth={3}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 0.2, ease: "easeOut", delay: 0.06 }}
+                      />
+                    </motion.svg>
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
 
             {/* Title + meta row. The title is plain text — the whole
@@ -508,6 +616,18 @@ function TaskRowInner({
                     <DatePicker value={due} onChange={setDue} />
                   </PopoverContent>
                 </Popover>
+
+                {/* Recurrence indicator — completing this advances the due
+                    date rather than finishing the task. */}
+                {isRecurrence(task.recurrence) && (
+                  <span
+                    className="inline-flex shrink-0 items-center text-muted-foreground/70"
+                    title={recurrenceLabel(task.recurrence)}
+                    aria-label={recurrenceLabel(task.recurrence)}
+                  >
+                    <ArrowsClockwise size={11} weight="bold" />
+                  </span>
+                )}
 
                 {/* Author note — only when someone else assigned this to you */}
                 {task.author &&
@@ -620,7 +740,7 @@ function TaskRowInner({
                   {extraAssigneeCount > 0 && (
                     <span
                       aria-hidden
-                      className="absolute -bottom-0.5 -right-1 grid h-[13px] min-w-[13px] place-items-center rounded-full bg-foreground px-0.5 text-[9px] font-semibold leading-none text-background ring-2 ring-card tabular-nums"
+                      className="absolute -bottom-0.5 -right-1 grid h-[13px] min-w-[13px] place-items-center rounded-full bg-foreground px-0.5 text-[10px] font-semibold leading-none text-background ring-2 ring-card tabular-nums"
                     >
                       +{extraAssigneeCount}
                     </span>
@@ -739,7 +859,7 @@ function PopoverItem({
     <button
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] transition-colors",
+        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13px] transition-colors",
         destructive
           ? "text-rose-600 hover:bg-rose-50"
           : selected

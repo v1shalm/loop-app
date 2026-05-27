@@ -143,10 +143,10 @@ export function SkeletonPageHeader() {
 }
 
 /**
- * Right-rail skeleton. Three stacked cards: stats summary, team
- * members list, recent activity. Sized to the 300px column the real
- * RightRail uses. Hidden below lg: the real rail also stacks below
- * the main content on narrow screens.
+ * Right-rail skeleton. Two stacked cards: stats summary and recent
+ * activity. Sized to the 300px column the real RightRail uses. Hidden
+ * below lg: the real rail also stacks below the main content on narrow
+ * screens.
  */
 export function SkeletonRightRail() {
   return (
@@ -163,19 +163,6 @@ export function SkeletonRightRail() {
             <SkeletonBar className="h-7 w-10" delay={100} />
             <SkeletonBar className="mt-1.5 h-2.5 w-14" delay={160} />
           </div>
-        </div>
-      </div>
-
-      {/* Teammates card */}
-      <div className="rounded-xl border border-border/60 bg-card p-4">
-        <SkeletonBar className="mb-3 h-3 w-24" delay={80} />
-        <div className="space-y-2.5">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-2.5">
-              <SkeletonCircle size={26} delay={i * 80 + 100} />
-              <SkeletonBar className="h-3 flex-1" delay={i * 80 + 140} />
-            </div>
-          ))}
         </div>
       </div>
 
@@ -199,11 +186,13 @@ export function SkeletonRightRail() {
 }
 
 /**
- * Single day column for the /upcoming view. Outer pill matches the
- * TaskCardGroup chrome: rounded-2xl, soft tinted background, title +
- * subtitle + count header, then a few stacked card rows inside.
+ * Single day card for the /upcoming vertical agenda. Full-width gray
+ * outer card (matching TaskCardGroup chrome) with a title + subtitle
+ * header, then a few stacked white task rows — or a slim "nothing
+ * scheduled" bar when the day is empty. Mirrors UpcomingSevenDays so
+ * the canvas doesn't reflow when real data arrives.
  */
-export function SkeletonDayColumn({
+export function SkeletonDayRow({
   delay = 0,
   rows = 2,
 }: {
@@ -211,19 +200,21 @@ export function SkeletonDayColumn({
   rows?: number;
 }) {
   return (
-    <div className="w-[320px] shrink-0 rounded-2xl bg-card/70 p-3">
-      <div className="mb-3 flex items-baseline justify-between px-1">
-        <div className="flex items-baseline gap-2">
-          <SkeletonBar className="h-4 w-16" delay={delay} />
-          <SkeletonBar className="h-3 w-12" delay={delay + 60} />
+    <div className="rounded-xl bg-slate-100/70 px-1.5 pt-3 pb-1.5 ring-1 ring-inset ring-slate-200/60 dark:bg-[oklch(0.205_0.005_250)] dark:ring-[oklch(0.27_0.006_250)]">
+      <div className="mb-3 flex items-center gap-2 px-1">
+        <SkeletonBar className="h-4 w-20" delay={delay} />
+        <SkeletonBar className="h-3 w-12" delay={delay + 60} />
+        <SkeletonBar className="ml-auto size-5 rounded-md" delay={delay + 120} />
+      </div>
+      {rows > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          {Array.from({ length: rows }).map((_, i) => (
+            <TaskRowSkeleton key={i} delay={delay + i * 100} />
+          ))}
         </div>
-        <SkeletonBar className="size-5 rounded-full" delay={delay + 120} />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        {Array.from({ length: rows }).map((_, i) => (
-          <TaskRowSkeleton key={i} delay={delay + i * 100} />
-        ))}
-      </div>
+      ) : (
+        <SkeletonBar className="mx-1 mb-2 h-3 w-28" delay={delay + 80} />
+      )}
     </div>
   );
 }

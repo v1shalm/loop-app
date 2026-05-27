@@ -26,10 +26,10 @@ import { cn } from "@/lib/utils";
  * Modal version of the invite flow, used by the "Invite a teammate"
  * CTAs in the Inbox / Assigned-to-me / Upcoming empty states (and
  * anywhere else we want to keep the user on the current canvas
- * instead of jumping to /team/manage).
+ * instead of jumping to /workspace/manage).
  *
  * Deliberately scoped to one job: generate a single invite link.
- * Pending-invite management (cancel, view all) lives on /team/manage
+ * Pending-invite management (cancel, view all) lives on /workspace/manage
  * because it's a roster surface, not a quick action — we link to it
  * from the bottom of the dialog for users who want it.
  */
@@ -107,10 +107,10 @@ export function InviteTeammateDialog({
             <PaperPlaneTilt size={16} weight="regular" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[14.5px] font-semibold tracking-tight text-foreground">
+            <p className="text-[14px] font-semibold tracking-tight text-foreground">
               Invite a teammate
             </p>
-            <p className="text-[11.5px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               Generate a link, share it via Slack or email.
             </p>
           </div>
@@ -171,7 +171,7 @@ export function InviteTeammateDialog({
               <Popover>
                 <PopoverTrigger
                   disabled={pending}
-                  className="focus-ring inline-flex h-9 items-center justify-between gap-1.5 rounded-md border border-border bg-card px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="focus-ring inline-flex h-9 items-center justify-between gap-1.5 rounded-md border border-border bg-card px-3 text-[12px] font-medium text-foreground transition-colors hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span>{role === "admin" ? "Admin" : "Member"}</span>
                   <CaretDown size={10} weight="bold" className="opacity-60" />
@@ -201,9 +201,9 @@ export function InviteTeammateDialog({
         {/* Footer */}
         <div className="flex items-center justify-between gap-2 border-t border-border/60 bg-muted/30 px-5 py-3">
           <Link
-            href="/team/manage"
+            href="/workspace/manage"
             onClick={() => onOpenChange(false)}
-            className="focus-ring rounded-md px-1 py-0.5 text-[11.5px] text-muted-foreground transition-colors hover:text-foreground"
+            className="focus-ring rounded-md px-1 py-0.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
           >
             Manage all invites
           </Link>
@@ -253,20 +253,20 @@ function Success({
 }) {
   return (
     <div className="flex flex-col gap-3 px-5 py-4">
-      <div className="rounded-md border border-emerald-200/60 bg-emerald-50 px-3 py-2 text-[12.5px] text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-200">
+      <div className="rounded-md border border-emerald-200/60 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-200">
         <span className="font-medium">Link ready.</span> Send it to{" "}
         <span className="font-medium">{email}</span>. They&apos;ll join as{" "}
         {role === "admin" ? "an admin" : "a member"} once they sign in.
       </div>
       <div className="relative rounded-md border border-border/60 bg-muted/40">
-        <code className="block w-full truncate py-1.5 pl-2.5 pr-[88px] text-[11.5px] text-muted-foreground">
+        <code className="block w-full truncate py-1.5 pl-2.5 pr-[88px] text-[11px] text-muted-foreground">
           {inviteUrl}
         </code>
         <button
           type="button"
           onClick={onCopy}
           className={cn(
-            "focus-ring absolute right-1 top-1/2 inline-flex h-7 -translate-y-1/2 items-center gap-1.5 rounded-md px-2 text-[11.5px] font-medium transition-colors",
+            "focus-ring absolute right-1 top-1/2 inline-flex h-7 -translate-y-1/2 items-center gap-1.5 rounded-md px-2 text-[11px] font-medium transition-colors",
             copied
               ? "bg-emerald-500/12 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
               : "bg-card text-foreground hover:bg-accent/40"
@@ -288,7 +288,7 @@ function Success({
       <button
         type="button"
         onClick={onReset}
-        className="focus-ring self-start rounded-md px-1 py-0.5 text-[11.5px] text-muted-foreground transition-colors hover:text-foreground"
+        className="focus-ring self-start rounded-md px-1 py-0.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
       >
         Invite someone else
       </button>

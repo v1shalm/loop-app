@@ -57,8 +57,8 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
 
       <div className="mx-auto w-full max-w-[760px] px-8 pb-24 pt-8">
         <Link
-          href="/team"
-          className="focus-ring mb-4 inline-flex items-center gap-1 text-[12.5px] text-muted-foreground hover:text-foreground"
+          href="/workspace"
+          className="focus-ring mb-4 inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground"
         >
           <CaretRight size={12} className="rotate-180" />
           All teammates
@@ -77,7 +77,7 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
             size={56}
           />
           <div className="min-w-0 flex-1">
-            <h2 className="text-[18px] font-semibold tracking-tight text-foreground">
+            <h2 className="text-[17px] font-semibold tracking-tight text-foreground">
               {member.name}
               {isMe && (
                 <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
@@ -120,7 +120,7 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
             <p className="mt-3 text-[14px] font-medium text-foreground">
               {isMe ? "You're clear" : `${member.name} is clear`}
             </p>
-            <p className="mt-1 text-[12.5px] text-muted-foreground">
+            <p className="mt-1 text-[12px] text-muted-foreground">
               No open tasks right now.
             </p>
           </div>
@@ -135,7 +135,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   // desktop, default left when wrapped onto a second row on mobile).
   return (
     <div>
-      <div className="text-[18px] font-semibold tabular-nums text-foreground">
+      <div className="text-[17px] font-semibold tabular-nums text-foreground">
         {value}
       </div>
       <div className="text-[12px] font-medium text-muted-foreground/80">
@@ -169,7 +169,7 @@ function Section({
             {title}
           </h2>
           {subtitle && (
-            <span className="text-[12.5px] text-muted-foreground">
+            <span className="text-[12px] text-muted-foreground">
               {subtitle}
             </span>
           )}

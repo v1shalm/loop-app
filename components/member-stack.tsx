@@ -33,7 +33,7 @@ export function MemberStack({
       {visible.map((m) => (
         <Link
           key={m.id}
-          href={`/team/${m.id}`}
+          href={`/workspace/${m.id}`}
           prefetch={false}
           aria-label={m.name}
           title={m.name}

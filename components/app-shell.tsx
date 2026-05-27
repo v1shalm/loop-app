@@ -8,7 +8,11 @@ import { SidebarProvider } from "@/components/sidebar-context";
 import { NotificationsProvider } from "@/components/notifications-context";
 import { NotificationsDrawer } from "@/components/notifications-drawer";
 import { TeamProvider } from "@/components/team-provider";
-import { QuickAddProvider } from "@/components/quick-add-context";
+import {
+  QuickAddProvider,
+  type QuickAddDefaults,
+} from "@/components/quick-add-context";
+import { InviteProvider } from "@/components/invite-context";
 import { OptimisticDeletesProvider } from "@/components/optimistic-deletes";
 import { AppControlsProvider } from "@/components/app-controls-context";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
@@ -30,6 +34,13 @@ const SearchPalette = dynamic(
   () => import("@/components/search-palette").then((m) => m.SearchPalette),
   { ssr: false }
 );
+const InviteTeammateDialog = dynamic(
+  () =>
+    import("@/components/invite-teammate-dialog").then(
+      (m) => m.InviteTeammateDialog
+    ),
+  { ssr: false }
+);
 const RealtimeBridge = dynamic(
   () => import("@/components/realtime-bridge").then((m) => m.RealtimeBridge),
   { ssr: false }
@@ -39,6 +50,7 @@ export function AppShell({
   user,
   workspace,
   team,
+  teams,
   teamRole,
   projects,
   members,
@@ -46,7 +58,9 @@ export function AppShell({
   children,
 }: Omit<SidebarProps, "onOpenQuickAdd"> & { children: React.ReactNode }) {
   const [quickOpen, setQuickOpen] = useState(false);
+  const [quickDefaults, setQuickDefaults] = useState<QuickAddDefaults>();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Prefetch the heavy modal chunks once the shell has painted so the
@@ -73,6 +87,41 @@ export function AppShell({
     }
   }, []);
 
+  // Global keyboard shortcuts, native-app style: ⌘K / Ctrl+K opens
+  // search; a bare Q opens quick-add. The onboarding task tells new
+  // users "Hit Q anywhere to open Add task" and several comments promise
+  // ⌘K — this is what makes good on both. Q is ignored while typing in a
+  // field (or with any modifier) so it never hijacks real input.
+  useEffect(() => {
+    const isTypingTarget = (el: EventTarget | null) => {
+      const node = el as HTMLElement | null;
+      if (!node) return false;
+      if (node.isContentEditable) return true;
+      const tag = node.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+        return;
+      }
+      if (
+        (e.key === "q" || e.key === "Q") &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !isTypingTarget(e.target)
+      ) {
+        e.preventDefault();
+        setQuickDefaults(undefined);
+        setQuickOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     // reducedMotion="user" makes every motion.* component in the tree
     // respect the OS prefers-reduced-motion setting: drawer slide-up,
@@ -87,7 +136,19 @@ export function AppShell({
         projects={projects}
         currentUserId={user.id}
       >
-        <QuickAddProvider open={() => setQuickOpen(true)}>
+        <QuickAddProvider
+          open={(defaults) => {
+            // Several callers wire `open` straight to an onClick, so the
+            // arg can be a MouseEvent. Only accept the real seed shapes.
+            const seed: QuickAddDefaults = {};
+            if (defaults?.dueAt instanceof Date) seed.dueAt = defaults.dueAt;
+            if (typeof defaults?.projectId === "string")
+              seed.projectId = defaults.projectId;
+            setQuickDefaults(Object.keys(seed).length ? seed : undefined);
+            setQuickOpen(true);
+          }}
+        >
+          <InviteProvider open={() => setInviteOpen(true)}>
           <OptimisticDeletesProvider>
           <AppControlsProvider
             value={{
@@ -107,6 +168,7 @@ export function AppShell({
                 user={user}
                 workspace={workspace}
                 team={team}
+                teams={teams}
                 teamRole={teamRole}
                 projects={projects}
                 members={members}
@@ -141,6 +203,7 @@ export function AppShell({
               user={user}
               workspace={workspace}
               team={team}
+              teams={teams}
               projects={projects}
               counts={counts}
               onOpenSearch={() => setSearchOpen(true)}
@@ -148,6 +211,8 @@ export function AppShell({
             <QuickAddDialog
               open={quickOpen}
               onOpenChange={setQuickOpen}
+              defaultDue={quickDefaults?.dueAt ?? null}
+              defaultProjectId={quickDefaults?.projectId ?? null}
               projects={projects}
               members={members}
               currentUserId={user.id}
@@ -158,6 +223,7 @@ export function AppShell({
               currentUserId={user.id}
             />
             <SearchPalette open={searchOpen} onOpenChange={setSearchOpen} />
+            <InviteTeammateDialog open={inviteOpen} onOpenChange={setInviteOpen} />
             <BottomAddTaskBar
               currentUserId={user.id}
               projects={projects}
@@ -169,6 +235,7 @@ export function AppShell({
           </div>
           </AppControlsProvider>
           </OptimisticDeletesProvider>
+          </InviteProvider>
         </QuickAddProvider>
       </TeamProvider>
       </NotificationsProvider>

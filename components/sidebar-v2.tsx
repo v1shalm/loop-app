@@ -1,15 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { motion } from "motion/react";
+import { sileo } from "sileo";
 import {
   CaretDown,
+  Check,
+  DotsThree,
   Folder,
   MagnifyingGlass,
+  Plus,
   PushPin,
   SidebarSimple,
+  Trash,
+  UserPlus,
 } from "@/components/icons";
+import { deleteProject, setActiveTeam, togglePinnedProject } from "@/lib/actions";
 import {
   CompletedIcon,
   InboxIcon,
@@ -23,6 +31,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -31,6 +46,11 @@ import { cn } from "@/lib/utils";
 import { ProfileMenu } from "@/components/profile-menu";
 import { projectColor } from "@/components/project-dot";
 import { AddProjectPopover } from "@/components/add-project-popover";
+import { CreateWorkspaceDialog } from "@/components/create-workspace-dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useInvite } from "@/components/invite-context";
+import { useQuickAdd } from "@/components/quick-add-context";
+import { WorkspaceBadge } from "@/components/workspace-badge";
 import { useSidebar } from "@/components/sidebar-context";
 import type {
   MemberPulse,
@@ -49,6 +69,9 @@ export interface SidebarProps {
   user: Profile;
   workspace: Workspace | null;
   team: Team | null;
+  /** Every workspace (department) the user belongs to — drives the
+   *  header switcher. `team` is the active one. */
+  teams: Team[];
   teamRole: "admin" | "member" | null;
   projects: Project[];
   members: MemberPulse[];
@@ -81,14 +104,37 @@ export function SidebarV2({
   user,
   workspace,
   team,
-  teamRole: _teamRole,
+  teams,
+  teamRole,
   projects,
   counts,
   onOpenSearch,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { collapsed, toggle } = useSidebar();
-  void _teamRole;
+  const [wsMenuOpen, setWsMenuOpen] = useState(false);
+  const [createWsOpen, setCreateWsOpen] = useState(false);
+  const [, startSwitch] = useTransition();
+  const invite = useInvite();
+  const isAdmin = teamRole === "admin";
+
+  const switchWorkspace = (id: string) => {
+    setWsMenuOpen(false);
+    if (id === team?.id) return;
+    startSwitch(async () => {
+      const res = await setActiveTeam(id);
+      if (res?.error) {
+        sileo.error({ title: res.error });
+        return;
+      }
+      // Land on a workspace-agnostic page. Staying put would 404 if the
+      // current route is a resource of the old workspace (a project,
+      // a member detail) that the new workspace can't see.
+      router.push("/assigned-to-me");
+      router.refresh();
+    });
+  };
 
   if (collapsed) {
     return (
@@ -150,45 +196,112 @@ export function SidebarV2({
           accent + caret. Whole pill is a popover trigger for the
           workspace menu. Right side: search + bell + sidebar-toggle. */}
       <div className="flex items-center gap-2 px-3 pt-4 pb-3">
-        <Popover>
+        <Popover open={wsMenuOpen} onOpenChange={setWsMenuOpen}>
           <PopoverTrigger
             aria-label={`${workspaceName} workspace menu`}
-            className="focus-ring group/wp inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:bg-foreground/[0.04] data-[popup-open]:bg-foreground/[0.06]"
+            className="focus-ring group/wp inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-foreground/[0.04] data-[popup-open]:bg-foreground/[0.06]"
           >
-            <span className="min-w-0 truncate text-[14px] font-semibold tracking-tight text-primary-readable">
+            <WorkspaceBadge color={team?.color} size={20} />
+            <span className="min-w-0 truncate text-[14px] font-semibold tracking-tight text-foreground">
               {workspaceName}
             </span>
             <CaretDown
               size={14}
               weight="bold"
-              className="shrink-0 text-primary-readable/70 transition-transform duration-150 group-data-[popup-open]/wp:rotate-180"
-
+              className="shrink-0 text-muted-foreground/70 transition-transform duration-150 group-data-[popup-open]/wp:rotate-180"
             />
           </PopoverTrigger>
           <PopoverContent
             side="bottom"
             align="start"
             sideOffset={6}
-            className="w-[220px]"
+            className="w-[248px] p-1.5"
           >
-            <Link
-              href="/team"
-              className="focus-ring block rounded-md px-3 py-2.5 text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04]"
-            >
-              Add members
-            </Link>
-            <Link
-              href="/team"
-              className="focus-ring block rounded-md px-3 py-2.5 text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04]"
-            >
-              Copy invitation link
-            </Link>
-            <Link
-              href="/team"
-              className="focus-ring block rounded-md px-3 py-2.5 text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04]"
-            >
-              Manage workspace
-            </Link>
+            {/* Workspace switcher — the departments you belong to. The
+                active one carries a check; picking another re-scopes the
+                whole app (setActiveTeam → my_team_id). */}
+            {teams.length > 1 && (
+              <p className="px-2 pb-1 pt-1 text-[11px] font-medium text-muted-foreground">
+                Switch workspace
+              </p>
+            )}
+            {teams.map((t) => {
+              const active = t.id === team?.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => switchWorkspace(t.id)}
+                  className="focus-ring flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-foreground/[0.04]"
+                >
+                  <WorkspaceBadge color={t.color} size={24} />
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
+                    {t.name}
+                  </span>
+                  {active && (
+                    <Check
+                      size={13}
+                      weight="bold"
+                      className="shrink-0 text-primary-readable"
+                    />
+                  )}
+                </button>
+              );
+            })}
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  setWsMenuOpen(false);
+                  setCreateWsOpen(true);
+                }}
+                className="focus-ring flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] font-medium text-foreground transition-colors hover:bg-foreground/[0.04]"
+              >
+                <span
+                  aria-hidden
+                  className="grid size-6 shrink-0 place-items-center rounded-md border border-dashed border-border text-muted-foreground"
+                >
+                  <Plus size={12} weight="bold" />
+                </span>
+                New workspace
+              </button>
+            )}
+
+            <div className="my-1 h-px bg-border" />
+
+            {isAdmin ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWsMenuOpen(false);
+                    invite.open();
+                  }}
+                  className="focus-ring flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-foreground transition-colors hover:bg-foreground/[0.04]"
+                >
+                  <Plus size={13} className="text-muted-foreground" />
+                  Invite teammates
+                </button>
+                <Link
+                  href="/workspace/manage"
+                  onClick={() => setWsMenuOpen(false)}
+                  className="focus-ring flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-foreground transition-colors hover:bg-foreground/[0.04]"
+                >
+                  <CaretDown size={13} className="rotate-[-90deg] text-muted-foreground" />
+                  Manage workspace
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/workspace"
+                onClick={() => setWsMenuOpen(false)}
+                className="focus-ring flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-foreground transition-colors hover:bg-foreground/[0.04]"
+              >
+                <CaretDown size={13} className="rotate-[-90deg] text-muted-foreground" />
+                View members
+              </Link>
+            )}
           </PopoverContent>
         </Popover>
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
@@ -209,6 +322,8 @@ export function SidebarV2({
         </div>
       </div>
 
+      <CreateWorkspaceDialog open={createWsOpen} onOpenChange={setCreateWsOpen} />
+
       {/* Primary nav */}
       <nav className="mt-2 flex flex-col px-2">
         {navItems.map((item) => (
@@ -223,13 +338,7 @@ export function SidebarV2({
           <span className="text-[14px] font-bold tracking-tight text-foreground">
             Projects
           </span>
-          <div className="ml-auto flex items-center gap-0.5">
-            <Link
-              href="/projects"
-              className="focus-ring rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-primary"
-            >
-              All
-            </Link>
+          <div className="ml-auto flex items-center">
             <AddProjectPopover />
           </div>
         </div>
@@ -278,7 +387,6 @@ function NavRow({
   return (
     <MotionLink
       href={href}
-      prefetch={false}
       // Hovering anywhere on the row drives the icon's internal motion
       // (rays pulse, letter drops, page lifts, check draws) via variant
       // propagation — not a per-icon hover.
@@ -493,7 +601,6 @@ function RailNavLink({
         render={
           <MotionLink
             href={href}
-            prefetch={false}
             aria-label={label}
             initial="rest"
             animate="rest"
@@ -542,7 +649,6 @@ function RailProjectLink({
         render={
           <Link
             href={`/projects/${id}`}
-            prefetch={false}
             aria-label={name}
             className={cn(
               "focus-ring relative grid size-9 place-items-center rounded-md transition-colors",
@@ -571,42 +677,155 @@ function ProjectRow({
   color: string;
   pinned: boolean;
 }) {
+  // The row is a wrapper (not the Link itself) so the `…` menu can sit
+  // as a sibling button — nesting a button inside the <a> would be
+  // invalid and would fight the link's navigation on click.
   return (
-    <Link
-      href={`/projects/${id}`}
-      prefetch={false}
-      className={cn(
-        "group/proj focus-ring relative flex h-8 items-center gap-3 rounded-md px-3 text-[13.5px] transition-colors",
-        active
-          ? "font-semibold text-primary-readable"
-          : "text-foreground/85 hover:text-foreground"
-      )}
-    >
-      {!active && (
-        <span
-          aria-hidden
-          className="absolute inset-0 rounded-md bg-transparent transition-colors duration-150 ease-[var(--ease-out)] group-hover/proj:bg-foreground/[0.06]"
-        />
-      )}
-      <motion.span
-        aria-hidden
-        className="relative z-[1] grid size-5 shrink-0 place-items-center"
-        whileHover={{ scale: 1.18, rotate: -6 }}
-        transition={{ type: "spring", stiffness: 420, damping: 14 }}
+    <div className="group/proj relative">
+      <Link
+        href={`/projects/${id}`}
+        className={cn(
+          "focus-ring relative flex h-8 items-center gap-3 rounded-md pl-3 pr-8 text-[13px] transition-colors",
+          active
+            ? "font-semibold text-primary-readable"
+            : "text-foreground/85 hover:text-foreground"
+        )}
       >
-        <Folder size={15} weight="fill" style={{ color }} />
-      </motion.span>
-      <span className="relative z-[1] min-w-0 flex-1 truncate">{name}</span>
+        {!active && (
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-md bg-transparent transition-colors duration-150 ease-[var(--ease-out)] group-hover/proj:bg-foreground/[0.06]"
+          />
+        )}
+        <motion.span
+          aria-hidden
+          className="relative z-[1] grid size-5 shrink-0 place-items-center"
+          whileHover={{ scale: 1.18, rotate: -6 }}
+          transition={{ type: "spring", stiffness: 420, damping: 14 }}
+        >
+          <Folder size={15} weight="fill" style={{ color }} />
+        </motion.span>
+        <span className="relative z-[1] min-w-0 flex-1 truncate">{name}</span>
+      </Link>
+
+      {/* Trailing slot. Pin indicator at rest; on hover (or while the
+          menu is open) it cross-fades to the `…` actions button, pinned
+          to the same spot so the row never reflows. */}
       {pinned && (
         <PushPin
           size={11}
           weight="fill"
           className={cn(
-            "relative z-[1] shrink-0",
+            "pointer-events-none absolute right-2.5 top-1/2 z-[1] -translate-y-1/2 shrink-0 transition-opacity duration-150 group-hover/proj:opacity-0",
             active ? "text-primary-readable" : "text-muted-foreground/60"
           )}
         />
       )}
-    </Link>
+      <ProjectRowMenu id={id} name={name} pinned={pinned} />
+    </div>
+  );
+}
+
+/**
+ * The per-project `…` menu in the sidebar: quick-add a task tagged to
+ * this project, pin it to the top, invite a teammate, or delete the
+ * project. Hidden until the row is hovered (kept visible while the menu
+ * is open).
+ */
+function ProjectRowMenu({
+  id,
+  name,
+  pinned,
+}: {
+  id: string;
+  name: string;
+  pinned: boolean;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const quickAdd = useQuickAdd();
+  const invite = useInvite();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const togglePin = () => {
+    togglePinnedProject(id).then((res) => {
+      if (res?.error) {
+        sileo.error({ title: res.error });
+        return;
+      }
+      sileo.success({ title: res.pinned ? "Pinned to top" : "Unpinned" });
+      router.refresh();
+    });
+  };
+
+  // Async so ConfirmDialog's own transition tracks it: spinner shows
+  // while the delete is in flight, dialog closes when it resolves.
+  const remove = async () => {
+    const res = await deleteProject(id);
+    if (res?.error) {
+      sileo.error({ title: res.error });
+      return;
+    }
+    sileo.success({ title: "Project deleted" });
+    // If we're viewing the project we just deleted, leave the now-dead
+    // page so we don't 404.
+    if (pathname === `/projects/${id}`) router.push("/assigned-to-me");
+    router.refresh();
+  };
+
+  return (
+    <>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger
+          aria-label={`Actions for ${name}`}
+          className={cn(
+            // Click-through until revealed, so the right edge of the row
+            // still navigates to the project at rest.
+            "focus-ring absolute right-1 top-1/2 z-[2] grid size-6 -translate-y-1/2 place-items-center rounded text-muted-foreground/80 transition-[opacity,background-color,color] duration-150 hover:bg-foreground/[0.08] hover:text-foreground",
+            menuOpen
+              ? "opacity-100"
+              : "pointer-events-none opacity-0 group-hover/proj:pointer-events-auto group-hover/proj:opacity-100"
+          )}
+        >
+          <DotsThree size={16} weight="bold" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" sideOffset={4} className="w-[200px]">
+          <DropdownMenuItem onClick={() => quickAdd.open({ projectId: id })}>
+            <Plus size={15} className="text-muted-foreground" />
+            Add task
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={togglePin}>
+            <PushPin
+              size={15}
+              weight={pinned ? "fill" : "regular"}
+              className="text-muted-foreground"
+            />
+            {pinned ? "Unpin" : "Pin to top"}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => invite.open()}>
+            <UserPlus size={15} className="text-muted-foreground" />
+            Invite teammate
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setConfirmOpen(true)}
+          >
+            <Trash size={15} />
+            Delete project
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Delete ${name}?`}
+        description="This removes the project for everyone in the workspace. Its tasks aren't deleted; they move to your Inbox."
+        confirmLabel="Delete project"
+        onConfirm={remove}
+      />
+    </>
   );
 }

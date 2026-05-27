@@ -51,6 +51,9 @@ export type TaskWithRelations = Task & {
    *  stack on rows; the popover in the drawer is the authoritative
    *  editor. */
   assignees?: { user_id: string }[];
+  /** Recurrence rule (lib/recurrence.ts). Present once migration 0029 is
+   *  applied; fetched via the `*` in TASK_RELATIONS_SELECT. */
+  recurrence?: string | null;
 };
 
 export const TASK_RELATIONS_SELECT = `
@@ -106,64 +109,6 @@ export const getProjects = cache(async (): Promise<Project[]> => {
   return (data ?? []) as Project[];
 });
 
-export interface ProjectBoardColumn {
-  project: Project;
-  open_count: number;
-  done_count: number;
-  tasks: TaskWithRelations[];
-}
-
-/**
- * Used by the /projects board view. Returns every project paired with its
- * open tasks (capped per column so a runaway list doesn't drag the board)
- * and the done count so the column header can show progress.
- */
-export const getProjectsBoard = cache(
-  async (perColumn = 8): Promise<ProjectBoardColumn[]> => {
-    const supabase = await getSupabaseServer();
-    if (!supabase) return [];
-
-    const projects = await getProjects();
-    if (projects.length === 0) return [];
-
-    const ids = projects.map((p) => p.id);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = (await (supabase
-      .from("tasks")
-      .select(TASK_RELATIONS_SELECT)
-      .in("project_id", ids)
-      .order("priority", { ascending: true })
-      .order("created_at", { ascending: false }) as any)) as {
-      data: TaskWithRelations[] | null;
-    };
-    const rows = (data ?? []) as TaskWithRelations[];
-
-    const byProject = new Map<
-      string,
-      { open: TaskWithRelations[]; doneCount: number }
-    >();
-    for (const r of rows) {
-      if (!r.project_id) continue;
-      const bucket =
-        byProject.get(r.project_id) ?? { open: [], doneCount: 0 };
-      if (r.status === "done") bucket.doneCount += 1;
-      else bucket.open.push(r);
-      byProject.set(r.project_id, bucket);
-    }
-
-    return projects.map((p) => {
-      const b = byProject.get(p.id) ?? { open: [], doneCount: 0 };
-      return {
-        project: p,
-        open_count: b.open.length,
-        done_count: b.doneCount,
-        tasks: b.open.slice(0, perColumn),
-      };
-    });
-  }
-);
-
 // ── Teams ────────────────────────────────────────────────────────────────────
 
 export interface Team {
@@ -177,35 +122,69 @@ export interface TeamMember extends Profile {
   team_role: "admin" | "member";
 }
 
-/** The team the current user belongs to. One per user (enforced by unique idx). */
+/**
+ * Every team (department) the current user belongs to, earliest first.
+ * A user can be on several now; this is the universe for the workspace
+ * switcher.
+ */
+export const getMyTeams = cache(async (): Promise<Team[]> => {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return [];
+  const profile = await getCurrentProfile();
+  if (!profile) return [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase
+    .from("team_members")
+    .select("team:teams(id, workspace_id, name, color)")
+    .eq("user_id", profile.id)
+    .order("joined_at") as any);
+  return ((data ?? []) as Array<{ team: Team | null }>)
+    .map((r) => r.team)
+    .filter((t): t is Team => t != null);
+});
+
+/**
+ * The team the user is currently viewing — their active selection, or
+ * the earliest team they joined as a fallback. Mirrors the DB's
+ * app_private.my_team_id() so server queries and RLS agree on which
+ * team is "current".
+ */
 export const getMyTeam = cache(async (): Promise<Team | null> => {
   const supabase = await getSupabaseServer();
   if (!supabase) return null;
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
+  const teams = await getMyTeams();
+  if (teams.length === 0) return null;
+  if (teams.length === 1) return teams[0];
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase
-    .from("team_members")
-    .select("role, team:teams(id, workspace_id, name, color)")
+  const { data: sel } = await (supabase as any)
+    .from("team_active_selection")
+    .select("team_id")
     .eq("user_id", profile.id)
-    .maybeSingle() as any);
-  if (!data || !data.team) return null;
-  return data.team as Team;
+    .maybeSingle();
+  const activeId = sel?.team_id as string | undefined;
+  return teams.find((t) => t.id === activeId) ?? teams[0];
 });
 
-/** Is the current user an admin of their team? */
+/** The current user's role in their ACTIVE team. */
 export const getMyTeamRole = cache(
   async (): Promise<"admin" | "member" | null> => {
     const supabase = await getSupabaseServer();
     if (!supabase) return null;
     const profile = await getCurrentProfile();
     if (!profile) return null;
+    const team = await getMyTeam();
+    if (!team) return null;
 
     const { data } = await supabase
       .from("team_members")
       .select("role")
       .eq("user_id", profile.id)
+      .eq("team_id", team.id)
       .maybeSingle();
     return (data?.role as "admin" | "member" | null) ?? null;
   }
@@ -570,6 +549,24 @@ export async function getProjectTasks(
   });
 }
 
+/**
+ * Completed tasks for a project, newest-finished first. Powers the
+ * collapsible "Completed" disclosure on the project page so a finished
+ * task is still reachable (and reopenable) instead of vanishing.
+ */
+export async function getProjectDoneTasks(
+  projectId: string,
+  limit = 50
+): Promise<TaskWithRelations[]> {
+  return fetchTasks((q: any) =>
+    q
+      .eq("project_id", projectId)
+      .eq("status", "done")
+      .order("completed_at", { ascending: false, nullsFirst: false })
+      .limit(limit)
+  );
+}
+
 export async function getProject(id: string): Promise<Project | null> {
   const supabase = await getSupabaseServer();
   if (!supabase) return null;
@@ -670,10 +667,9 @@ export const getSidebarCounts = cache(async (): Promise<SidebarCounts> => {
 export interface MemberPulse extends Profile {
   open_tasks: number;
   completed_today: number;
-  current_task_title: string | null;
 }
 
-/** Used by the sidebar Team Pulse list + /team grid. */
+/** Members with their open/done task counts. Powers the /workspace grid and the app-wide member list. */
 export const getMembersWithPulse = cache(async (): Promise<MemberPulse[]> => {
   const supabase = await getSupabaseServer();
   if (!supabase) return [];
@@ -684,33 +680,26 @@ export const getMembersWithPulse = cache(async (): Promise<MemberPulse[]> => {
   startOfToday.setHours(0, 0, 0, 0);
   const ids = members.map((m) => m.id);
 
-  // One pass over open tasks — count them AND grab the highest-priority /
-  // soonest-due title per user as the "currently working on" hint.
+  // Two count-only scans: open tasks per user, and tasks each user
+  // finished today. We only need the assignee column to tally.
   const [openRes, doneRes] = await Promise.all([
     supabase
       .from("tasks")
-      .select("assignee_id, title, priority, due_at, created_at")
+      .select("assignee_id")
       .neq("status", "done")
-      .in("assignee_id", ids)
-      .order("priority", { ascending: true })
-      .order("due_at", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: false }),
+      .in("assignee_id", ids),
     supabase
       .from("tasks")
-      .select("assignee_id, completed_at")
+      .select("assignee_id")
       .eq("status", "done")
       .gte("completed_at", startOfToday.toISOString())
       .in("assignee_id", ids),
   ]);
 
   const openByUser = new Map<string, number>();
-  const topTitleByUser = new Map<string, string>();
   for (const row of openRes.data ?? []) {
     if (!row.assignee_id) continue;
     openByUser.set(row.assignee_id, (openByUser.get(row.assignee_id) ?? 0) + 1);
-    if (!topTitleByUser.has(row.assignee_id)) {
-      topTitleByUser.set(row.assignee_id, row.title);
-    }
   }
   const doneByUser = new Map<string, number>();
   for (const row of doneRes.data ?? []) {
@@ -722,7 +711,6 @@ export const getMembersWithPulse = cache(async (): Promise<MemberPulse[]> => {
     ...m,
     open_tasks: openByUser.get(m.id) ?? 0,
     completed_today: doneByUser.get(m.id) ?? 0,
-    current_task_title: topTitleByUser.get(m.id) ?? null,
   }));
 });
 

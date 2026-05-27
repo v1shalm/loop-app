@@ -10,7 +10,7 @@ import {
 import { statusLabel } from "@/components/status-picker";
 import { Avatar } from "@/components/avatar";
 
-export const metadata = { title: "Team · Loop" };
+export const metadata = { title: "Members · Loop" };
 
 export default async function TeamPage() {
   const [me, members, role] = await Promise.all([
@@ -21,20 +21,20 @@ export default async function TeamPage() {
 
   return (
     <div className="min-h-full">
-      <PageHeader icon={<UsersThree size={16} />} title="Team" />
+      <PageHeader icon={<UsersThree size={16} />} title="Members" />
 
       <div className="mx-auto w-full max-w-[960px] px-8 pb-24 pt-8">
         {role === "admin" && (
           <div className="mb-5 flex items-center justify-between rounded-xl border border-violet-200/60 bg-violet-50/50 px-4 py-3 dark:border-violet-400/25 dark:bg-violet-500/10">
-            <p className="text-[12.5px] text-violet-700 dark:text-violet-300">
+            <p className="text-[12px] text-violet-700 dark:text-violet-300">
               You&apos;re an admin. Add or remove members, change roles.
             </p>
             <Link
-              href="/team/manage"
-              className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-violet-300/70 bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-400/40 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/25"
+              href="/workspace/manage"
+              className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-violet-300/70 bg-white px-2.5 py-1.5 text-[12px] font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-400/40 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/25"
             >
               <Gear size={13} />
-              Manage team
+              Manage workspace
             </Link>
           </div>
         )}
@@ -78,7 +78,7 @@ function MemberCard({
 
   return (
     <Link
-      href={`/team/${member.id}`}
+      href={`/workspace/${member.id}`}
       className="focus-ring group flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-5 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
     >
       <div className="flex items-start gap-3">
@@ -89,10 +89,10 @@ function MemberCard({
           size={44}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[14.5px] font-semibold text-foreground">
+          <p className="truncate text-[14px] font-semibold text-foreground">
             {member.name}
             {isMe && (
-              <span className="ml-1.5 text-[11.5px] font-normal text-muted-foreground">
+              <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
                 (you)
               </span>
             )}
@@ -110,7 +110,7 @@ function MemberCard({
         <ProgressRing ratio={ratio} />
       </div>
 
-      <div className="flex items-baseline gap-4 border-t border-border/40 pt-3 text-[12.5px]">
+      <div className="flex items-baseline gap-4 border-t border-border/40 pt-3 text-[12px]">
         <span>
           <span className="text-[15px] font-semibold tabular-nums text-foreground">
             {member.open_tasks}

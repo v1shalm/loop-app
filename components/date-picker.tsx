@@ -15,13 +15,7 @@ import {
   subMonths,
 } from "date-fns";
 import { sileo } from "sileo";
-import {
-  ArrowsClockwise,
-  Bell,
-  CaretLeft,
-  CaretRight,
-  Clock,
-} from "@/components/icons";
+import { CaretLeft, CaretRight, Clock } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 function endOfDayAt6pm(d: Date) {
@@ -87,16 +81,6 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
     onChange(next);
   };
 
-  // Reminders + recurring aren't backed by a schema yet. Surface the
-  // rows because the reference shows them, but be honest on click —
-  // a toast that says what's missing beats silently no-op'ing.
-  const notYet = (feature: string) => () =>
-    sileo.info({
-      title: `${feature} coming soon`,
-      description:
-        "Date-only for now. Reminders and recurrence need a bit more wiring.",
-    });
-
   return (
     <div className={cn("w-[340px] p-3 max-md:w-[336px]", className)}>
       {/* Month header — title on the left, chevrons clustered on the
@@ -129,7 +113,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
         {WEEKDAYS.map((d, i) => (
           <div
             key={i}
-            className="grid h-8 place-items-center text-[10.5px] font-semibold tracking-wide text-muted-foreground/70"
+            className="grid h-8 place-items-center text-[10px] font-semibold tracking-wide text-muted-foreground/70"
           >
             {d}
           </div>
@@ -184,9 +168,9 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
         })}
       </div>
 
-      {/* Action rows — mirror the reference. Set due time is wired
-          to the existing due_at timestamp; Add Reminder and Recurring
-          show "coming soon" toasts until the schema lands. */}
+      {/* Set due time — the one action row here. Recurrence lives on
+          its own chip next to the date in Quick Add and the task
+          drawer, so it isn't duplicated in the calendar. */}
       <div className="mt-2 flex flex-col">
         {/* Set due time. Click to reveal a native time input inline.
             Only meaningful when a date is set, so it goes muted when
@@ -203,7 +187,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
             <button
               type="button"
               onClick={() => setTimeEditing(false)}
-              className="focus-ring rounded-md px-2 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
+              className="focus-ring rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
             >
               Done
             </button>
@@ -228,24 +212,6 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
             </span>
           </button>
         )}
-
-        <button
-          type="button"
-          onClick={notYet("Reminders")}
-          className="focus-ring flex w-full items-center gap-2.5 rounded-md px-1 py-2 text-left text-[13px] text-muted-foreground transition-colors hover:bg-foreground/[0.04]"
-        >
-          <Bell size={15} className="text-muted-foreground" />
-          <span className="flex-1">Add Reminder</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={notYet("Recurring tasks")}
-          className="focus-ring flex w-full items-center gap-2.5 rounded-md px-1 py-2 text-left text-[13px] text-muted-foreground transition-colors hover:bg-foreground/[0.04]"
-        >
-          <ArrowsClockwise size={15} className="text-muted-foreground" />
-          <span className="flex-1">Recurring</span>
-        </button>
       </div>
 
       {/* Clear all footer — hairline separated, centered text.
@@ -259,7 +225,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
           setTimeEditing(false);
         }}
         disabled={!value}
-        className="focus-ring mt-1 flex w-full items-center justify-center rounded-md py-2 text-[12.5px] font-medium text-foreground transition-colors hover:bg-foreground/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+        className="focus-ring mt-1 flex w-full items-center justify-center rounded-md py-2 text-[12px] font-medium text-foreground transition-colors hover:bg-foreground/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
       >
         Clear all
       </button>

@@ -92,14 +92,14 @@ export function EmptyState({
         <h3 className="mt-6 text-[20px] font-semibold tracking-tight text-foreground">
           No results found
         </h3>
-        <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
           Your filter is too narrow. Clear it to see the full list.
         </p>
         {onClearFilters && (
           <button
             type="button"
             onClick={onClearFilters}
-            className="focus-ring mt-5 inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.97]"
+            className="focus-ring mt-5 inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.97]"
           >
             <FunnelSimple size={12} weight="bold" />
             Clear filters
@@ -147,14 +147,14 @@ export function EmptyState({
       <h3 className="mt-6 text-[20px] font-semibold tracking-tight text-foreground">
         {title}
       </h3>
-      <p className="mt-2 max-w-[420px] text-[13.5px] leading-relaxed text-muted-foreground">
+      <p className="mt-2 max-w-[420px] text-[13px] leading-relaxed text-muted-foreground">
         {hint}
       </p>
 
       {showAction && (
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
           <button
-            onClick={action}
+            onClick={() => action()}
             className="focus-ring surface-brand surface-brand-hover inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97]"
           >
             <Plus size={13} weight="bold" />
@@ -170,7 +170,7 @@ export function EmptyState({
           {tips.map((tip, i) => (
             <li
               key={i}
-              className="flex items-start gap-2 text-[12.5px] text-muted-foreground"
+              className="flex items-start gap-2 text-[12px] text-muted-foreground"
             >
               <CheckCircle
                 size={14}

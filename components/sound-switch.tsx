@@ -39,7 +39,7 @@ export function SoundSwitch() {
       <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
         {on ? <SpeakerHigh size={13} /> : <SpeakerSlash size={13} />}
       </span>
-      <span className="flex-1 text-left text-[12.5px] font-medium text-foreground">
+      <span className="flex-1 text-left text-[12px] font-medium text-foreground">
         Sounds
       </span>
       <span

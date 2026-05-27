@@ -5,7 +5,7 @@ import {
   getMyTeam,
 } from "@/lib/queries";
 
-export const metadata = { title: "Set up your team · Loop" };
+export const metadata = { title: "Set up your workspace · Loop" };
 
 /**
  * First-run landing for users who signed in but haven't joined a team
@@ -32,15 +32,15 @@ export default async function OnboardingPage() {
           Hey {firstName}.
         </h1>
         <p className="mt-2 text-center text-[15px] text-muted-foreground">
-          Name your team to get started.
+          Name your workspace to get started.
         </p>
 
         <div className="mt-10">
           <CreateTeamForm />
         </div>
 
-        <p className="mx-auto mt-8 text-center text-[12.5px] text-muted-foreground/80">
-          Already on a team? Ask an admin to add you.
+        <p className="mx-auto mt-8 text-center text-[12px] text-muted-foreground/80">
+          Already in a workspace? Ask an admin to add you.
         </p>
       </div>
     </main>

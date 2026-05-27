@@ -13,10 +13,10 @@ export const metadata = { title: "Manage workspace · Loop" };
 /**
  * Admin-only workspace management. The page itself is a thin shell — all
  * the UI lives in WorkspaceMembersDialog (rendered open). Closing the
- * dialog navigates back to /team. Server-side data is passed in so the
+ * dialog navigates back to /workspace. Server-side data is passed in so the
  * dialog renders instantly with no client-side round-trip.
  *
- * Non-admins redirect to /team (read-only roster) so they never see the
+ * Non-admins redirect to /workspace (read-only roster) so they never see the
  * management surface.
  */
 export default async function ManageTeamPage() {
@@ -29,7 +29,7 @@ export default async function ManageTeamPage() {
   ]);
 
   if (role !== "admin" || !profile) {
-    redirect("/team");
+    redirect("/workspace");
   }
 
   return (

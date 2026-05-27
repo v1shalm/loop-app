@@ -239,8 +239,33 @@ export function InboxList({
  */
 function SortableInbox({ tasks }: { tasks: TaskWithRelations[] }) {
   const [ordered, setOrdered] = useState(tasks);
-  useEffect(() => setOrdered(tasks), [tasks]);
+  // Cards the user just accepted/snoozed: hidden instantly so the Inbox
+  // feels as snappy as everywhere else, restored if the server rejects.
+  const [resolved, setResolved] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    setOrdered(tasks);
+    // The fresh server list is the source of truth: drop any optimistic
+    // ids that have genuinely left the inbox so the set can't leak.
+    setResolved((prev) => {
+      if (prev.size === 0) return prev;
+      const present = new Set(tasks.map((t) => t.id));
+      const next = new Set([...prev].filter((id) => present.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [tasks]);
   const [, startTransition] = useTransition();
+
+  const onResolved = (id: string) =>
+    setResolved((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+  const onRestore = (id: string) =>
+    setResolved((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+  const visible = ordered.filter((t) => !resolved.has(t.id));
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -273,13 +298,18 @@ function SortableInbox({ tasks }: { tasks: TaskWithRelations[] }) {
       onDragEnd={onDragEnd}
     >
       <SortableContext
-        items={ordered.map((t) => t.id)}
+        items={visible.map((t) => t.id)}
         strategy={verticalListSortingStrategy}
       >
         <ul className="flex flex-col gap-2">
           <AnimatePresence initial={false}>
-            {ordered.map((t) => (
-              <SortableInboxItem key={t.id} task={t} />
+            {visible.map((t) => (
+              <SortableInboxItem
+                key={t.id}
+                task={t}
+                onResolved={onResolved}
+                onRestore={onRestore}
+              />
             ))}
           </AnimatePresence>
         </ul>
@@ -288,7 +318,15 @@ function SortableInbox({ tasks }: { tasks: TaskWithRelations[] }) {
   );
 }
 
-function SortableInboxItem({ task }: { task: TaskWithRelations }) {
+function SortableInboxItem({
+  task,
+  onResolved,
+  onRestore,
+}: {
+  task: TaskWithRelations;
+  onResolved: (id: string) => void;
+  onRestore: (id: string) => void;
+}) {
   const {
     attributes,
     listeners,
@@ -328,14 +366,22 @@ function SortableInboxItem({ task }: { task: TaskWithRelations }) {
           <DotsSixVertical size={18} weight="bold" />
         </button>
         <div className="min-w-0 flex-1">
-          <InboxItem task={task} />
+          <InboxItem task={task} onResolved={onResolved} onRestore={onRestore} />
         </div>
       </motion.div>
     </li>
   );
 }
 
-function InboxItem({ task }: { task: TaskWithRelations }) {
+function InboxItem({
+  task,
+  onResolved,
+  onRestore,
+}: {
+  task: TaskWithRelations;
+  onResolved: (id: string) => void;
+  onRestore: (id: string) => void;
+}) {
   const [pending, startTransition] = useTransition();
   const [replyOpen, setReplyOpen] = useState(false);
   const [reply, setReply] = useState("");
@@ -351,20 +397,26 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
   const accept = () => {
     if (pending) return;
     playSound("added");
+    onResolved(task.id); // drop the card now; restore below if it fails
     startTransition(async () => {
       const res = await triageTask(task.id);
-      if (res.error) sileo.error({ title: res.error });
-      else sileo.success({ title: "Task accepted" });
+      if (res.error) {
+        onRestore(task.id);
+        sileo.error({ title: res.error });
+      } else sileo.success({ title: "Task accepted" });
     });
   };
 
   const snooze = (until?: Date) => {
     if (pending) return;
     const wake = until ?? defaultSnoozeUntil();
+    onResolved(task.id); // drop the card now; restore below if it fails
     startTransition(async () => {
       const res = await snoozeTask(task.id, wake.toISOString());
-      if (res.error) sileo.error({ title: res.error });
-      else
+      if (res.error) {
+        onRestore(task.id);
+        sileo.error({ title: res.error });
+      } else
         sileo.info({
           title: `Snoozed until ${formatWake(wake)}`,
         });
@@ -403,7 +455,7 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[11.5px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             <span className="font-medium text-foreground">
               {task.author?.name ?? "Someone"}
             </span>{" "}
@@ -413,12 +465,12 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
             <MentionText text={task.title} />
           </p>
           {task.description && (
-            <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">
+            <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
               {task.description}
             </p>
           )}
 
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-muted-foreground">
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
             {task.project && (
               <span className="inline-flex items-center gap-1.5">
                 <ProjectDot project={task.project} size={7} />
@@ -496,7 +548,7 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
           onClick={() => setReplyOpen((v) => !v)}
           disabled={pending}
           className={cn(
-            "focus-ring inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] transition-colors disabled:opacity-50",
+            "focus-ring inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] transition-colors disabled:opacity-50",
             replyOpen
               ? "bg-accent/50 text-foreground"
               : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
@@ -511,7 +563,7 @@ function InboxItem({ task }: { task: TaskWithRelations }) {
           <button
             onClick={accept}
             disabled={pending}
-            className="focus-ring surface-brand surface-brand-hover flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50"
+            className="focus-ring surface-brand surface-brand-hover flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] font-medium text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50"
           >
             <Check size={13} weight="bold" />
             Accept
@@ -542,7 +594,7 @@ function SnoozeButton({
     <Popover>
       <PopoverTrigger
         disabled={pending}
-        className="focus-ring inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground disabled:opacity-50"
+        className="focus-ring inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground disabled:opacity-50"
       >
         <Clock size={13} />
         Snooze
@@ -766,12 +818,12 @@ function SavedViewsChip({
               aria-label="Name for saved view"
               placeholder="View name"
               maxLength={40}
-              className="focus-ring h-7 flex-1 rounded-md border border-border bg-background px-2 text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+              className="focus-ring h-7 flex-1 rounded-md border border-border bg-background px-2 text-[12px] text-foreground outline-none placeholder:text-muted-foreground/60"
             />
             <button
               type="submit"
               disabled={pending || !name.trim()}
-              className="focus-ring inline-flex h-7 items-center gap-1 rounded-md bg-primary px-2 text-[11.5px] font-semibold text-primary-foreground disabled:opacity-60"
+              className="focus-ring inline-flex h-7 items-center gap-1 rounded-md bg-primary px-2 text-[11px] font-semibold text-primary-foreground disabled:opacity-60"
             >
               Save
             </button>
@@ -780,7 +832,7 @@ function SavedViewsChip({
           <button
             type="button"
             onClick={() => setNaming(true)}
-            className="focus-ring flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] text-primary transition-colors hover:bg-primary/8"
+            className="focus-ring flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-primary transition-colors hover:bg-primary/8"
           >
             + Save current filter as a view
           </button>

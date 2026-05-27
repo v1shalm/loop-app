@@ -6,6 +6,7 @@ import { sileo } from "sileo";
 import {
   Bell,
   BellSlash,
+  CaretDown,
   Desktop,
   Gear,
   MoonStars,
@@ -143,7 +144,7 @@ export function ProfileMenu({
             <p className="truncate text-[13px] font-semibold text-foreground">
               {user.name}
             </p>
-            <p className="truncate text-[11.5px] text-muted-foreground">
+            <p className="truncate text-[11px] text-muted-foreground">
               {user.role ?? "Team member"}
             </p>
           </div>
@@ -176,7 +177,7 @@ export function ProfileMenu({
               <p className="truncate text-[15px] font-semibold text-foreground">
                 {user.name}
               </p>
-              <p className="truncate text-[12.5px] text-muted-foreground">
+              <p className="truncate text-[12px] text-muted-foreground">
                 {progressToday
                   ? `${progressToday.done}/${progressToday.total} tasks today`
                   : user.role ?? "Team member"}
@@ -234,10 +235,10 @@ export function ProfileMenu({
           </SheetRow>
           <SheetRow
             icon={<UsersThree size={18} className="text-muted-foreground" />}
-            href="/team"
+            href="/workspace"
             onClick={closeMobile}
           >
-            Team
+            Members
           </SheetRow>
           <SheetRow
             icon={
@@ -254,7 +255,7 @@ export function ProfileMenu({
             trailing={
               <span
                 className={cn(
-                  "text-[12.5px] font-semibold",
+                  "text-[12px] font-semibold",
                   soundsOn ? "text-primary" : "text-muted-foreground/70"
                 )}
               >
@@ -350,7 +351,7 @@ export function ProfileMenu({
         </Tooltip>
       ) : (
         <DropdownMenuTrigger
-          className="group/profile focus-ring flex w-full items-center gap-2.5 rounded-lg border border-border/60 bg-card px-2.5 py-2 text-left shadow-soft-xs transition-colors hover:bg-accent/40 data-[popup-open]:bg-accent/40"
+          className="group/profile focus-ring flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent/40 data-[popup-open]:bg-accent/40"
           aria-label="Open account menu"
         >
           <span className="relative shrink-0">
@@ -371,14 +372,14 @@ export function ProfileMenu({
             <p className="truncate text-[13px] font-semibold text-foreground">
               {user.name}
             </p>
-            <p className="truncate text-[11.5px] text-muted-foreground">
+            <p className="truncate text-[11px] text-muted-foreground">
               {user.role ?? "Team member"}
             </p>
           </div>
-          <Gear
-            size={14}
-            className="shrink-0 text-muted-foreground/60 transition-colors group-hover/profile:text-foreground"
-          />
+          <span className="-space-y-1.5 flex shrink-0 flex-col items-center text-muted-foreground/60 transition-colors group-hover/profile:text-foreground">
+            <CaretDown size={11} weight="bold" className="rotate-180" />
+            <CaretDown size={11} weight="bold" />
+          </span>
         </DropdownMenuTrigger>
       )}
 
@@ -404,7 +405,7 @@ export function ProfileMenu({
             />
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[12.5px] font-semibold text-foreground">
+            <p className="truncate text-[12px] font-semibold text-foreground">
               {user.name}
             </p>
             <p className="truncate text-[11px] text-muted-foreground">
@@ -462,9 +463,9 @@ export function ProfileMenu({
           <span className="flex-1">Settings</span>
         </DropdownMenuItem>
 
-        <DropdownMenuItem render={<Link href="/team" />}>
+        <DropdownMenuItem render={<Link href="/workspace" />}>
           <UsersThree size={15} className="text-muted-foreground" />
-          <span className="flex-1">Team</span>
+          <span className="flex-1">Members</span>
         </DropdownMenuItem>
 
         {/* Sound toggle */}
@@ -476,7 +477,7 @@ export function ProfileMenu({
           }}
           role="menuitemcheckbox"
           aria-checked={soundsOn}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.04] focus-visible:outline-none"
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13px] text-foreground transition-colors hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.04] focus-visible:outline-none"
         >
           {soundsOn ? (
             <SpeakerHigh size={15} className="text-muted-foreground" />
@@ -486,7 +487,7 @@ export function ProfileMenu({
           <span className="flex-1">Sounds</span>
           <span
             className={cn(
-              "text-[11.5px] font-semibold",
+              "text-[11px] font-semibold",
               soundsOn ? "text-primary" : "text-muted-foreground/70"
             )}
           >
@@ -574,7 +575,7 @@ function MenuRow({
       disabled={disabled}
       aria-pressed={aria["aria-pressed"]}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] text-foreground transition-colors",
+        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13px] text-foreground transition-colors",
         "hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.04] focus-visible:outline-none",
         "disabled:cursor-not-allowed disabled:opacity-60"
       )}
@@ -617,7 +618,7 @@ function SheetRow({
   "aria-pressed"?: boolean;
 }) {
   const cls = cn(
-    "flex w-full min-h-12 items-center gap-3 px-4 py-2 text-left text-[14.5px] transition-colors",
+    "flex w-full min-h-12 items-center gap-3 px-4 py-2 text-left text-[14px] transition-colors",
     "hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none",
     "disabled:cursor-not-allowed disabled:opacity-60",
     destructive ? "text-rose-600 dark:text-rose-400" : "text-foreground"
@@ -684,7 +685,7 @@ function ProgressRing({ done, total }: { done: number; total: number }) {
           }}
         />
       </svg>
-      <span className="absolute text-[9.5px] font-semibold tabular-nums text-foreground">
+      <span className="absolute text-[10px] font-semibold tabular-nums text-foreground">
         {done}
       </span>
     </div>

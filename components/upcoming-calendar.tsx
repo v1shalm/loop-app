@@ -112,14 +112,14 @@ export function UpcomingCalendar({ tasks }: CalendarProps) {
             setCursor(startOfMonth(now));
             setSelected(now);
           }}
-          className="focus-ring rounded-md px-2 py-1 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+          className="focus-ring rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
         >
           Today
         </button>
       </header>
 
       {/* Weekday strip */}
-      <div className="grid grid-cols-7 border-b border-border/60 px-1 pt-1.5 pb-1 text-[11.5px] font-medium text-muted-foreground/80">
+      <div className="grid grid-cols-7 border-b border-border/60 px-1 pt-1.5 pb-1 text-[11px] font-medium text-muted-foreground/80">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div key={d} className="px-2">
             {d}
@@ -164,7 +164,7 @@ export function UpcomingCalendar({ tasks }: CalendarProps) {
                   <div
                     key={t.id}
                     className={cn(
-                      "flex items-center gap-1 rounded px-1 py-0.5 text-[10.5px] leading-tight",
+                      "flex items-center gap-1 rounded px-1 py-0.5 text-[10px] leading-tight",
                       "bg-foreground/[0.045] text-foreground/80"
                     )}
                   >
@@ -205,7 +205,7 @@ export function UpcomingCalendar({ tasks }: CalendarProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="py-3 text-center text-[12.5px] text-muted-foreground/70"
+                className="py-3 text-center text-[12px] text-muted-foreground/70"
               >
                 Nothing scheduled.
               </motion.p>
@@ -243,7 +243,7 @@ export function UpcomingCalendar({ tasks }: CalendarProps) {
                       {t.title}
                     </span>
                     {t.project && (
-                      <span className="shrink-0 text-[11.5px] text-muted-foreground">
+                      <span className="shrink-0 text-[11px] text-muted-foreground">
                         {t.project.name}
                       </span>
                     )}

@@ -151,7 +151,7 @@ function ReactionChip({
       transition={{ type: "spring", duration: 0.32, bounce: 0.22 }}
       whileTap={{ scale: 0.94 }}
       className={cn(
-        "focus-ring inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[11.5px] leading-none transition-colors duration-150 ease-[var(--ease-out)]",
+        "focus-ring inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[11px] leading-none transition-colors duration-150 ease-[var(--ease-out)]",
         group.byMe
           ? "border-primary/40 bg-primary/10 text-primary"
           : "border-border bg-card text-muted-foreground hover:bg-accent/40 hover:text-foreground"
@@ -216,7 +216,7 @@ function AddReactionButton({
               type="button"
               onClick={() => handle(e)}
               aria-label={`React with ${e}`}
-              className="focus-ring grid size-8 place-items-center rounded-md text-[16px] leading-none transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/60 active:scale-[0.88]"
+              className="focus-ring grid size-8 place-items-center rounded-md text-[15px] leading-none transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/60 active:scale-[0.88]"
             >
               {e}
             </button>

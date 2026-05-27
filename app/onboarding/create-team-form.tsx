@@ -40,7 +40,7 @@ export function CreateTeamForm() {
       }
       sileo.success({
         title: `${trimmed} is live`,
-        description: "You're the admin. Invite teammates from /team.",
+        description: "You're the admin. Invite teammates from workspace settings.",
       });
       router.push("/assigned-to-me");
       router.refresh();
@@ -53,8 +53,8 @@ export function CreateTeamForm() {
       className="rounded-2xl border border-border/60 bg-card p-7 shadow-soft-sm"
     >
       <label className="block">
-        <span className="block text-[12.5px] font-medium text-foreground">
-          Team name
+        <span className="block text-[12px] font-medium text-foreground">
+          Workspace name
         </span>
         <input
           type="text"
@@ -72,13 +72,13 @@ export function CreateTeamForm() {
       </label>
 
       <fieldset className="mt-6">
-        <legend className="text-[12.5px] font-medium text-foreground">
+        <legend className="text-[12px] font-medium text-foreground">
           Color
         </legend>
         <div
           className="mt-2.5 flex items-center gap-2"
           role="radiogroup"
-          aria-label="Team color"
+          aria-label="Workspace color"
         >
           {COLOR_OPTIONS.map((c) => {
             const active = c.value === color;
@@ -151,7 +151,7 @@ export function CreateTeamForm() {
         )}
       >
         {pending && <CircleNotch size={14} className="animate-spin" />}
-        {pending ? "Creating…" : "Create team"}
+        {pending ? "Creating…" : "Create workspace"}
       </button>
     </form>
   );

@@ -61,14 +61,14 @@ function Hero() {
       <h1 className="text-[56px] font-semibold leading-[1.04] tracking-[-0.02em] text-foreground sm:text-[72px]">
         Loop
       </h1>
-      <p className="mt-6 text-[19px] leading-relaxed text-muted-foreground sm:text-[20px]">
+      <p className="mt-6 text-[20px] leading-relaxed text-muted-foreground sm:text-[20px]">
         A team task tracker.
       </p>
 
       <div className="mt-9 flex flex-wrap items-center gap-3">
         <Link
           href="/login"
-          className="focus-ring surface-brand surface-brand-hover inline-flex h-11 items-center rounded-md px-5 text-[14.5px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
+          className="focus-ring surface-brand surface-brand-hover inline-flex h-11 items-center rounded-md px-5 text-[14px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
         >
           Try the app
         </Link>
@@ -149,7 +149,7 @@ function Problems() {
         {PROBLEMS.map((p, i) => (
           <li
             key={i}
-            className="flex items-start gap-3 text-[16px] leading-relaxed text-muted-foreground"
+            className="flex items-start gap-3 text-[15px] leading-relaxed text-muted-foreground"
           >
             <span
               aria-hidden
@@ -223,10 +223,10 @@ function Overrides() {
       <ul className="mt-7 flex max-w-[820px] flex-col gap-7">
         {OVERRIDES.map((o, i) => (
           <li key={i}>
-            <h3 className="text-[18px] font-semibold tracking-tight text-foreground">
+            <h3 className="text-[17px] font-semibold tracking-tight text-foreground">
               {o.title}
             </h3>
-            <p className="mt-1.5 text-[16px] leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">
               {o.body}
             </p>
           </li>
@@ -244,7 +244,7 @@ function LookAndFeel() {
       <Prose>
         <p>
           I wanted Loop to feel good to sit in front of all day. Thin
-          borders, quiet shadows, and a brand pink that stands apart
+          borders, quiet shadows, and a brand blue that stands apart
           from Linear&apos;s purple, Notion&apos;s monochrome, and
           Todoist&apos;s red.
         </p>
@@ -395,7 +395,7 @@ function NextUp() {
         {NEXT_ITEMS.map((item, i) => (
           <li
             key={i}
-            className="flex items-start gap-3 text-[16px] leading-relaxed text-muted-foreground"
+            className="flex items-start gap-3 text-[15px] leading-relaxed text-muted-foreground"
           >
             <CheckCircle
               size={15}
@@ -456,7 +456,7 @@ function DemoAccounts() {
       <div className="mt-5 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-border/60 text-left text-[12.5px] font-semibold text-muted-foreground">
+            <tr className="border-b border-border/60 text-left text-[12px] font-semibold text-muted-foreground">
               <th className="px-5 py-3">Name</th>
               <th className="px-5 py-3">Team</th>
               <th className="px-5 py-3">Role</th>
@@ -493,7 +493,7 @@ function DemoAccounts() {
                     {d.role}
                   </span>
                 </td>
-                <td className="px-5 py-3.5 font-mono text-[13.5px] text-muted-foreground">
+                <td className="px-5 py-3.5 font-mono text-[13px] text-muted-foreground">
                   {d.pw}
                 </td>
               </tr>
@@ -533,7 +533,7 @@ function Section({
 }) {
   return (
     <section className="mt-20 scroll-mt-8" id={id}>
-      <h2 className="text-[26px] font-semibold tracking-tight text-foreground sm:text-[28px]">
+      <h2 className="text-[28px] font-semibold tracking-tight text-foreground sm:text-[28px]">
         {title}
       </h2>
       <div className="mt-6">{children}</div>

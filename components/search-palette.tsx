@@ -108,10 +108,10 @@ const JUMP_TARGETS: JumpItem[] = [
   },
   {
     kind: "jump",
-    id: "team",
-    label: "Team",
+    id: "members",
+    label: "Members",
     sublabel: "Page · everyone in the workspace",
-    href: "/team",
+    href: "/workspace",
     Icon: UsersThree,
   },
 ];
@@ -233,7 +233,7 @@ export function SearchPalette({
     } else if (row.kind === "project") {
       router.push(`/projects/${row.id}`);
     } else if (row.kind === "person") {
-      router.push(`/team/${row.id}`);
+      router.push(`/workspace/${row.id}`);
     }
     onOpenChange(false);
   };
@@ -415,7 +415,7 @@ function Body({ row }: { row: ResultRow }) {
     <span className="flex min-w-0 flex-1 flex-col">
       <span
         className={cn(
-          "truncate text-[13.5px] font-medium text-foreground",
+          "truncate text-[13px] font-medium text-foreground",
           row.kind === "task" && row.status === "done"
             ? "text-muted-foreground line-through"
             : ""
@@ -424,7 +424,7 @@ function Body({ row }: { row: ResultRow }) {
         {title}
       </span>
       {subtitle && (
-        <span className="truncate text-[11.5px] text-muted-foreground">
+        <span className="truncate text-[11px] text-muted-foreground">
           {subtitle}
         </span>
       )}

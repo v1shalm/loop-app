@@ -85,7 +85,7 @@ function ToggleBtn({
       aria-checked={active}
       onClick={onClick}
       className={cn(
-        "focus-ring inline-flex h-6 items-center gap-1.5 rounded px-2 text-[11.5px] font-medium transition-colors duration-150 ease-[var(--ease-out)]",
+        "focus-ring inline-flex h-6 items-center gap-1.5 rounded px-2 text-[11px] font-medium transition-colors duration-150 ease-[var(--ease-out)]",
         active
           ? "bg-primary/12 text-primary"
           : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"

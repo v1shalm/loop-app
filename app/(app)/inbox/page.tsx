@@ -8,7 +8,6 @@ import { RightRail } from "@/components/right-rail";
 import {
   getCurrentProfile,
   getInboxAssignments,
-  getMembersWithPulse,
   getMyStats,
   getRecentActivity,
 } from "@/lib/queries";
@@ -17,11 +16,10 @@ import { listSavedViews } from "@/lib/actions";
 export const metadata = { title: "Inbox · Loop" };
 
 export default async function InboxPage() {
-  const [tasks, profile, members, activity, stats, savedViewsRes] =
+  const [tasks, profile, activity, stats, savedViewsRes] =
     await Promise.all([
       getInboxAssignments(),
       getCurrentProfile(),
-      getMembersWithPulse(),
       getRecentActivity(),
       getMyStats(),
       listSavedViews("inbox"),
@@ -45,7 +43,7 @@ export default async function InboxPage() {
                 secondarySlot={<InviteCTA />}
                 tips={[
                   "Tasks someone else assigns to you appear here first.",
-                  "Hit Accept to add them to your day, or Mark later to push them out a week.",
+                  "Hit Accept to add them to your day, or Snooze to push them out a week.",
                   "Use the search bar at the top to jump to any task, project, or teammate.",
                 ]}
               />
@@ -66,7 +64,6 @@ export default async function InboxPage() {
             <RightRail
               completedToday={stats.completed_today}
               activeToday={stats.open_assigned}
-              members={members}
               currentUserId={profile.id}
               activity={activity}
             />

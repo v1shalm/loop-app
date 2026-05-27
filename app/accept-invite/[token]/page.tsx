@@ -112,7 +112,7 @@ export default async function AcceptInvitePage({
         </p>
         <Link
           href={`/login?next=${encodeURIComponent(`/accept-invite/${token}`)}`}
-          className="focus-ring surface-brand surface-brand-hover mt-6 flex h-10 items-center justify-center rounded-md px-4 text-[13.5px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
+          className="focus-ring surface-brand surface-brand-hover mt-6 flex h-10 items-center justify-center rounded-md px-4 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
         >
           Sign in to accept
         </Link>
@@ -143,7 +143,7 @@ export default async function AcceptInvitePage({
       </p>
 
       {emailMismatch ? (
-        <div className="mt-6 rounded-md border border-rose-200/70 bg-rose-50 px-3 py-3 text-[12.5px] text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200">
+        <div className="mt-6 rounded-md border border-rose-200/70 bg-rose-50 px-3 py-3 text-[12px] text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200">
           You&apos;re signed in as{" "}
           <span className="font-medium">{currentEmail}</span>, but this invite
           was sent to <span className="font-medium">{invite.email}</span>. Sign

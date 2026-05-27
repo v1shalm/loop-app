@@ -62,7 +62,7 @@ export function ProjectDescription({
         className="w-full resize-none bg-transparent p-0 text-[14px] leading-relaxed text-muted-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:text-foreground"
       />
       {pending && (
-        <span className="pointer-events-none absolute right-0 top-0 text-[10.5px] text-muted-foreground/70">
+        <span className="pointer-events-none absolute right-0 top-0 text-[10px] text-muted-foreground/70">
           Saving...
         </span>
       )}

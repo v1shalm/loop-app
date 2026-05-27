@@ -42,7 +42,7 @@ export function AcceptInviteCTA({
         type="button"
         onClick={accept}
         disabled={pending}
-        className="focus-ring surface-brand surface-brand-hover flex h-10 items-center justify-center gap-1.5 rounded-md px-4 text-[13.5px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100"
+        className="focus-ring surface-brand surface-brand-hover flex h-10 items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100"
       >
         {pending && <CircleNotch size={14} className="animate-spin" />}
         {pending ? "Joining…" : `Join ${teamName}`}

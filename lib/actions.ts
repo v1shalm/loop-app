@@ -6,6 +6,7 @@ import {
   getCurrentProfile,
   getDefaultWorkspace,
   getMyTeam,
+  getMyTeams,
   hasTaskSortOrder,
 } from "@/lib/queries";
 import type { ProfileStatus } from "@/lib/queries";
@@ -200,6 +201,25 @@ export async function createProject(
   return { ok: true, projectId: data?.id };
 }
 
+/**
+ * Delete a project. RLS (`projects_all_members`) limits this to members
+ * of the project's workspace. Tasks aren't lost: the `tasks.project_id`
+ * FK is `on delete set null`, so they fall back to the Inbox instead of
+ * being deleted with the project.
+ */
+export async function deleteProject(
+  projectId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const { error } = await supabase.from("projects").delete().eq("id", projectId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export interface CreateTaskInput {
   title: string;
   description?: string;
@@ -207,6 +227,9 @@ export interface CreateTaskInput {
   dueAt?: string | null; // ISO
   projectId?: string | null;
   assigneeId?: string | null;
+  /** Recurrence rule (see lib/recurrence.ts). Completing the task then
+   *  advances its due date instead of marking it done. */
+  recurrence?: string | null;
 }
 
 function revalidateTaskRoutes(_projectId?: string | null) {
@@ -249,15 +272,8 @@ export async function createTeam(input: {
   const workspace = await getDefaultWorkspace();
   if (!workspace) return { error: "Workspace missing." };
 
-  // Block users who are already on a team (one team per user enforced
-  // at the DB by team_members_one_team_per_user, but a friendlier
-  // message here saves a database round-trip).
-  const existing = await getMyTeam();
-  if (existing) {
-    return {
-      error: "You're already on a team. Ask an admin to switch you over.",
-    };
-  }
+  // Multi-membership: a user can belong to (and create) several teams,
+  // so there's no longer a one-team-per-user gate here.
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const teamIns = await (supabase as any)
@@ -299,6 +315,16 @@ export async function createTeam(input: {
     }
     return { error: msg || "Could not add you to the new team." };
   }
+
+  // Land the creator in the team they just made (active workspace). RLS
+  // lets a user write only their own selection row.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from("team_active_selection")
+    .upsert(
+      { user_id: profile.id, team_id: teamIns.data.id },
+      { onConflict: "user_id" }
+    );
 
   // Optional starter content. Five short, generic tasks that work for
   // any team type (eng / design / marketing / etc.). One sample project
@@ -477,6 +503,38 @@ export async function changeTeamMemberRole(
   return { ok: true };
 }
 
+/**
+ * Switch which team (workspace) the user is currently viewing. The
+ * active selection drives app_private.my_team_id(), so this re-scopes
+ * every team-scoped query and RLS check to the chosen team.
+ */
+export async function setActiveTeam(
+  teamId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+
+  // Only switch to a team they actually belong to.
+  const teams = await getMyTeams();
+  if (!teams.some((t) => t.id === teamId)) {
+    return { error: "You're not a member of that workspace." };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from("team_active_selection")
+    .upsert(
+      { user_id: profile.id, team_id: teamId },
+      { onConflict: "user_id" }
+    );
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 // ── Team invitations ──────────────────────────────────────────────────────────
 //
 // Admins generate a token-keyed invitation row that yields a shareable
@@ -521,43 +579,58 @@ export async function sendInvite(
     return { error: "That doesn't look like an email address." };
   }
 
-  const supabase = await getSupabaseServer();
-  if (!supabase) return { error: "Supabase not configured." };
+  // Everything below runs in a try so any unexpected throw (network
+  // failure, missing table/RPC, a runtime error) comes back as a
+  // readable toast. Without it, an uncaught throw makes the server
+  // action return an error page, which the client surfaces as the
+  // opaque "An unexpected response was received from the server".
+  try {
+    const supabase = await getSupabaseServer();
+    if (!supabase) return { error: "Supabase not configured." };
 
-  const [profile, team] = await Promise.all([getCurrentProfile(), getMyTeam()]);
-  if (!profile) return { error: "Not signed in." };
-  if (!team) return { error: "You're not on a team." };
+    const [profile, team] = await Promise.all([
+      getCurrentProfile(),
+      getMyTeam(),
+    ]);
+    if (!profile) return { error: "Not signed in." };
+    if (!team) return { error: "You're not on a team." };
 
-  const token = generateInviteToken();
+    const token = generateInviteToken();
 
-  // team_invitations isn't in the generated database.types yet — use
-  // the same `(supabase as any)` cast pattern as the other recent
-  // tables (saved_views, etc.).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
-    .from("team_invitations")
-    .insert({
-      team_id: team.id,
-      email: trimmed,
-      role,
-      token,
-      invited_by: profile.id,
-    });
+    // team_invitations isn't in the generated database.types yet — use
+    // the same `(supabase as any)` cast pattern as the other recent
+    // tables (saved_views, etc.).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("team_invitations")
+      .insert({
+        team_id: team.id,
+        email: trimmed,
+        role,
+        token,
+        invited_by: profile.id,
+      });
 
-  if (error) {
-    if (
-      error.message.includes("team_invitations_one_pending_per_email") ||
-      error.message.toLowerCase().includes("duplicate")
-    ) {
-      return {
-        error: "There's already a pending invite for that email. Cancel it first.",
-      };
+    if (error) {
+      if (
+        error.message.includes("team_invitations_one_pending_per_email") ||
+        error.message.toLowerCase().includes("duplicate")
+      ) {
+        return {
+          error:
+            "There's already a pending invite for that email. Cancel it first.",
+        };
+      }
+      return { error: error.message };
     }
-    return { error: error.message };
-  }
 
-  revalidatePath("/team/manage");
-  return { ok: true, token };
+    revalidatePath("/workspace/manage");
+    return { ok: true, token };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "Couldn't send the invite.",
+    };
+  }
 }
 
 export async function cancelInvite(
@@ -656,6 +729,9 @@ export async function createTask(
     triaged_at: triagedAt,
   };
   if (useSortOrder) insertPayload.sort_order = Date.now();
+  // Only attach recurrence when set, so task creation still works before
+  // migration 0029 lands (only recurring tasks need the new column).
+  if (input.recurrence) insertPayload.recurrence = input.recurrence;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("tasks")
@@ -676,6 +752,7 @@ export interface UpdateTaskInput {
   dueAt?: string | null;
   projectId?: string | null;
   assigneeId?: string | null;
+  recurrence?: string | null;
 }
 
 export async function updateTask(
@@ -692,6 +769,7 @@ export async function updateTask(
     due_at?: string | null;
     project_id?: string | null;
     assignee_id?: string | null;
+    recurrence?: string | null;
   } = {};
   if (patch.title !== undefined) update.title = patch.title.trim();
   if (patch.description !== undefined) update.description = patch.description;
@@ -699,9 +777,15 @@ export async function updateTask(
   if (patch.dueAt !== undefined) update.due_at = patch.dueAt;
   if (patch.projectId !== undefined) update.project_id = patch.projectId;
   if (patch.assigneeId !== undefined) update.assignee_id = patch.assigneeId;
+  if (patch.recurrence !== undefined) update.recurrence = patch.recurrence;
   if (Object.keys(update).length === 0) return { ok: true };
 
-  const { error } = await supabase.from("tasks").update(update).eq("id", id);
+  // `recurrence` isn't in the generated Row type until types are
+  // regenerated post-0029, so widen the payload.
+  const { error } = await supabase
+    .from("tasks")
+    .update(update as never)
+    .eq("id", id);
   if (error) return { error: error.message };
   revalidateTaskRoutes(patch.projectId ?? undefined);
   return { ok: true };
@@ -850,7 +934,8 @@ export async function toggleCommentReaction(
       .eq("user_id", profile.id)
       .eq("emoji", emoji);
     if (del.error) return { error: del.error.message };
-    revalidateTaskRoutes();
+    // Reactions are optimistic in the UI (useOptimistic) and aren't
+    // surfaced on any task list, so skip the full-layout revalidate.
     return { ok: true, added: false };
   }
 
@@ -861,7 +946,7 @@ export async function toggleCommentReaction(
     emoji,
   });
   if (ins.error) return { error: ins.error.message };
-  revalidateTaskRoutes();
+  // See above: reactions are optimistic and not surfaced on task lists.
   return { ok: true, added: true };
 }
 
@@ -1254,7 +1339,10 @@ export async function reorderTasks(
   const firstError = results.find((r) => r.error);
   if (firstError?.error) return { error: firstError.error.message };
 
-  revalidateTaskRoutes();
+  // No revalidation: the list already shows the new order optimistically,
+  // this only writes sort_order (no count or badge change), and realtime
+  // nudges other clients. A full-layout revalidate here would just stall
+  // the next interaction for nothing.
   return { ok: true };
 }
 

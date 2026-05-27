@@ -4,6 +4,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Canonical type scale. Use ONLY these font sizes (as `text-[Npx]`, which
+ * sets font-size only and leaves line-height to the element / `leading-*`).
+ * Do not introduce new sizes or 0.5px half-steps — they read as drift.
+ *
+ *   10px  micro: counts, tiny badges, timestamps
+ *   11px  small labels, secondary meta
+ *   12px  captions, secondary body
+ *   13px  body (default list/row text)
+ *   14px  emphasized body, primary actions
+ *   15px  lead body, large secondary
+ *   17px  card / section titles
+ *   20px  large titles
+ *   22px  page / modal titles
+ *   28px  headings
+ *   (32 / 56 / 72 reserved for hero & illustration one-offs)
+ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -666,19 +684,31 @@
   opacity: 1 !important;
 }
 
-/* Action button — compact brand pill that lives on its OWN line below
-   the description text.
-   - `display: flex` (sileo's default) keeps it block-level outer so it
-     line-breaks below the description text instead of sitting inline.
-   - `width: fit-content` constrains horizontal size to its content so it
-     doesn't stretch into a full-width banner.
-   - `margin-top` is preserved from sileo's default (0.75rem) to give it
-     breathing room from the description above.
-   DO NOT use `display: inline-flex` here — that puts the button on the
-   same line as the description text, causing visible overlap. */
+/* When a toast carries an action button, lay the body out as one row:
+   text on the left, button pushed to the right of the same line. sileo
+   nests the button INSIDE the description element (as a sibling of the
+   text node), so the description itself becomes the flex row and
+   space-between pins the button to the right edge. The 1rem padding
+   sileo already puts on the description gives both the text's left
+   inset and the button's right inset. Plain toasts (no button) are
+   untouched and keep full-width text. */
+[data-sileo-toast] [data-sileo-description]:has([data-sileo-button]) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+}
+
+/* Action button — compact brand pill on the right end of the text row.
+   - `flex-shrink: 0` stops the text from squeezing it.
+   - `margin: 0` clears sileo's default 0.75rem top offset that used to
+     stack it below the text; the description's right padding is the
+     inset now. */
 [data-sileo-toast] [data-sileo-button] {
   display: flex !important;
+  flex-shrink: 0 !important;
   width: fit-content !important;
+  margin: 0 !important;
   background: var(--primary) !important;
   color: var(--primary-foreground) !important;
   border-radius: 9999px !important;

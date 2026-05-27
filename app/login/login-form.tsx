@@ -89,7 +89,7 @@ export function LoginForm() {
         <p className="mt-3 text-[14px] font-semibold text-foreground">
           Check your inbox
         </p>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <p className="mt-1 text-[12px] text-muted-foreground">
           A magic link is on its way to{" "}
           <span className="font-medium text-foreground">{sentTo}</span>.
         </p>
@@ -99,7 +99,7 @@ export function LoginForm() {
             setEmail("");
             setMode("password");
           }}
-          className="focus-ring mt-4 rounded-md px-3 py-1.5 text-[12.5px] text-primary transition-colors hover:bg-primary/8"
+          className="focus-ring mt-4 rounded-md px-3 py-1.5 text-[12px] text-primary transition-colors hover:bg-primary/8"
         >
           Use a different email
         </button>
@@ -120,7 +120,7 @@ export function LoginForm() {
         type="button"
         onClick={signInWithGoogle}
         disabled={anyPending}
-        className="focus-ring chip-3d flex h-10 items-center justify-center gap-2.5 rounded-md border border-border bg-card px-4 text-[13.5px] font-medium text-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100"
+        className="focus-ring chip-3d flex h-10 items-center justify-center gap-2.5 rounded-md border border-border bg-card px-4 text-[13px] font-medium text-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100"
       >
         {googlePending ? (
           <CircleNotch size={14} className="animate-spin text-muted-foreground" />
@@ -153,7 +153,7 @@ export function LoginForm() {
         <div>
           <label
             htmlFor="email"
-            className="mb-1.5 block text-[12.5px] font-medium text-foreground"
+            className="mb-1.5 block text-[12px] font-medium text-foreground"
           >
             Work email
           </label>
@@ -168,7 +168,7 @@ export function LoginForm() {
             aria-invalid={!!error}
             aria-describedby={error ? "login-error" : undefined}
             disabled={anyPending}
-            className="focus-ring h-10 w-full rounded-md border border-border bg-background px-3 text-[13.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/50 disabled:opacity-60"
+            className="focus-ring h-10 w-full rounded-md border border-border bg-background px-3 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/50 disabled:opacity-60"
           />
         </div>
 
@@ -176,7 +176,7 @@ export function LoginForm() {
           <div>
             <label
               htmlFor="password"
-              className="mb-1.5 block text-[12.5px] font-medium text-foreground"
+              className="mb-1.5 block text-[12px] font-medium text-foreground"
             >
               Password
             </label>
@@ -191,7 +191,7 @@ export function LoginForm() {
                 aria-invalid={!!error}
                 aria-describedby={error ? "login-error" : undefined}
                 disabled={anyPending}
-                className="focus-ring h-10 w-full rounded-md border border-border bg-background px-3 pr-10 text-[13.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/50 disabled:opacity-60"
+                className="focus-ring h-10 w-full rounded-md border border-border bg-background px-3 pr-10 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/50 disabled:opacity-60"
               />
               <button
                 type="button"
@@ -209,7 +209,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={anyPending || !canSubmit}
-          className="focus-ring surface-brand surface-brand-hover mt-1 flex h-10 items-center justify-center gap-1.5 rounded-md px-4 text-[13.5px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100"
+          className="focus-ring surface-brand surface-brand-hover mt-1 flex h-10 items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] disabled:opacity-60 disabled:active:scale-100"
         >
           {pending && <CircleNotch size={14} className="animate-spin" />}
           {pending
@@ -240,7 +240,7 @@ export function LoginForm() {
             setError(null);
           }}
           disabled={anyPending}
-          className="focus-ring mt-0.5 self-center rounded px-1.5 py-1 text-[11.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+          className="focus-ring mt-0.5 self-center rounded px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
         >
           {mode === "password"
             ? "Email me a magic link instead"

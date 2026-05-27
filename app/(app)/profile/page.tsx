@@ -79,7 +79,7 @@ export default async function ProfilePage() {
           <h3 className="mb-2 text-[15px] font-semibold tracking-tight text-foreground">
             Status
           </h3>
-          <p className="mb-2 text-[12.5px] text-muted-foreground">
+          <p className="mb-2 text-[12px] text-muted-foreground">
             Tell teammates what you&apos;re up to.
           </p>
           <ProfileStatusRow current={profile.status ?? null} />
@@ -93,7 +93,7 @@ export default async function ProfilePage() {
             </h3>
           </header>
           {recent.length === 0 ? (
-            <p className="px-3 py-3 text-[12.5px] text-muted-foreground/70">
+            <p className="px-3 py-3 text-[12px] text-muted-foreground/70">
               Nothing yet.
             </p>
           ) : (
@@ -118,7 +118,7 @@ export default async function ProfilePage() {
                     {a.kind === "i-completed" ? "You completed " : "Assigned · "}
                     <span className="text-muted-foreground">{a.task.title}</span>
                   </p>
-                  <span className="text-[11.5px] tabular-nums text-muted-foreground/70">
+                  <span className="text-[11px] tabular-nums text-muted-foreground/70">
                     {format(new Date(a.at), "h:mm a")}
                   </span>
                 </li>

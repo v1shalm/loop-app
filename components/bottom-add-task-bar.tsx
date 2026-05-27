@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { sileo } from "sileo";
 import {
+  ArrowsClockwise,
   ArrowUp,
   CalendarBlank,
   CircleNotch,
@@ -218,6 +219,7 @@ export function BottomAddTaskBar({
     const assigneeId = parsed.assigneeId ?? ctx.assigneeId;
     const projectId = parsed.projectId ?? ctx.projectId;
     const priority = parsed.priority ?? undefined;
+    const recurrence = parsed.recurrence;
 
     const stagedAttachment = attachment;
     setValue("");
@@ -230,6 +232,7 @@ export function BottomAddTaskBar({
         assigneeId,
         projectId,
         priority,
+        recurrence,
       });
       if (res.error || !res.taskId) {
         sileo.error({ title: res.error ?? "Couldn't create task" });
@@ -349,7 +352,7 @@ export function BottomAddTaskBar({
             />
           ))}
           {attachment && (
-            <span className="chip-3d inline-flex h-6 items-center gap-1.5 rounded-sm bg-popover px-2 text-[11.5px] font-medium text-foreground ring-1 ring-inset ring-border/60 shadow-[var(--shadow-soft-xs)]">
+            <span className="chip-3d inline-flex h-6 items-center gap-1.5 rounded-sm bg-popover px-2 text-[11px] font-medium text-foreground ring-1 ring-inset ring-border/60 shadow-[var(--shadow-soft-xs)]">
               {attachment.kind === "file" ? (
                 <Paperclip size={11} weight="fill" className="text-primary" />
               ) : (
@@ -576,7 +579,7 @@ export function BottomAddTaskBar({
 /**
  * Single row in the + attachment popover. Icon + label, fires the
  * caller-provided file picker on click. Same per-item spacing as the
- * harmonized PopoverItem used everywhere else (px-3 py-2.5 text-[13.5px]).
+ * harmonized PopoverItem used everywhere else (px-3 py-2.5 text-[13px]).
  */
 function AttachOption({
   icon,
@@ -594,12 +597,12 @@ function AttachOption({
     <button
       type="button"
       onClick={onClick}
-      className="focus-ring flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04]"
+      className="focus-ring flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13px] text-foreground transition-colors hover:bg-foreground/[0.04]"
     >
       {icon}
       <span className="flex-1">{label}</span>
       {hint && (
-        <span className="text-[10.5px] font-medium text-muted-foreground/70">
+        <span className="text-[10px] font-medium text-muted-foreground/70">
           {hint}
         </span>
       )}
@@ -625,7 +628,7 @@ function HintChip({
   // Pick the right glyph + label for each parsed token type. All
   // share the same compact pill chrome so the row reads as one set.
   const base =
-    "chip-3d inline-flex h-6 items-center gap-1 rounded-sm bg-popover px-2 text-[11.5px] font-medium ring-1 ring-inset ring-border/60 shadow-[var(--shadow-soft-xs)]";
+    "chip-3d inline-flex h-6 items-center gap-1 rounded-sm bg-popover px-2 text-[11px] font-medium ring-1 ring-inset ring-border/60 shadow-[var(--shadow-soft-xs)]";
 
   if (hint.kind === "project") {
     const proj = projects.find((p) => p.id === parsedProjectId);
@@ -655,6 +658,14 @@ function HintChip({
       <span className={`${base} text-rose-700 ring-rose-500/25 dark:text-rose-200 dark:ring-rose-400/30`}>
         <CalendarBlank size={11} weight="fill" />
         <span className="tabular-nums">{label}</span>
+      </span>
+    );
+  }
+  if (hint.kind === "recurrence") {
+    return (
+      <span className={`${base} text-primary ring-primary/30`}>
+        <ArrowsClockwise size={11} weight="bold" />
+        <span>{hint.label}</span>
       </span>
     );
   }

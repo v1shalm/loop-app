@@ -6,8 +6,9 @@ import { WorkspaceMembersDialog } from "@/components/workspace-members-dialog";
 import type { PendingInvitation, Team, TeamMember } from "@/lib/queries";
 
 /**
- * Thin client wrapper used by /team/manage. Mounts the dialog open so the
- * page reads as a modal experience; closing routes back to /team. Keeps
+ * Thin client wrapper used by /workspace/manage. Mounts the dialog open so
+ * the page reads as a modal experience; closing routes back to /workspace.
+ * Keeps
  * the dialog itself a pure controlled component.
  */
 export function WorkspaceMembersDialogShell({
@@ -32,7 +33,7 @@ export function WorkspaceMembersDialogShell({
         if (!next) {
           // Defer the navigation past the dialog's exit animation so the
           // user sees the modal collapse before the page swaps.
-          setTimeout(() => router.push("/team"), 180);
+          setTimeout(() => router.push("/workspace"), 180);
         }
       }}
       team={team}

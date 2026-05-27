@@ -22,6 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  ArrowsClockwise,
   ArrowUp,
   CalendarBlank,
   CaretDown,
@@ -66,6 +67,11 @@ import {
   type TaskAttachmentRow,
 } from "@/lib/actions";
 import { compressImage } from "@/lib/compress-image";
+import {
+  RECURRENCE_OPTIONS,
+  isRecurrence,
+  recurrenceLabel,
+} from "@/lib/recurrence";
 import { playSound } from "@/lib/sounds";
 import { RelativeTime } from "@/components/relative-time";
 import { CommentReactions } from "@/components/comment-reactions";
@@ -98,6 +104,14 @@ const PRIORITY_OPTIONS: { p: Priority; label: string; cls: string }[] = [
   { p: 3, label: "Low", cls: "text-emerald-500" },
   { p: 4, label: "None", cls: "text-muted-foreground/50" },
 ];
+
+// End of today (23:59), used as the default anchor when a recurrence is
+// set on a task that has no due date yet.
+function endOfTodayIso(): string {
+  const d = new Date();
+  d.setHours(23, 59, 0, 0);
+  return d.toISOString();
+}
 
 
 export function TaskDrawer({
@@ -416,6 +430,8 @@ function DrawerInner({
       optimistic.description = changes.description;
     if (changes.priority !== undefined) optimistic.priority = changes.priority;
     if (changes.dueAt !== undefined) optimistic.due_at = changes.dueAt;
+    if (changes.recurrence !== undefined)
+      optimistic.recurrence = changes.recurrence;
     if (changes.projectId !== undefined) {
       optimistic.project_id = changes.projectId;
       const proj = projects.find((p) => p.id === changes.projectId);
@@ -462,10 +478,16 @@ function DrawerInner({
     if (next === "done") {
       playSound("completed", task.priority as Priority);
       setStatus("done");
-      sileo.success({
+      const id = sileo.success({
         title: "Marked complete",
         description: task.title,
-        button: { title: "Undo", onClick: () => setStatus("todo") },
+        button: {
+          title: "Undo",
+          onClick: () => {
+            sileo.dismiss(id);
+            setStatus("todo");
+          },
+        },
         duration: 6000,
       });
     } else {
@@ -551,7 +573,7 @@ function DrawerInner({
   // single hairline ring + subtle hover lift via accent. rounded-md
   // for soft corners that match the modal card.
   const chipBase =
-    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2.5 text-[12.5px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40";
+    "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2.5 text-[12px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40";
 
   return (
     <div className="flex h-full flex-col">
@@ -572,7 +594,7 @@ function DrawerInner({
           on the right. Mobile (chatOpen is forced false) collapses
           back to the single column it always was. */}
       <div className="flex min-h-0 flex-1">
-        <div ref={scrollRef} className="flex-1 min-w-0 overflow-y-auto">
+        <div ref={scrollRef} className="flex-1 min-w-0 overflow-y-auto overscroll-contain">
         {/* Title row. No checkbox here: the Mark-as-complete pill in
             the header is the single completion CTA. A checkbox next
             to the title duplicates that intent and adds an extra hit
@@ -698,11 +720,61 @@ function DrawerInner({
             </PopoverContent>
           </Popover>
 
+          <Popover>
+            <PopoverTrigger className={chipBase}>
+              <ArrowsClockwise
+                size={13}
+                weight="bold"
+                className={
+                  isRecurrence(task.recurrence)
+                    ? "text-primary-readable"
+                    : "text-muted-foreground"
+                }
+              />
+              <span>
+                {isRecurrence(task.recurrence)
+                  ? recurrenceLabel(task.recurrence)
+                  : "Repeat"}
+              </span>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px]" align="start">
+              <PopoverItem
+                selected={!isRecurrence(task.recurrence)}
+                onSelect={() => patch({ recurrence: null })}
+              >
+                <span>Doesn&apos;t repeat</span>
+              </PopoverItem>
+              {RECURRENCE_OPTIONS.map((r) => (
+                <PopoverItem
+                  key={r}
+                  selected={task.recurrence === r}
+                  onSelect={() =>
+                    patch({
+                      // A recurrence needs an anchor date; default to today
+                      // if the task has none yet.
+                      recurrence: r,
+                      ...(task.due_at
+                        ? {}
+                        : { dueAt: endOfTodayIso() }),
+                    })
+                  }
+                >
+                  <ArrowsClockwise
+                    size={14}
+                    weight="bold"
+                    className="text-muted-foreground"
+                  />
+                  <span>{recurrenceLabel(r)}</span>
+                </PopoverItem>
+              ))}
+            </PopoverContent>
+          </Popover>
+
           {/* Created + Completed — one quiet line, pushed to the end
               of the chip row when there's space, wrapping below
               otherwise. Less weight than its own row but still in
               view for auditability. */}
-          <p className="ml-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11.5px] text-muted-foreground">
+          <p className="ml-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-muted-foreground">
             <span>
               by{" "}
               <span className="text-foreground/75">
@@ -716,7 +788,7 @@ function DrawerInner({
             {task.completed_at && (
               <>
                 <span className="text-foreground/30">·</span>
-                <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
+                <span className="inline-flex items-center gap-1 text-primary-readable">
                   <CheckCircle size={11} weight="fill" />
                   <span className="tabular-nums">
                     {format(new Date(task.completed_at), "d MMM")}
@@ -738,7 +810,7 @@ function DrawerInner({
             onBlur={saveDescription}
             placeholder="Add a description…"
             minRows={4}
-            className="focus-ring w-full resize-none rounded-lg border border-border/70 bg-transparent px-3.5 py-3 text-[13.5px] leading-relaxed text-foreground outline-none transition-colors placeholder:text-foreground/45 hover:border-border"
+            className="focus-ring w-full resize-none rounded-lg border border-border/70 bg-transparent px-3.5 py-3 text-[13px] leading-relaxed text-foreground outline-none transition-colors placeholder:text-foreground/45 hover:border-border"
           />
         </section>
 
@@ -955,7 +1027,7 @@ function DetailRow({
   // the visual weight.
   return (
     <li className="grid grid-cols-[120px_minmax(0,1fr)] items-center gap-3 py-2">
-      <span className="flex items-center gap-2 text-[12.5px] font-medium text-muted-foreground">
+      <span className="flex items-center gap-2 text-[12px] font-medium text-muted-foreground">
         {icon}
         {label}
       </span>
@@ -982,10 +1054,10 @@ function DrawerFooter({
         onClick={onToggle}
         disabled={pending}
         className={cn(
-          "focus-ring inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13.5px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.99] disabled:opacity-60 disabled:active:scale-100",
+          "focus-ring inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg text-[13px] font-semibold transition-[background-color,color,box-shadow,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.99] disabled:opacity-60 disabled:active:scale-100",
           done
             ? "border border-border bg-card text-foreground shadow-[var(--shadow-cta-secondary)] hover:bg-accent/40"
-            : "bg-emerald-600 text-white shadow-[var(--shadow-cta-success)] hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+            : "surface-brand surface-brand-hover text-primary-foreground shadow-[var(--shadow-cta)]"
         )}
       >
         <CheckCircle
@@ -1132,7 +1204,7 @@ function CommentsSection({
   const emptyState = (
     <p
       className={cn(
-        "text-center text-[12.5px] text-muted-foreground",
+        "text-center text-[12px] text-muted-foreground",
         isPanel ? "py-10" : "mt-4"
       )}
     >
@@ -1173,7 +1245,7 @@ function CommentsSection({
         placeholder="Add a comment. Type @ to mention a teammate."
         minRows={isPanel ? 1 : 2}
         ariaLabel="Add a comment"
-        className="bg-transparent py-0.5 text-[13.5px]"
+        className="bg-transparent py-0.5 text-[13px]"
       />
       <div className="flex items-center justify-end pt-1">
         <Button
@@ -1204,12 +1276,12 @@ function CommentsSection({
       <div className="flex h-full min-h-0 flex-col">
         {comments.length > 0 && (
           <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-4 py-2">
-            <span className="text-[11.5px] text-muted-foreground tabular-nums">
+            <span className="text-[11px] text-muted-foreground tabular-nums">
               {comments.length}{" "}
               {comments.length === 1 ? "comment" : "comments"}
             </span>
             <Popover>
-              <PopoverTrigger className="focus-ring inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground">
+              <PopoverTrigger className="focus-ring inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground">
                 {sort === "recent" ? "Most recent" : "Oldest first"}
                 <CaretDown size={10} weight="bold" />
               </PopoverTrigger>
@@ -1250,7 +1322,7 @@ function CommentsSection({
         trailing={
           comments.length > 0 ? (
             <Popover>
-              <PopoverTrigger className="focus-ring inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground">
+              <PopoverTrigger className="focus-ring inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground">
                 {sort === "recent" ? "Most recent" : "Oldest first"}
                 <CaretDown size={10} weight="bold" />
               </PopoverTrigger>
@@ -1270,7 +1342,7 @@ function CommentsSection({
               </PopoverContent>
             </Popover>
           ) : (
-            <span className="text-[11.5px] tabular-nums text-foreground/55">
+            <span className="text-[11px] tabular-nums text-foreground/55">
               0
             </span>
           )
@@ -1357,7 +1429,7 @@ function CommentItem({
         <Avatar
           src={comment.author?.avatar_url ?? null}
           initials={comment.author?.initials ?? "?"}
-          color={comment.author?.avatar_color ?? "#D4D4D4"}
+          color={comment.author?.avatar_color ?? "#94A3B8"}
           size={24}
         />
         {!isLast && (
@@ -1370,7 +1442,7 @@ function CommentItem({
 
       <div className="min-w-0 flex-1 pb-3.5">
         <div className="flex items-baseline gap-2">
-          <span className="text-[12.5px] font-semibold text-foreground">
+          <span className="text-[12px] font-semibold text-foreground">
             {isMe ? "You" : comment.author?.name ?? "Someone"}
           </span>
           <RelativeTime
@@ -1406,7 +1478,7 @@ function CommentItem({
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="focus-ring inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11.5px] font-medium text-primary transition-colors hover:bg-primary/10"
+              className="focus-ring inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
             >
               {/* Peek avatar — most recent replier */}
               {(() => {
@@ -1439,7 +1511,7 @@ function CommentItem({
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              className="focus-ring rounded-md px-1.5 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+              className="focus-ring rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
             >
               Reply
             </button>
@@ -1493,7 +1565,7 @@ function ReplyItem({
       <Avatar
         src={reply.author?.avatar_url ?? null}
         initials={reply.author?.initials ?? "?"}
-        color={reply.author?.avatar_color ?? "#D4D4D4"}
+        color={reply.author?.avatar_color ?? "#94A3B8"}
         size={20}
       />
       <div className="min-w-0 flex-1">
@@ -1503,12 +1575,12 @@ function ReplyItem({
           </span>
           <RelativeTime
             date={reply.created_at}
-            className="text-[10.5px] text-muted-foreground/70"
+            className="text-[10px] text-muted-foreground/70"
           />
           {isMe && (
             <button
               onClick={onDelete}
-              className="focus-ring ml-auto text-[10.5px] text-muted-foreground hover:text-rose-600"
+              className="focus-ring ml-auto text-[10px] text-muted-foreground hover:text-rose-600"
             >
               Delete
             </button>
@@ -1516,7 +1588,7 @@ function ReplyItem({
         </div>
         <MentionText
           text={reply.body}
-          className="mt-0.5 block text-[12.5px] leading-relaxed text-foreground"
+          className="mt-0.5 block text-[12px] leading-relaxed text-foreground"
         />
       </div>
     </li>
@@ -1564,7 +1636,7 @@ function ReplyComposer({
         <button
           type="button"
           onClick={onCancel}
-          className="focus-ring rounded-md px-2 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+          className="focus-ring rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
         >
           Cancel
         </button>
@@ -1642,7 +1714,7 @@ function Header({
       <div className="ml-auto flex items-center gap-1">
         {/* Mark-as-complete pill — primary CTA, moved up from the
             footer so it's always in view while editing. Hollow when
-            the task is open, filled emerald when already done so the
+            the task is open, filled blue when already done so the
             reverse-action also reads at a glance. */}
         {task && onToggleDone && (
           <button
@@ -1650,9 +1722,9 @@ function Header({
             onClick={onToggleDone}
             disabled={pending}
             className={cn(
-              "focus-ring inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-semibold transition-colors disabled:opacity-60",
+              "focus-ring inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold transition-colors disabled:opacity-60",
               done
-                ? "bg-emerald-600 text-white hover:brightness-110 dark:bg-emerald-500"
+                ? "bg-primary text-primary-foreground hover:brightness-110"
                 : "bg-foreground/[0.06] text-foreground hover:bg-foreground/[0.1]"
             )}
           >
@@ -1741,7 +1813,7 @@ function PopoverItem({
     <button
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] transition-colors",
+        "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13px] transition-colors",
         selected
           ? "bg-primary/8 font-medium text-primary"
           : "text-foreground hover:bg-accent/40 hover:text-foreground"
@@ -1852,11 +1924,11 @@ function SubtasksSection({ taskId }: { taskId: string }) {
         label="Subtasks"
         trailing={
           total > 0 ? (
-            <span className="text-[11.5px] tabular-nums text-muted-foreground">
+            <span className="text-[11px] tabular-nums text-muted-foreground">
               {done}/{total}
             </span>
           ) : (
-            <span className="text-[11.5px] tabular-nums text-foreground/55">
+            <span className="text-[11px] tabular-nums text-foreground/55">
               0
             </span>
           )
@@ -1900,7 +1972,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
                 className={cn(
                   "focus-ring grid size-6 shrink-0 place-items-center rounded-[6px] border-[1.5px] transition-colors duration-150 ease-[var(--ease-out)] active:scale-95",
                   s.status === "done"
-                    ? "border-emerald-600 bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-500"
+                    ? "border-primary bg-primary"
                     : "border-border hover:border-foreground/40 bg-background"
                 )}
               >
@@ -1908,7 +1980,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
                   <Check
                     size={13}
                     weight="bold"
-                    className="text-white"
+                    className="text-primary-foreground"
                   />
                 )}
               </button>
@@ -2124,7 +2196,7 @@ function AttachmentsSection({ taskId }: { taskId: string }) {
         icon={<Paperclip size={14} />}
         label="Attachments"
         trailing={
-          <span className="text-[11.5px] tabular-nums text-foreground/55">
+          <span className="text-[11px] tabular-nums text-foreground/55">
             {items.length}
           </span>
         }
@@ -2336,12 +2408,12 @@ function AttachOption({
     <button
       type="button"
       onClick={onClick}
-      className="focus-ring flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] text-foreground transition-colors hover:bg-foreground/[0.04]"
+      className="focus-ring flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13px] text-foreground transition-colors hover:bg-foreground/[0.04]"
     >
       {icon}
       <span className="flex-1">{label}</span>
       {hint && (
-        <span className="text-[10.5px] font-medium text-muted-foreground/70">
+        <span className="text-[10px] font-medium text-muted-foreground/70">
           {hint}
         </span>
       )}
@@ -2422,7 +2494,7 @@ function AssigneeStackPicker({
 
   return (
     <Popover>
-      <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2 pr-2.5 text-[12.5px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40">
+      <PopoverTrigger className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2 pr-2.5 text-[12px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40">
         {sorted.length === 0 ? (
           <>
             <UserPlus size={13} className="text-muted-foreground" />
@@ -2460,7 +2532,7 @@ function AssigneeStackPicker({
       </PopoverTrigger>
       <PopoverContent className="w-[240px]" align="start">
         <div className="px-2 pb-1.5 pt-2">
-          <p className="text-[12.5px] font-semibold tracking-tight text-foreground">
+          <p className="text-[12px] font-semibold tracking-tight text-foreground">
             Assigned to
           </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -2476,7 +2548,7 @@ function AssigneeStackPicker({
               onClick={() => toggle(m)}
               aria-pressed={isAssigned}
               className={cn(
-                "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13.5px] transition-colors hover:bg-foreground/[0.04]",
+                "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-[13px] transition-colors hover:bg-foreground/[0.04]",
                 isAssigned && "bg-primary/8 text-primary"
               )}
             >

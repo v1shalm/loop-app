@@ -11,6 +11,7 @@ import {
 import { format, isToday, isTomorrow } from "date-fns";
 import { sileo } from "sileo";
 import {
+  ArrowsClockwise,
   CalendarBlank,
   CircleNotch,
   Flag,
@@ -127,9 +128,12 @@ export function AddTaskInline({
     const payload = {
       title: parsed.title,
       priority: parsed.priority ?? undefined,
+      // A recurrence needs an anchor date; parsed.dueAt is set by the
+      // parser when it detects "every…", so this is just a safety net.
       dueAt: parsed.dueAt ? parsed.dueAt.toISOString() : null,
       projectId: parsed.projectId ?? defaultProjectId ?? null,
       assigneeId: parsed.assigneeId ?? currentUserId,
+      recurrence: parsed.recurrence,
     };
 
     // Optimistically clear input and play added chime instantly!
@@ -177,7 +181,7 @@ export function AddTaskInline({
       <button
         onClick={() => setActive(true)}
         className={cn(
-          "focus-ring group/add flex w-full items-center gap-2.5 text-left text-[13.5px] text-muted-foreground transition-[background-color,color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.997]",
+          "focus-ring group/add flex w-full items-center gap-2.5 text-left text-[13px] text-muted-foreground transition-[background-color,color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.997]",
           flat
             ? "border-t border-border/60 px-4 py-3 hover:bg-accent/30 hover:text-primary"
             : "rounded-xl border border-transparent px-4 py-2.5 hover:border-border/60 hover:bg-card hover:text-foreground"
@@ -269,13 +273,13 @@ export function AddTaskInline({
             }
           }}
           placeholder="What needs doing? Try @name #project p1 tomorrow"
-          className="min-w-0 flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+          className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
         />
         <button
           type="button"
-          onClick={openModal}
+          onClick={() => openModal()}
           title="Open full form"
-          className="focus-ring shrink-0 rounded-md px-1.5 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+          className="focus-ring shrink-0 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
         >
           More
         </button>
@@ -308,13 +312,13 @@ export function AddTaskInline({
             aria-label="Assignee suggestions"
             className="absolute left-12 top-full z-50 mt-1.5 min-w-[240px] max-w-[300px] overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-soft-md ring-1 ring-foreground/5"
           >
-            <p className="px-2 pb-1 pt-1.5 text-[11.5px] font-medium text-muted-foreground/70">
+            <p className="px-2 pb-1 pt-1.5 text-[11px] font-medium text-muted-foreground/70">
               {mentionQuery.trim() === ""
                 ? "Mention someone"
                 : `Matches for “${mentionQuery}”`}
             </p>
             {mentionMatches.length === 0 ? (
-              <div className="px-2 py-2.5 text-[12.5px] text-muted-foreground">
+              <div className="px-2 py-2.5 text-[12px] text-muted-foreground">
                 No people found
               </div>
             ) : (
@@ -384,6 +388,7 @@ function HintChip({ hint }: { hint: ParseHint }) {
     assignee: <User size={11} weight="fill" />,
     priority: <Flag size={11} weight="fill" />,
     due: <CalendarBlank size={11} weight="fill" />,
+    recurrence: <ArrowsClockwise size={11} weight="bold" />,
   };
 
   const TONE: Record<ParseHint["kind"], string> = {
@@ -399,6 +404,9 @@ function HintChip({ hint }: { hint: ParseHint }) {
     due:
       "border-emerald-500/30 bg-emerald-50 text-emerald-700 " +
       "dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-400/30",
+    recurrence:
+      "border-primary/30 bg-primary/8 text-primary " +
+      "dark:bg-primary/15 dark:text-primary dark:border-primary/40",
   };
 
   const label =

@@ -1,32 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { RelativeTime } from "@/components/relative-time";
 import { CheckCircle, UserPlus } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
-import { statusLabel } from "@/components/status-picker";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
-import type { ActivityItem, MemberPulse, ProfileStatus } from "@/lib/queries";
+import type { ActivityItem } from "@/lib/queries";
 
 interface RightRailProps {
   completedToday: number;
   activeToday: number;
-  members: MemberPulse[];
   currentUserId: string;
   activity: ActivityItem[];
 }
 
 /**
- * 300px companion column for list pages. One card, three sections,
- * hairline dividers between them — keeps the eye in a single column
- * instead of bouncing between three stacked panels.
+ * 300px companion column for list pages. One card, two sections,
+ * a hairline divider between them — keeps the eye in a single column
+ * instead of bouncing between stacked panels.
  */
 export function RightRail({
   completedToday,
   activeToday,
-  members,
   currentUserId,
   activity,
 }: RightRailProps) {
@@ -34,8 +30,6 @@ export function RightRail({
     <aside className="hidden lg:block">
       <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
         <TodaySection completed={completedToday} active={activeToday} />
-        <Divider />
-        <TeamSection members={members} currentUserId={currentUserId} />
         <Divider />
         <ActivitySection items={activity} currentUserId={currentUserId} />
       </div>
@@ -47,29 +41,12 @@ function Divider() {
   return <div className="h-px bg-border/60" />;
 }
 
-function SectionHeader({
-  title,
-  href,
-  linkLabel = "All",
-}: {
-  title: string;
-  href?: string;
-  linkLabel?: string;
-}) {
+function SectionHeader({ title }: { title: string }) {
   return (
     <div className="flex items-baseline justify-between">
       <h3 className="text-[13px] font-semibold text-foreground/80">
         {title}
       </h3>
-      {href && (
-        <Link
-          href={href}
-          prefetch={false}
-          className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          {linkLabel}
-        </Link>
-      )}
     </div>
   );
 }
@@ -192,92 +169,6 @@ function ProgressRing({ ratio }: { ratio: number }) {
   );
 }
 
-// ── Team Pulse ───────────────────────────────────────────────────────────────
-
-const PRESENCE: Record<NonNullable<ProfileStatus>, string> = {
-  coffee: "bg-amber-500",
-  focus: "bg-violet-500",
-  done: "bg-muted-foreground/40",
-  busy: "bg-rose-500",
-};
-
-function presenceColor(status: ProfileStatus, openTasks: number) {
-  if (status) return PRESENCE[status];
-  return openTasks > 0 ? "bg-emerald-500" : "bg-muted-foreground/30";
-}
-
-function memberSubtext(m: MemberPulse) {
-  if (m.status === "coffee" || m.status === "busy" || m.status === "done") {
-    return statusLabel(m.status) ?? "";
-  }
-  if (m.current_task_title) {
-    return `Working on ${m.current_task_title}`;
-  }
-  if (m.open_tasks > 0) return `${m.open_tasks} open`;
-  return statusLabel(m.status) ?? "Active now";
-}
-
-function TeamSection({
-  members,
-  currentUserId,
-}: {
-  members: MemberPulse[];
-  currentUserId: string;
-}) {
-  // Others with work first, sorted by load. Cap at 4 to keep the rail compact.
-  const others = members
-    .filter((m) => m.id !== currentUserId)
-    .sort((a, b) => b.open_tasks - a.open_tasks)
-    .slice(0, 4);
-
-  return (
-    <section className="px-4 py-3.5">
-      <SectionHeader title="Team Pulse" href="/team" />
-      {others.length === 0 ? (
-        <p className="mt-3 text-[12.5px] text-muted-foreground">
-          Quiet on the floor right now.
-        </p>
-      ) : (
-        <ul className="mt-2 flex flex-col">
-          {others.map((m) => (
-            <li key={m.id}>
-              <Link
-                href={`/team/${m.id}`}
-                prefetch={false}
-                className="focus-ring -mx-1.5 flex items-center gap-2.5 rounded-md px-1.5 py-1.5 transition-colors hover:bg-accent/40"
-              >
-                <span className="relative shrink-0">
-                  <Avatar
-                    src={m.avatar_url}
-                    initials={m.initials}
-                    color={m.avatar_color}
-                    size={26}
-                  />
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "absolute -bottom-0.5 -right-0.5 size-2 rounded-full ring-2 ring-card",
-                      presenceColor(m.status ?? null, m.open_tasks)
-                    )}
-                  />
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-[12.5px] font-medium text-foreground">
-                    {m.name.split(" ")[0]}
-                  </span>
-                  <span className="truncate text-[11px] text-muted-foreground">
-                    {memberSubtext(m)}
-                  </span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
 // ── Recent activity ──────────────────────────────────────────────────────────
 
 function ActivitySection({
@@ -293,7 +184,7 @@ function ActivitySection({
     <section className="px-4 py-3.5">
       <SectionHeader title="Recent activity" />
       {top.length === 0 ? (
-        <p className="mt-3 text-[12.5px] text-muted-foreground">
+        <p className="mt-3 text-[12px] text-muted-foreground">
           Nothing in the last 7 days.
         </p>
       ) : (
@@ -345,7 +236,7 @@ function ActivityRow({
           />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[11.5px] leading-tight text-muted-foreground">
+          <p className="text-[11px] leading-tight text-muted-foreground">
             <span className="text-foreground">You</span> completed
           </p>
           <p className="mt-1 line-clamp-2 text-[13px] font-medium leading-[1.35] text-foreground">
@@ -353,7 +244,7 @@ function ActivityRow({
           </p>
           <RelativeTime
             date={at}
-            className="mt-1.5 block text-[10.5px] text-muted-foreground/70"
+            className="mt-1.5 block text-[10px] text-muted-foreground/70"
           />
         </div>
       </li>
@@ -389,7 +280,7 @@ function ActivityRow({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-[11.5px] leading-tight text-muted-foreground">
+        <p className="text-[11px] leading-tight text-muted-foreground">
           <span className="text-foreground">{name}</span> assigned you
         </p>
         <p className="mt-1 line-clamp-2 text-[13px] font-medium leading-[1.35] text-foreground">
@@ -397,7 +288,7 @@ function ActivityRow({
         </p>
         <RelativeTime
           date={at}
-          className="mt-1.5 block text-[10.5px] text-muted-foreground/70"
+          className="mt-1.5 block text-[10px] text-muted-foreground/70"
         />
       </div>
     </li>

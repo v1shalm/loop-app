@@ -49,7 +49,7 @@ export function MetricStrip({
           >
             {m.value}
           </span>
-          <span className="text-[12.5px] text-muted-foreground">
+          <span className="text-[12px] text-muted-foreground">
             {m.label}
           </span>
           {i < metrics.length - 1 && (
@@ -74,7 +74,7 @@ export function MetricStrip({
               }}
             />
           </div>
-          <span className="text-[11.5px] font-medium tabular-nums text-muted-foreground">
+          <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
             {progress.label ??
               `${Math.round(progress.ratio * 100)}%`}
           </span>

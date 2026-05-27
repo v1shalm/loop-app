@@ -48,14 +48,14 @@ export function ConfirmDialog({
       <DialogContent
         showCloseButton={false}
         aria-label={title}
-        className="max-w-[400px] gap-0 p-0 shadow-soft-md sm:rounded-2xl"
+        className="max-w-[400px] gap-0 p-0 shadow-soft-md sm:rounded-xl"
       >
         <div className="px-6 pb-6 pt-7 text-center">
           <h2 className="text-[17px] font-bold tracking-tight text-foreground">
             {title}
           </h2>
           {description && (
-            <div className="mx-auto mt-2.5 max-w-[320px] text-[13.5px] leading-relaxed text-foreground/70">
+            <div className="mx-auto mt-2.5 max-w-[320px] text-[13px] leading-relaxed text-foreground/70">
               {description}
             </div>
           )}
@@ -88,7 +88,7 @@ export function ConfirmDialog({
               )}
             >
               {pending && <CircleNotch size={14} className="animate-spin" />}
-              {pending ? "Saving…" : confirmLabel}
+              {confirmLabel}
             </button>
           </div>
         </div>

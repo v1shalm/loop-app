@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { format } from "date-fns";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -9,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  ArrowsClockwise,
   CalendarBlank,
   Check,
   CircleNotch,
@@ -25,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { createTask } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
 import { parseTask } from "@/lib/parse-task";
+import { RECURRENCE_OPTIONS, recurrenceLabel } from "@/lib/recurrence";
 import { DatePicker } from "@/components/date-picker";
 import { Avatar } from "@/components/avatar";
 import { ProjectDot, projectColor } from "@/components/project-dot";
@@ -35,6 +44,12 @@ type Priority = 1 | 2 | 3 | 4;
 export interface QuickAddDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** Seed the due date when the dialog opens (e.g. the Upcoming page's
+   *  per-day `+` opens it pre-set to that day). */
+  defaultDue?: Date | null;
+  /** Seed the project when opened from a project row's `…` menu, so the
+   *  new task is already tagged to that project. */
+  defaultProjectId?: string | null;
   projects: Project[];
   members: Profile[];
   currentUserId: string;
@@ -45,20 +60,26 @@ const PRIORITY_OPTIONS: {
   label: string;
   cls: string;
 }[] = [
-  { p: 1, label: "Urgent", cls: "text-rose-500" },
-  { p: 2, label: "High", cls: "text-amber-500" },
-  { p: 3, label: "Medium", cls: "text-emerald-500" },
-  { p: 4, label: "Low", cls: "text-muted-foreground/60" },
+  // Same scale as the task row, drawer, and inline picker: 1=High …
+  // 4=None. (These used to read Urgent/High/Medium/Low here, which
+  // mislabeled every stored priority by one step versus the rest of
+  // the app — a #1 "Urgent" task showed as "High" everywhere else.)
+  { p: 1, label: "High", cls: "text-rose-500" },
+  { p: 2, label: "Medium", cls: "text-amber-500" },
+  { p: 3, label: "Low", cls: "text-emerald-500" },
+  { p: 4, label: "None", cls: "text-muted-foreground/60" },
 ];
 
 // Hairline-bordered pill on the card surface. Same chip used by the
 // edit drawer so the two modals read as one family.
 const chipBase =
-  "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2.5 text-[12.5px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40";
+  "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2.5 text-[12px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40";
 
 export function QuickAddDialog({
   open,
   onOpenChange,
+  defaultDue,
+  defaultProjectId,
   projects,
   members,
   currentUserId,
@@ -69,7 +90,19 @@ export function QuickAddDialog({
   const [priority, setPriority] = useState<Priority>(4);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [assigneeId, setAssigneeId] = useState<string>(currentUserId);
+  const [recurrence, setRecurrence] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+
+  // Grow the title field to fit its text so long titles wrap onto new
+  // lines instead of scrolling sideways — same behaviour as the edit
+  // drawer's title. Runs on every keystroke and on reset (title -> "").
+  useLayoutEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [title]);
 
   useEffect(() => {
     if (!open) {
@@ -79,12 +112,19 @@ export function QuickAddDialog({
       setPriority(4);
       setProjectId(null);
       setAssigneeId(currentUserId);
+      setRecurrence(null);
     } else {
+      // Seed the due date when opened with one (Upcoming's per-day `+`);
+      // otherwise start undated. Typing a date token still overrides it.
+      setDue(defaultDue ?? null);
+      // Seed the project when opened from a project row's `…` menu; typing
+      // a #project token still overrides it.
+      setProjectId(defaultProjectId ?? null);
       // Quick-add opens from sidebar CTA, topbar CTA, empty-state Add task
       // buttons. Wiring the sound here covers all of them with one line.
       playSound("pin");
     }
-  }, [open, currentUserId]);
+  }, [open, currentUserId, defaultDue, defaultProjectId]);
 
   // Live natural-language parsing. The chip strip above the input surfaces
   // what the parser saw ("Project: Platform debt", "Due: Tomorrow", etc.)
@@ -109,10 +149,19 @@ export function QuickAddDialog({
         setDue(parsed.dueAt);
       }
     }
+    if (parsed.recurrence !== null && parsed.recurrence !== recurrence) {
+      setRecurrence(parsed.recurrence);
+    }
     // State only moves forward via the parser. Backspacing "tomorrow" out of
     // the title shouldn't clear a Today chip the user clicked.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsed.projectId, parsed.assigneeId, parsed.priority, parsed.dueAt]);
+  }, [
+    parsed.projectId,
+    parsed.assigneeId,
+    parsed.priority,
+    parsed.dueAt,
+    parsed.recurrence,
+  ]);
 
   const submit = () => {
     if (!title.trim()) return;
@@ -121,9 +170,12 @@ export function QuickAddDialog({
     const savedTitle = cleaned || title.trim();
     const savedDescription = description;
     const savedPriority = priority;
-    const savedDue = due;
     const savedProjectId = projectId;
     const savedAssigneeId = assigneeId;
+    const savedRecurrence = recurrence;
+    // A recurrence needs an anchor: if none was given, start it today so
+    // the first occurrence is due now and it advances from there.
+    const savedDue = due ?? (recurrence ? today() : null);
 
     playSound("added");
     onOpenChange(false);
@@ -144,6 +196,7 @@ export function QuickAddDialog({
         dueAt: savedDue ? savedDue.toISOString() : null,
         projectId: savedProjectId,
         assigneeId: savedAssigneeId,
+        recurrence: savedRecurrence,
       });
       if (res.error) {
         playSound("error");
@@ -186,8 +239,10 @@ export function QuickAddDialog({
         {/* Title. Same scale as the edit drawer (22px / -0.01em) so the
             two modals read as one family. */}
         <section className="px-6 pt-1">
-          <input
+          <textarea
+            ref={titleRef}
             autoFocus
+            rows={1}
             placeholder="What needs to get done?"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -197,7 +252,7 @@ export function QuickAddDialog({
                 submit();
               }
             }}
-            className="w-full bg-transparent text-[22px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground outline-none placeholder:text-muted-foreground/55"
+            className="min-h-[28px] w-full resize-none bg-transparent text-[22px] font-semibold leading-[1.2] tracking-[-0.01em] text-foreground outline-none placeholder:text-muted-foreground/55"
           />
         </section>
 
@@ -225,8 +280,8 @@ export function QuickAddDialog({
               ))}
             </div>
             {parsed.title.trim() !== title.trim() && (
-              <p className="mt-2 text-[11.5px] text-muted-foreground">
-                Saved as{" "}
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Saves as{" "}
                 <span className="font-medium text-foreground">
                   {parsed.title.trim() || (
                     <em className="text-muted-foreground/70">(empty)</em>
@@ -333,6 +388,41 @@ export function QuickAddDialog({
               ))}
             </PopoverContent>
           </Popover>
+
+          <Popover>
+            <PopoverTrigger className={chipBase}>
+              <ArrowsClockwise
+                size={13}
+                weight="bold"
+                className={
+                  recurrence ? "text-primary-readable" : "text-muted-foreground"
+                }
+              />
+              <span>{recurrence ? recurrenceLabel(recurrence) : "Repeat"}</span>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px]" align="start">
+              <PopoverItem
+                selected={recurrence === null}
+                onSelect={() => setRecurrence(null)}
+              >
+                <span>Doesn&apos;t repeat</span>
+              </PopoverItem>
+              {RECURRENCE_OPTIONS.map((r) => (
+                <PopoverItem
+                  key={r}
+                  selected={recurrence === r}
+                  onSelect={() => setRecurrence(r)}
+                >
+                  <ArrowsClockwise
+                    size={14}
+                    weight="bold"
+                    className="text-muted-foreground"
+                  />
+                  <span>{recurrenceLabel(r)}</span>
+                </PopoverItem>
+              ))}
+            </PopoverContent>
+          </Popover>
         </section>
 
         {/* Description: plain inline editable, no card wrapper or
@@ -344,7 +434,7 @@ export function QuickAddDialog({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="focus-ring w-full resize-none rounded-md bg-transparent px-1 py-1 text-[13.5px] leading-relaxed text-foreground outline-none placeholder:text-foreground/40"
+            className="focus-ring w-full resize-none rounded-md bg-transparent px-1 py-1 text-[13px] leading-relaxed text-foreground outline-none placeholder:text-foreground/40"
           />
         </section>
 
@@ -352,7 +442,7 @@ export function QuickAddDialog({
         <div className="flex items-center justify-between gap-2 border-t border-border/60 px-6 py-3.5">
           <button
             onClick={() => onOpenChange(false)}
-            className="focus-ring rounded-md px-3 py-2 text-[13.5px] font-medium text-foreground transition-colors hover:bg-accent/40"
+            className="focus-ring rounded-md px-3 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-accent/40"
           >
             Cancel
           </button>
@@ -401,7 +491,7 @@ function AssigneeChip({
             ? `Assignee: ${assignee.id === currentUserId ? "Me" : assignee.name}`
             : "Pick assignee"
         }
-        className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-1.5 pr-2.5 text-[12.5px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40"
+        className="focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-1.5 pr-2.5 text-[12px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40"
       >
         {assignee ? (
           <>
@@ -489,7 +579,7 @@ function ParseChip({
   member: Profile | null;
 }) {
   const base =
-    "inline-flex h-6 items-center gap-1.5 rounded-md bg-card px-2 text-[11.5px] font-medium text-foreground ring-1 ring-inset ring-border/70";
+    "inline-flex h-6 items-center gap-1.5 rounded-md bg-card px-2 text-[11px] font-medium text-foreground ring-1 ring-inset ring-border/70";
   if (hint.kind === "project") {
     return (
       <span className={base}>
@@ -529,6 +619,14 @@ function ParseChip({
     return (
       <span className={base}>
         <Flag size={11} weight="fill" className={tone} />
+        {hint.label}
+      </span>
+    );
+  }
+  if (hint.kind === "recurrence") {
+    return (
+      <span className={base}>
+        <ArrowsClockwise size={11} weight="bold" className="text-primary-readable" />
         {hint.label}
       </span>
     );

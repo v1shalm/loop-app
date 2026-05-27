@@ -1,19 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Hash } from "@/components/icons";
+import { Hash, CheckCircle } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { SortableTaskList } from "@/components/sortable-task-list";
 import { TaskCardGroup } from "@/components/task-card-group";
 import { EmptyState } from "@/components/empty-state";
 import { ProjectStatusPicker } from "@/components/project-status-picker";
 import { ProjectDescription } from "@/components/project-description";
+import { ProjectCompletedSection } from "@/components/project-completed-section";
 import { MemberStack } from "@/components/member-stack";
+import { InviteButton } from "@/components/invite-button";
 import { RelativeTime } from "@/components/relative-time";
 import { Avatar } from "@/components/avatar";
 import type { WorkflowStatus } from "@/components/workflow-status-picker";
 import {
   getProject,
   getProjectTasks,
+  getProjectDoneTasks,
   getMembersWithPulse,
 } from "@/lib/queries";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -30,12 +33,14 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function ProjectPage({ params }: PageProps) {
   const { id } = await params;
-  const [project, openTasks, members, completedCount] = await Promise.all([
-    getProject(id),
-    getProjectTasks(id),
-    getMembersWithPulse(),
-    countDoneInProject(id),
-  ]);
+  const [project, openTasks, doneTasks, members, completedCount] =
+    await Promise.all([
+      getProject(id),
+      getProjectTasks(id),
+      getProjectDoneTasks(id),
+      getMembersWithPulse(),
+      countDoneInProject(id),
+    ]);
 
   if (!project) notFound();
 
@@ -56,6 +61,7 @@ export default async function ProjectPage({ params }: PageProps) {
         right={
           <div className="flex items-center gap-3">
             <MemberStack members={activeMembers} max={4} size={22} />
+            <InviteButton />
             <ProjectStatusPicker
               projectId={project.id}
               initialStatus={
@@ -96,18 +102,41 @@ export default async function ProjectPage({ params }: PageProps) {
             white-card mode. */}
         <section className="mb-10">
           {openTasks.length === 0 ? (
-            <EmptyState
-              tone="purple"
-              icon={<Hash size={20} weight="bold" />}
-              title="This project is empty"
-              hint="Add the first task and tag it to this project."
-            />
+            completedCount > 0 ? (
+              // Not empty — done. Don't tell someone who just cleared the
+              // board that their project is "empty".
+              <EmptyState
+                tone="green"
+                icon={<CheckCircle size={20} weight="bold" />}
+                title="All wrapped up"
+                hint="Every task in this project is done. Add another whenever you're ready."
+              />
+            ) : (
+              <EmptyState
+                tone="purple"
+                icon={<Hash size={20} weight="bold" />}
+                title="This project is empty"
+                hint="Add the first task and tag it to this project."
+              />
+            )
           ) : (
-            <TaskCardGroup title={project.name} count={openTasks.length}>
+            // No header + / ⋯: the + had no handler here and the ⋯ has no
+            // action anywhere. Adding to this project happens via the quick
+            // bar and the sidebar project menu.
+            <TaskCardGroup
+              title={project.name}
+              count={openTasks.length}
+              showAdd={false}
+              showOverflow={false}
+            >
               <SortableTaskList tasks={openTasks} />
             </TaskCardGroup>
           )}
         </section>
+
+        {/* Completed — collapsible, so finished tasks stay reachable and
+            reopenable instead of disappearing from the project. */}
+        <ProjectCompletedSection tasks={doneTasks} />
 
         {/* Activity feed — quiet label, relative time, 🎉 on completed */}
         <RecentActivity projectId={id} />
@@ -151,7 +180,7 @@ function ProgressBlock({
           <span className="font-normal text-primary/80"> done</span>
         </p>
         {supporting.length > 0 && (
-          <p className="text-[11.5px] tabular-nums text-muted-foreground">
+          <p className="text-[11px] tabular-nums text-muted-foreground">
             {supporting.join(" · ")}
           </p>
         )}
@@ -259,7 +288,7 @@ async function RecentActivity({ projectId }: { projectId: string }) {
                     </span>
                   )}
                 </p>
-                <span className="shrink-0 text-[11.5px] tabular-nums text-muted-foreground/70">
+                <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
                   <RelativeTime date={at} />
                 </span>
               </Link>

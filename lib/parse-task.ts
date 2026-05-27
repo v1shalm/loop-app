@@ -21,6 +21,7 @@
  */
 
 import type { Profile, Project } from "@/lib/queries";
+import { detectRecurrence } from "@/lib/recurrence";
 
 export type Priority = 1 | 2 | 3 | 4;
 
@@ -36,10 +37,11 @@ export interface ParsedTask {
   dueAt: Date | null;
   projectId: string | null;
   assigneeId: string | null;
+  recurrence: string | null;
 }
 
 export interface ParseHint {
-  kind: "project" | "assignee" | "priority" | "due";
+  kind: "project" | "assignee" | "priority" | "due" | "recurrence";
   label: string;
 }
 
@@ -212,6 +214,7 @@ export function parseTask(
   let dueAt: Date | null = null;
   let projectId: string | null = null;
   let assigneeId: string | null = null;
+  let recurrence: string | null = null;
 
   // 1. Priority — p1..p4 or !1..!4, whitespace-delimited
   const priMatch = title.match(/(?:^|\s)([p!])([1-4])(?=\s|$)/i);
@@ -246,7 +249,19 @@ export function parseTask(
     }
   }
 
-  // 4. Multi-word dates first ("next week", "in N days", "D MMM", "MMM D")
+  // 4. Recurrence ("every day", "every monday", "weekly", ...). Detected
+  //    before plain dates so "every monday" doesn't read as a one-off
+  //    "monday". Sets the first due date too; stripping the whole phrase
+  //    keeps the standalone weekday/date matchers from re-firing on it.
+  const rec = detectRecurrence(title, now);
+  if (rec) {
+    recurrence = rec.rule;
+    dueAt = rec.due;
+    hints.push({ kind: "recurrence", label: rec.label });
+    title = title.replace(rec.matched, " ");
+  }
+
+  // 5. Multi-word dates first ("next week", "in N days", "D MMM", "MMM D")
   const multi = [
     /\b(in \d+ days?)\b/i,
     /\b(next week)\b/i,
@@ -265,7 +280,7 @@ export function parseTask(
     }
   }
 
-  // 5. Single-word dates (today, tonight, tomorrow, weekday)
+  // 6. Single-word dates (today, tonight, tomorrow, weekday)
   if (!dueAt) {
     const singleRe =
       /\b(today|tonight|tomorrow|tmrw|tmr|sun|sunday|mon|monday|tue|tues|tuesday|wed|weds|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday)\b/i;
@@ -283,5 +298,5 @@ export function parseTask(
   // Clean up: collapse whitespace, trim.
   title = title.replace(/\s+/g, " ").trim();
 
-  return { title, priority, dueAt, projectId, assigneeId, hints };
+  return { title, priority, dueAt, projectId, assigneeId, recurrence, hints };
 }

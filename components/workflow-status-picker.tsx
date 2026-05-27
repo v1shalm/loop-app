@@ -5,7 +5,6 @@ import {
   CaretDown,
   Check,
   CheckCircle,
-  CircleNotch,
   Pause,
   Prohibit,
   Tag,
@@ -45,7 +44,10 @@ interface StatusMeta {
 export const WORKFLOW_STATUS_META: Record<WorkflowStatus, StatusMeta> = {
   active: {
     label: "Active",
-    icon: <CircleNotch size={12} weight="bold" className="animate-spin" />,
+    // A solid "live" dot — the conventional active/in-progress marker.
+    // (Was a spinning loader icon, which read as "loading" and added
+    // perpetual motion to an otherwise static status chip.)
+    icon: <span aria-hidden className="block size-2.5 rounded-full bg-current" />,
     pill:
       "bg-sky-100/70 text-sky-700 border-sky-200/70 " +
       "dark:bg-sky-500/15 dark:text-sky-200 dark:border-sky-400/25",
@@ -130,7 +132,7 @@ export function WorkflowStatusPicker({
         <button
           onClick={() => onChange(null)}
           className={cn(
-            "focus-ring flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors",
+            "focus-ring flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[12px] transition-colors",
             value === null
               ? "bg-accent/50 font-medium text-foreground"
               : "text-foreground hover:bg-accent/40"
@@ -187,7 +189,7 @@ export function WorkflowStatusChip({
       className={cn(
         "inline-flex items-center gap-1 rounded border font-medium",
         meta.pill,
-        size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-1 text-[10.5px]"
+        size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-1 text-[10px]"
       )}
     >
       <span className={meta.iconColor}>{meta.icon}</span>

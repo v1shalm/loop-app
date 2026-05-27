@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { CircleNotch, Plus, CheckCircle, UserPlus, ArrowsClockwise, Trash } from "@/components/icons";
-import { Avatar } from "@/components/avatar";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { Profile } from "@/lib/queries";
 
@@ -74,7 +73,7 @@ export function ActivityLogs({ taskId, members }: { taskId: string; members: Pro
 
   if (logs.length === 0) {
     return (
-      <div className="text-[12.5px] text-muted-foreground">
+      <div className="text-[12px] text-muted-foreground">
         No activity yet.
       </div>
     );
@@ -88,7 +87,7 @@ export function ActivityLogs({ taskId, members }: { taskId: string; members: Pro
             <ActionIcon action={log.action} />
           </div>
           <div className="min-w-0 flex-1 pt-0.5">
-            <p className="text-[12.5px] text-foreground">
+            <p className="text-[12px] text-foreground">
               <span className="font-medium">{log.actor?.name ?? "Someone"}</span>{" "}
               <ActionText log={log} members={members} />
             </p>
@@ -116,8 +115,9 @@ function ActionIcon({ action }: { action: string }) {
 function ActionText({ log, members }: { log: ActivityLog; members: Profile[] }) {
   if (log.action === "created") return <>created this task</>;
   if (log.action === "status_changed") {
-    const to = log.new_value === "done" ? "completed" : "todo";
-    return <>marked task as <strong>{to}</strong></>;
+    if (log.new_value === "done")
+      return <>marked task as <strong>completed</strong></>;
+    return <>reopened this task</>;
   }
   if (log.action === "assignee_changed") {
     if (!log.new_value) return <>removed the assignee</>;

@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -9,6 +10,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  Check,
   Gear,
   MagnifyingGlass,
   PushPin,
@@ -16,6 +18,9 @@ import {
 } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { ProjectDot } from "@/components/project-dot";
+import { WorkspaceBadge } from "@/components/workspace-badge";
+import { sileo } from "sileo";
+import { setActiveTeam } from "@/lib/actions";
 import { signOut } from "@/app/login/actions";
 import { cn } from "@/lib/utils";
 import type {
@@ -32,6 +37,8 @@ interface MobileMenuSheetProps {
   user: Profile;
   workspace: Workspace | null;
   team: Team | null;
+  /** Every workspace the user belongs to — drives the switcher. */
+  teams: Team[];
   projects: Project[];
   counts: SidebarCounts;
   onOpenSearch: () => void;
@@ -49,12 +56,14 @@ export function MobileMenuSheet({
   open,
   onOpenChange,
   user,
-  workspace,
   team,
+  teams,
   projects,
   counts,
   onOpenSearch,
 }: MobileMenuSheetProps) {
+  const router = useRouter();
+  const [, startSwitch] = useTransition();
   const pinIds = new Set(user.pinned_project_ids ?? []);
   const pinned = (user.pinned_project_ids ?? [])
     .map((id) => projects.find((p) => p.id === id))
@@ -62,6 +71,23 @@ export function MobileMenuSheet({
   const others = projects.filter((p) => !pinIds.has(p.id));
 
   const close = () => onOpenChange(false);
+
+  const switchWorkspace = (id: string) => {
+    if (id !== team?.id) {
+      startSwitch(async () => {
+        const res = await setActiveTeam(id);
+        if (res?.error) {
+          sileo.error({ title: res.error });
+          return;
+        }
+        // Land on a workspace-agnostic page so we don't 404 on a project
+        // or member page that belongs to the workspace we just left.
+        router.push("/assigned-to-me");
+        router.refresh();
+      });
+    }
+    close();
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -87,23 +113,33 @@ export function MobileMenuSheet({
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
           }}
         >
-          {team && workspace && (
-            <div className="mb-3 mt-1 flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2">
-              <span
-                aria-hidden
-                className="grid size-7 place-items-center rounded-md text-[12px] font-semibold text-white"
-                style={{ backgroundColor: team.color ?? "var(--primary)" }}
-              >
-                {team.name.charAt(0).toUpperCase()}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[13.5px] font-medium text-foreground">
-                  {team.name}
-                </div>
-                <div className="truncate text-[11.5px] text-muted-foreground">
-                  {workspace.name}
-                </div>
-              </div>
+          {/* Workspace switcher — the departments you belong to. Tap to
+              switch which one the app is scoped to. */}
+          {teams.length > 0 && (
+            <div className="mb-3 mt-1 flex flex-col gap-0.5 rounded-xl bg-muted/40 p-1.5">
+              {teams.map((t) => {
+                const active = t.id === team?.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => switchWorkspace(t.id)}
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors active:bg-accent/50"
+                  >
+                    <WorkspaceBadge color={t.color} size={28} />
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
+                      {t.name}
+                    </span>
+                    {active && (
+                      <Check
+                        size={15}
+                        weight="bold"
+                        className="shrink-0 text-primary-readable"
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -134,17 +170,9 @@ export function MobileMenuSheet({
             </Section>
           )}
 
-          <Section title="Projects" trailing={
-            <Link
-              href="/projects"
-              onClick={close}
-              className="rounded px-1.5 text-[11px] font-medium text-muted-foreground active:bg-accent/40"
-            >
-              All
-            </Link>
-          }>
+          <Section title="Projects">
             {others.length === 0 ? (
-              <p className="px-2.5 py-3 text-[12.5px] text-muted-foreground">
+              <p className="px-2.5 py-3 text-[12px] text-muted-foreground">
                 No projects yet.
               </p>
             ) : (
@@ -173,18 +201,18 @@ export function MobileMenuSheet({
               />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{user.name}</div>
-                <div className="truncate text-[11.5px] text-muted-foreground">
+                <div className="truncate text-[11px] text-muted-foreground">
                   View profile
                 </div>
               </div>
             </Link>
             <Link
-              href="/team/manage"
+              href="/workspace/manage"
               onClick={close}
               className="flex h-11 items-center gap-3 rounded-xl px-2.5 text-[14px] text-foreground active:bg-accent/40"
             >
               <Gear size={18} className="text-muted-foreground" />
-              <span>Team settings</span>
+              <span>Workspace settings</span>
             </Link>
             <SignOutButton />
           </Section>
@@ -211,20 +239,17 @@ function SignOutButton() {
 
 function Section({
   title,
-  trailing,
   children,
 }: {
   title: string;
-  trailing?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between px-2.5 pb-1">
-        <h3 className="text-[12.5px] font-semibold text-foreground/75">
+        <h3 className="text-[12px] font-semibold text-foreground/75">
           {title}
         </h3>
-        {trailing}
       </div>
       <div className="flex flex-col">{children}</div>
     </div>
@@ -256,7 +281,7 @@ function ProjectRow({
         <PushPin size={12} weight="fill" className="-rotate-45 text-foreground/70" />
       )}
       {badge !== undefined && badge > 0 && (
-        <span className="rounded-md bg-accent/60 px-1.5 text-[11.5px] tabular-nums text-muted-foreground">
+        <span className="rounded-md bg-accent/60 px-1.5 text-[11px] tabular-nums text-muted-foreground">
           {badge}
         </span>
       )}

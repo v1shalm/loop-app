@@ -78,7 +78,7 @@ function NotificationsBody({
           Inbox
         </h2>
         {hasUnread && (
-          <span className="inline-flex h-[18px] items-center rounded-full bg-primary/15 px-1.5 text-[10.5px] font-semibold tabular-nums text-primary dark:bg-primary/20">
+          <span className="inline-flex h-[18px] items-center rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold tabular-nums text-primary dark:bg-primary/20">
             {unreadCount} new
           </span>
         )}
@@ -86,7 +86,7 @@ function NotificationsBody({
           type="button"
           onClick={markAllRead}
           disabled={!hasUnread}
-          className="focus-ring ml-auto rounded-md px-1.5 py-0.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          className="focus-ring ml-auto rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
         >
           Mark all read
         </button>
@@ -102,7 +102,7 @@ function NotificationsBody({
         )}
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         {loading && items.length === 0 ? (
           <div className="grid place-items-center py-16 text-muted-foreground">
             <CircleNotch size={18} className="animate-spin" />
@@ -206,7 +206,7 @@ function NotificationRow({
             size={28}
           />
         ) : (
-          <span className="grid size-7 place-items-center rounded-full bg-muted text-[10.5px] font-semibold text-muted-foreground">
+          <span className="grid size-7 place-items-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
             ?
           </span>
         )}
@@ -227,7 +227,7 @@ function NotificationRow({
         </span>
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[12.5px] leading-snug text-muted-foreground">
+        <p className="text-[12px] leading-snug text-muted-foreground">
           {item.kind === "assigned" ? (
             <>
               <span className="font-medium text-foreground">{firstName}</span>{" "}
@@ -247,7 +247,7 @@ function NotificationRow({
           )}
         </p>
         {item.preview && (
-          <p className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground/85">
+          <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground/85">
             {item.preview}
           </p>
         )}

@@ -99,14 +99,14 @@ function CompletedRow({
       className="focus-ring group flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 shadow-soft-xs transition-shadow duration-150 ease-[var(--ease-out)] hover:shadow-soft-sm"
       title="Open to reopen this task"
     >
-      <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border-[1.5px] border-emerald-600 bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-500">
-        <Check size={11} weight="bold" className="text-white" />
+      <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] border-[1.5px] border-primary bg-primary">
+        <Check size={11} weight="bold" className="text-primary-foreground" />
       </span>
-      <p className="min-w-0 flex-1 truncate text-[13.5px] text-muted-foreground line-through decoration-muted-foreground/40 group-hover:text-foreground/70">
+      <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground line-through decoration-muted-foreground/40 group-hover:text-foreground/70">
         {title}
       </p>
       {trailing && (
-        <span className="shrink-0 text-[11.5px] tabular-nums text-muted-foreground/70">
+        <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
           {trailing}
         </span>
       )}

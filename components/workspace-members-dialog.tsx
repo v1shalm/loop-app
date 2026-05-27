@@ -46,7 +46,7 @@ export interface WorkspaceMembersDialogProps {
  * Single canonical surface for workspace membership. Combines invite
  * (email or link), search, member roles, removal, and pending invites.
  *
- * Replaces the /team/manage page and the standalone InviteTeammateDialog
+ * Replaces the /workspace/manage page and the standalone InviteTeammateDialog
  * for the workspace-management flow. Server passes in members + invites
  * so the dialog renders instantly without a client-side fetch round-trip.
  */
@@ -108,7 +108,7 @@ export function WorkspaceMembersDialog({
         </div>
 
         <div className="max-h-[calc(100dvh-9rem)] overflow-y-auto px-5 py-5">
-          <h2 className="text-[19px] font-semibold tracking-tight text-foreground">
+          <h2 className="text-[20px] font-semibold tracking-tight text-foreground">
             Members
           </h2>
 
@@ -131,7 +131,7 @@ export function WorkspaceMembersDialog({
               obvious without a separate section header. */}
           <ul className="mt-1">
             {filteredMembers.length === 0 && filteredInvites.length === 0 ? (
-              <li className="py-6 text-center text-[12.5px] text-muted-foreground">
+              <li className="py-6 text-center text-[12px] text-muted-foreground">
                 No matches.
               </li>
             ) : (
@@ -209,7 +209,7 @@ function InviteEmailRow({
 
   return (
     <section className="mt-5">
-      <div className="flex items-center gap-2 text-[12.5px] font-medium text-foreground">
+      <div className="flex items-center gap-2 text-[12px] font-medium text-foreground">
         <PaperPlaneTilt size={13} className="text-muted-foreground" />
         Invite with email
       </div>
@@ -293,14 +293,14 @@ function InviteLinkRow({ invite }: { invite: PendingInvitation | null }) {
 
   return (
     <section className="mt-4">
-      <div className="flex items-center gap-2 text-[12.5px] font-medium text-foreground">
+      <div className="flex items-center gap-2 text-[12px] font-medium text-foreground">
         <LinkSimple size={13} className="text-muted-foreground" />
         Invite with link
       </div>
       <div className="mt-2 flex items-center gap-2 border-b border-border/60 pb-3">
         {url ? (
           <>
-            <code className="min-w-0 flex-1 truncate px-1 text-[12.5px] text-muted-foreground">
+            <code className="min-w-0 flex-1 truncate px-1 text-[12px] text-muted-foreground">
               {url}
             </code>
             <button
@@ -327,7 +327,7 @@ function InviteLinkRow({ invite }: { invite: PendingInvitation | null }) {
             </button>
           </>
         ) : (
-          <p className="px-1 py-2 text-[12.5px] text-muted-foreground">
+          <p className="px-1 py-2 text-[12px] text-muted-foreground">
             Send an invite email above to get a shareable link.
           </p>
         )}
@@ -405,16 +405,16 @@ function MemberRow({
         size={32}
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13.5px] font-semibold text-foreground">
+        <p className="truncate text-[13px] font-semibold text-foreground">
           {member.name}
           {isMe && (
-            <span className="ml-1.5 text-[11.5px] font-normal text-muted-foreground">
+            <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
               (you)
             </span>
           )}
         </p>
         {member.role && (
-          <p className="truncate text-[11.5px] text-muted-foreground">
+          <p className="truncate text-[11px] text-muted-foreground">
             {member.role}
           </p>
         )}
@@ -424,7 +424,7 @@ function MemberRow({
           disabled={pending || isMe}
           aria-label={`Role for ${member.name}: ${optRole}`}
           className={cn(
-            "focus-ring inline-flex h-7 items-center gap-1 rounded-md px-1.5 text-[12.5px] font-semibold transition-colors disabled:opacity-60",
+            "focus-ring inline-flex h-7 items-center gap-1 rounded-md px-1.5 text-[12px] font-semibold transition-colors disabled:opacity-60",
             optRole === "admin"
               ? "text-primary-readable hover:bg-primary/8"
               : "text-foreground hover:bg-accent/40"
@@ -523,10 +523,10 @@ function PendingInviteRow({
         <PaperPlaneTilt size={13} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13.5px] font-medium text-foreground">
+        <p className="truncate text-[13px] font-medium text-foreground">
           {invite.email}
         </p>
-        <p className="text-[11.5px] text-muted-foreground">
+        <p className="text-[11px] text-muted-foreground">
           {invite.role === "admin" ? "Admin" : "Member"} · {expiresLabel}
         </p>
       </div>

@@ -53,7 +53,7 @@ export function ProfileIdentityForm({
           size={56}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[16px] font-semibold tracking-tight text-foreground">
+          <p className="truncate text-[15px] font-semibold tracking-tight text-foreground">
             {name || "Unnamed"}
           </p>
           {email && (
@@ -67,14 +67,14 @@ export function ProfileIdentityForm({
       <div className="grid gap-4 p-5">
         <Field
           label="Display name"
-          hint="Teammates see this in Team Pulse and on your tasks."
+          hint="Teammates see this on your tasks and across the workspace."
         >
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
-            className="focus-ring w-full rounded-md border border-border bg-background px-3 py-2 text-[13.5px] text-foreground outline-none transition-colors focus:border-ring/40"
+            className="focus-ring w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors focus:border-ring/40"
           />
         </Field>
 
@@ -87,7 +87,7 @@ export function ProfileIdentityForm({
             value={role}
             onChange={(e) => setRole(e.target.value)}
             placeholder="e.g. Product Designer"
-            className="focus-ring w-full rounded-md border border-border bg-background px-3 py-2 text-[13.5px] text-foreground outline-none transition-colors focus:border-ring/40"
+            className="focus-ring w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors focus:border-ring/40"
           />
         </Field>
 
@@ -138,7 +138,7 @@ function Field({
       </span>
       {children}
       {hint && (
-        <span className="mt-1 block text-[11.5px] text-muted-foreground">{hint}</span>
+        <span className="mt-1 block text-[11px] text-muted-foreground">{hint}</span>
       )}
     </label>
   );

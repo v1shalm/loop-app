@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * Client wrapper around the "Invite a teammate" secondary CTA so the
  * dialog can be opened inline from server-rendered empty states
  * (Inbox, Assigned-to-me, Upcoming) without bouncing through
- * /team/manage. Visually identical to the previous Link-styled
+ * /workspace/manage. Visually identical to the previous Link-styled
  * SecondaryButton — only the click behavior changes.
  */
 export function InviteCTA() {
