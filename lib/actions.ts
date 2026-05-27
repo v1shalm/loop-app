@@ -59,7 +59,6 @@ export async function searchAll(query: string): Promise<SearchResults> {
 
   const like = `%${q}%`;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tasksP = (supabase
     .from("tasks")
     .select(
@@ -185,7 +184,6 @@ export async function createProject(
 
   const { data, error } = await supabase
     .from("projects")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .insert({
       workspace_id: workspace.id,
       team_id: team.id,
@@ -275,7 +273,6 @@ export async function createTeam(input: {
   // Multi-membership: a user can belong to (and create) several teams,
   // so there's no longer a one-team-per-user gate here.
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const teamIns = await (supabase as any)
     .from("teams")
     .insert({
@@ -288,7 +285,6 @@ export async function createTeam(input: {
 
   if (teamIns.error) return { error: teamIns.error.message };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const memberIns = await (supabase as any).from("team_members").insert({
     team_id: teamIns.data.id,
     user_id: profile.id,
@@ -298,7 +294,6 @@ export async function createTeam(input: {
   if (memberIns.error) {
     // Best-effort rollback: drop the empty team we just created so the
     // workspace doesn't accumulate ghost rows on the failure path.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("teams").delete().eq("id", teamIns.data.id);
     // Translate the RLS bootstrap error into something a user can act on.
     // If they hit this it almost certainly means migration 0016 hasn't
@@ -318,7 +313,6 @@ export async function createTeam(input: {
 
   // Land the creator in the team they just made (active workspace). RLS
   // lets a user write only their own selection row.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
     .from("team_active_selection")
     .upsert(
@@ -331,7 +325,6 @@ export async function createTeam(input: {
   // so the projects board has a column. Failures here don't fail the
   // create — the team exists, the user can still use the app.
   if (input.seedSamples) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const proj = await (supabase as any)
       .from("projects")
       .insert({
@@ -394,7 +387,6 @@ export async function createTeam(input: {
       },
     ];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("tasks").insert(
       samples.map((s) => ({
         workspace_id: workspace.id,
@@ -430,7 +422,6 @@ export async function addTeamMember(
   if (!team) return { error: "You're not on a team." };
 
   // Look up the profile by email via auth.users → profiles join
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: target } = await (supabase
     .from("profiles")
     .select("id")
@@ -444,7 +435,6 @@ export async function addTeamMember(
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from("team_members").insert({
     team_id: team.id,
     user_id: target[0].id,
@@ -491,7 +481,6 @@ export async function changeTeamMemberRole(
   const team = await getMyTeam();
   if (!team) return { error: "You're not on a team." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase
     .from("team_members")
     .update({ role })
@@ -522,7 +511,6 @@ export async function setActiveTeam(
     return { error: "You're not a member of that workspace." };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from("team_active_selection")
     .upsert(
@@ -600,7 +588,6 @@ export async function sendInvite(
     // team_invitations isn't in the generated database.types yet — use
     // the same `(supabase as any)` cast pattern as the other recent
     // tables (saved_views, etc.).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("team_invitations")
       .insert({
@@ -640,7 +627,6 @@ export async function cancelInvite(
   if (!supabase) return { error: "Supabase not configured." };
 
   // RLS handles the admin check — non-admins get a no-op update.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error, data } = await (supabase as any)
     .from("team_invitations")
     .update({ status: "revoked" })
@@ -670,7 +656,6 @@ export async function acceptInvite(
 
   // RPC isn't in the generated types (database.types only knows the
   // pre-existing helpers). Cast to any to bypass the union check.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc(
     "accept_team_invitation",
     { t: token }
@@ -732,7 +717,6 @@ export async function createTask(
   // Only attach recurrence when set, so task creation still works before
   // migration 0029 lands (only recurring tasks need the new column).
   if (input.recurrence) insertPayload.recurrence = input.recurrence;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("tasks")
     .insert(insertPayload)
@@ -820,7 +804,6 @@ export async function updateProject(
 
   const { error } = await supabase
     .from("projects")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .update(update as any)
     .eq("id", id);
   if (error) return { error: error.message };
@@ -865,7 +848,6 @@ export async function addComment(
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Not signed in." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await ((supabase as any)
     .from("task_comments")
     .insert({
@@ -916,7 +898,6 @@ export async function toggleCommentReaction(
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Not signed in." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const existing = await (supabase as any)
     .from("comment_reactions")
     .select("comment_id")
@@ -926,7 +907,6 @@ export async function toggleCommentReaction(
     .maybeSingle();
 
   if (existing.data) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const del = await (supabase as any)
       .from("comment_reactions")
       .delete()
@@ -939,7 +919,6 @@ export async function toggleCommentReaction(
     return { ok: true, added: false };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ins = await (supabase as any).from("comment_reactions").insert({
     comment_id: commentId,
     user_id: profile.id,
@@ -982,7 +961,6 @@ export async function addTaskAttachmentLink(
   const workspace = await getDefaultWorkspace();
   if (!workspace) return { error: "No workspace." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await ((supabase as any)
     .from("task_attachments")
     .insert({
@@ -1030,7 +1008,6 @@ export async function addTaskAttachmentFile(
     data: { publicUrl },
   } = supabase.storage.from("task-attachments").getPublicUrl(input.storagePath);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await ((supabase as any)
     .from("task_attachments")
     .insert({
@@ -1067,7 +1044,6 @@ export async function removeTaskAttachment(
   // Read the row first so we know whether to chase the storage object.
   // Failing to read = the user isn't allowed to delete it; surface that
   // up as a clean error.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: row, error: readErr } = await ((supabase as any)
     .from("task_attachments")
     .select("kind, url")
@@ -1094,7 +1070,6 @@ export async function removeTaskAttachment(
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from("task_attachments")
     .delete()
@@ -1117,7 +1092,6 @@ export async function bulkSetTaskStatus(
   if (ids.length === 0) return { ok: true };
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const upd = await (supabase as any)
     .from("tasks")
     .update({
@@ -1137,7 +1111,6 @@ export async function bulkSetTaskAssignee(
   if (ids.length === 0) return { ok: true };
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const upd = await (supabase as any)
     .from("tasks")
     .update({ assignee_id: userId })
@@ -1154,7 +1127,6 @@ export async function bulkSetTaskDueDate(
   if (ids.length === 0) return { ok: true };
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const upd = await (supabase as any)
     .from("tasks")
     .update({ due_at: dueAt })
@@ -1188,7 +1160,6 @@ export async function addTaskAssignee(
 ): Promise<{ ok?: true; error?: string }> {
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ins = await (supabase as any)
     .from("task_assignees")
     .insert({ task_id: taskId, user_id: userId });
@@ -1208,7 +1179,6 @@ export async function removeTaskAssignee(
 
   // If removing the primary, also clear assignee_id (otherwise the
   // trigger would re-add the row on the next task update).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const task = await (supabase as any)
     .from("tasks")
     .select("assignee_id")
@@ -1216,14 +1186,12 @@ export async function removeTaskAssignee(
     .maybeSingle();
 
   if (task.data?.assignee_id === userId) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from("tasks")
       .update({ assignee_id: null } as any)
       .eq("id", taskId);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const del = await (supabase as any)
     .from("task_assignees")
     .delete()
@@ -1253,7 +1221,6 @@ export async function createSubtask(input: {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Not signed in." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const parent = await (supabase as any)
     .from("tasks")
     .select("id, workspace_id, team_id, project_id, assignee_id")
@@ -1264,7 +1231,6 @@ export async function createSubtask(input: {
     return { error: "Parent task not found." };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ins = await (supabase as any)
     .from("tasks")
     .insert({
@@ -1441,7 +1407,6 @@ export async function listSavedViews(
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Not signed in." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const res = await (supabase as any)
     .from("saved_views")
     .select("id, scope, name, config")
@@ -1468,7 +1433,6 @@ export async function saveView(input: {
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Not signed in." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ins = await (supabase as any)
     .from("saved_views")
     .insert({
@@ -1491,7 +1455,6 @@ export async function deleteSavedView(
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const del = await (supabase as any).from("saved_views").delete().eq("id", id);
   if (del.error) return { error: del.error.message };
   revalidatePath("/", "layout");
@@ -1512,7 +1475,6 @@ export async function togglePinnedProject(
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Not signed in." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cur = await (supabase as any)
     .from("profiles")
     .select("pinned_project_ids")
@@ -1525,7 +1487,6 @@ export async function togglePinnedProject(
     ? existing.filter((id) => id !== projectId)
     : [projectId, ...existing].slice(0, 12); // cap to keep the section sane
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const upd = await (supabase as any)
     .from("profiles")
     .update({ pinned_project_ids: next })
@@ -1611,7 +1572,6 @@ export async function markNotificationsRead(): Promise<{
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.rpc as any)(
     "mark_notifications_read"
   );

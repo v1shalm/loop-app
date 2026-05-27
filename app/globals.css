@@ -167,12 +167,12 @@
 }
 
 :root {
-  /* Inter (loaded via Google Fonts in app/layout.tsx) is the body face.
-     System fallbacks cover the brief window before Inter fetches and
-     any client that fails the CDN (offline / blocked network). The
-     @theme block above re-exposes this as Tailwind's `font-sans`. */
+  /* Inter (self-hosted via next/font in app/layout.tsx, exposed as
+     --font-inter) is the body face. System fallbacks cover the brief
+     swap window and any client that can't load the font. The @theme
+     block above re-exposes this as Tailwind's `font-sans`. */
   --font-sans:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, ui-sans-serif, system-ui, sans-serif;
 
   /* Cool blue-grey neutrals — resume-builder palette */

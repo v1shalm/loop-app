@@ -490,11 +490,15 @@ function PendingInviteRow({
 }) {
   const [pending, startTransition] = useTransition();
 
-  const expiresIn = Math.max(
-    0,
-    Math.ceil(
-      (new Date(invite.expires_at).getTime() - Date.now()) /
-        (24 * 3600 * 1000)
+  // Computed once at mount (lazy init keeps render pure). An invite row
+  // is keyed by id and short-lived, so the countdown needn't tick.
+  const [expiresIn] = useState(() =>
+    Math.max(
+      0,
+      Math.ceil(
+        (new Date(invite.expires_at).getTime() - Date.now()) /
+          (24 * 3600 * 1000)
+      )
     )
   );
   const expiresLabel =

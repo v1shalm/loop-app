@@ -6,7 +6,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   addMonths,
-  endOfMonth,
   format,
   isSameDay,
   isSameMonth,

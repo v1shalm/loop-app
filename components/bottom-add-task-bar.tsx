@@ -14,7 +14,7 @@ import {
   FilePdf,
   Flag,
   Folder,
-  Image,
+  Image as ImageIcon,
   LinkSimple,
   Paperclip,
   Plus,
@@ -443,7 +443,7 @@ export function BottomAddTaskBar({
                 {/* Group 2 — Upload. One file, 5 MB cap. Icons
                     distinct per type so the row reads at a glance. */}
                 <AttachOption
-                  icon={<Image size={15} className="text-muted-foreground" />}
+                  icon={<ImageIcon size={15} className="text-muted-foreground" />}
                   label="Image"
                   onClick={() => pickFile("image/*")}
                 />

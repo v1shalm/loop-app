@@ -149,7 +149,6 @@ function ProgressBlock({
   open,
   completed,
   total,
-  ratio,
   percent,
 }: {
   open: number;
@@ -207,7 +206,7 @@ async function RecentActivity({ projectId }: { projectId: string }) {
   since.setDate(since.getDate() - 14);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase
+  const { data } = await ((supabase as any)
     .from("tasks")
     .select(
       "id, title, status, created_at, completed_at, author:profiles!tasks_author_id_fkey(id, name, initials, avatar_color, avatar_url), assignee:profiles!tasks_assignee_id_fkey(id, name, initials, avatar_color, avatar_url)"
@@ -217,7 +216,7 @@ async function RecentActivity({ projectId }: { projectId: string }) {
       `created_at.gte.${since.toISOString()},completed_at.gte.${since.toISOString()}`
     )
     .order("created_at", { ascending: false })
-    .limit(8) as any);
+    .limit(8));
 
   type Row = {
     id: string;

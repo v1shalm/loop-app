@@ -1,9 +1,20 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, ThemeInitScript } from "@/components/theme-provider";
 import { ThemedToaster } from "@/components/themed-toaster";
 import "sileo/styles.css";
 import "./globals.css";
+
+// Self-hosted Inter (only the four weights the UI uses). next/font
+// inlines the @font-face, eliminates the render-blocking Google Fonts
+// request, and reserves metrics so there's no layout shift on swap.
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://loop-tist.vercel.app"),
@@ -63,24 +74,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="h-full antialiased"
+      className={`h-full antialiased ${inter.variable}`}
       suppressHydrationWarning
     >
       <head>
-        {/* Inter via Google Fonts. preconnect to fonts.gstatic.com cuts
-            the woff2 fetch handshake. Only the four weights the UI
-            actually uses (400/500/600/700) so the font payload stays
-            small. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        />
         {/* Supabase preconnect — covers REST, auth, AND realtime (all
             share the project's `*.supabase.co` origin). crossOrigin is
             required because supabase-js sends the apikey header on

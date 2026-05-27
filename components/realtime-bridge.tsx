@@ -78,7 +78,9 @@ export function RealtimeBridge({
   // the subscribe effect can stay subscribed across navigations. Without
   // this, every route change would tear down and rebuild both channels.
   const navRef = useRef({ router, pathname, searchParams });
-  navRef.current = { router, pathname, searchParams };
+  useEffect(() => {
+    navRef.current = { router, pathname, searchParams };
+  });
 
   // Build the path that opens a task in the drawer: preserves current
   // page, appends/replaces ?task=<id>.

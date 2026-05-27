@@ -38,13 +38,12 @@ import {
   FilePdf,
   Flag,
   Folder,
-  Image,
+  Image as ImageIcon,
   LinkSimple,
   Paperclip,
   Plus,
   Trash,
   Tray,
-  User,
   UserPlus,
   X,
 } from "@/components/icons";
@@ -86,6 +85,11 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useOptimisticDeletes } from "@/components/optimistic-deletes";
 import { projectColor } from "@/components/project-dot";
 import { Button } from "@/components/ui/button";
+
+// Monotonic ids for optimistic comment rows. Avoids Date.now() in the
+// submit handlers, which the react-compiler purity lint flags.
+let optimisticCommentSeq = 0;
+const tempCommentId = () => `temp-${++optimisticCommentSeq}`;
 
 // Inlined to avoid pulling lib/queries.ts (which imports server-only code)
 // into the client bundle. Keep in sync with TASK_RELATIONS_SELECT.
@@ -339,13 +343,13 @@ function DrawerInner({
       .maybeSingle();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const commentsP = (supabase
+    const commentsP = ((supabase as any)
       .from("task_comments")
       .select(
         "id, task_id, author_id, body, parent_comment_id, created_at, author:profiles!task_comments_author_id_fkey(id, name, initials, avatar_color, avatar_url), reactions:comment_reactions(emoji, user_id)"
       )
       .eq("task_id", taskId)
-      .order("created_at", { ascending: true }) as any);
+      .order("created_at", { ascending: true }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const assigneesP = ((supabase as any)
@@ -1012,30 +1016,6 @@ function SectionHeader({
   );
 }
 
-function DetailRow({
-  icon,
-  label,
-  children,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  children: React.ReactNode;
-}) {
-  // One row in the details list. Icon + label on the left at a fixed
-  // 120px column so all rows align; value on the right. The icon is
-  // muted (it's a category cue, not the answer); the value carries
-  // the visual weight.
-  return (
-    <li className="grid grid-cols-[120px_minmax(0,1fr)] items-center gap-3 py-2">
-      <span className="flex items-center gap-2 text-[12px] font-medium text-muted-foreground">
-        {icon}
-        {label}
-      </span>
-      <div className="min-w-0">{children}</div>
-    </li>
-  );
-}
-
 function DrawerFooter({
   done,
   pending,
@@ -1127,7 +1107,7 @@ function CommentsSection({
     if (!text || pending) return;
 
     // Optimistic append
-    const tempId = `temp-${Date.now()}`;
+    const tempId = tempCommentId();
     const optimistic: CommentRow = {
       id: tempId,
       task_id: taskId,
@@ -1163,7 +1143,7 @@ function CommentsSection({
   // owns its own buffer below.
   const submitReply = (parentId: string, text: string) => {
     if (!text.trim()) return;
-    const tempId = `temp-${Date.now()}`;
+    const tempId = tempCommentId();
     const optimistic: CommentRow = {
       id: tempId,
       task_id: taskId,
@@ -1398,7 +1378,6 @@ const AutoTextarea = forwardRef<HTMLTextAreaElement, AutoTextareaProps>(
 function CommentItem({
   comment,
   replies,
-  currentUser,
   currentUserId,
   members,
   isLast,
@@ -1870,7 +1849,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
     const text = draft.trim();
     if (!text) return;
     // Optimistic mirror — server confirms with the real id later.
-    const tempId = `temp-${Date.now()}`;
+    const tempId = tempCommentId();
     setSubtasks((prev) => [...prev, { id: tempId, title: text, status: "todo" }]);
     setDraft("");
     addInputRef.current?.focus();
@@ -2322,7 +2301,7 @@ function AttachmentsSection({ taskId }: { taskId: string }) {
             />
             <div className="my-1 h-px bg-border/60" />
             <AttachOption
-              icon={<Image size={15} className="text-muted-foreground" />}
+              icon={<ImageIcon size={15} className="text-muted-foreground" />}
               label="Image"
               onClick={() => pickFile("image/*")}
             />
@@ -2379,7 +2358,7 @@ function AttachmentIcon({
     return <LinkSimple size={16} className="shrink-0 text-primary" />;
   }
   if (contentType?.startsWith("image/")) {
-    return <Image size={16} className="shrink-0 text-muted-foreground" />;
+    return <ImageIcon size={16} className="shrink-0 text-muted-foreground" />;
   }
   if (contentType === "application/pdf") {
     return <FilePdf size={16} className="shrink-0 text-muted-foreground" />;

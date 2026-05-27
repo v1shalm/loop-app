@@ -203,17 +203,12 @@ export function NotificationsProvider({
   // Initial load + reload whenever the panel is opened. Doesn't poll on
   // an interval; the realtime bridge will already invalidate the cache
   // when tasks/comments change, and we re-fetch on open anyway.
-  // The async fetcher resolves its first setState inside a microtask
-  // (after the synchronous useEffect body returns), so the React 19
-  // "setState in effect" purity rule fires a false positive here.
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     void fetchFeed();
   }, [fetchFeed]);
   useEffect(() => {
     if (open) void fetchFeed();
   }, [open, fetchFeed]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const unreadCount = useMemo(() => {
     if (!readAt) return 0;

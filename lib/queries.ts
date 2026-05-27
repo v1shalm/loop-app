@@ -133,7 +133,6 @@ export const getMyTeams = cache(async (): Promise<Team[]> => {
   const profile = await getCurrentProfile();
   if (!profile) return [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase
     .from("team_members")
     .select("team:teams(id, workspace_id, name, color)")
@@ -160,7 +159,6 @@ export const getMyTeam = cache(async (): Promise<Team | null> => {
   if (teams.length === 0) return null;
   if (teams.length === 1) return teams[0];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: sel } = await (supabase as any)
     .from("team_active_selection")
     .select("team_id")
@@ -202,7 +200,6 @@ export const getWorkspaceMembers = cache(async (): Promise<Profile[]> => {
   const team = await getMyTeam();
   if (!team) return [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase
     .from("team_members")
     .select("profile:profiles!inner(*)")
@@ -219,7 +216,6 @@ export const getTeamMembersWithRole = cache(
     const team = await getMyTeam();
     if (!team) return [];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase
       .from("team_members")
       .select("role, profile:profiles!inner(*)")
@@ -255,7 +251,6 @@ export const getPendingInvitations = cache(
 
     // team_invitations isn't in the generated database.types yet —
     // cast supabase to any (same pattern as saved_views, etc.).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("team_invitations")
       .select("id, email, role, token, expires_at, created_at")
@@ -296,7 +291,6 @@ async function fetchTasks(
   const supabase = await getSupabaseServer();
   if (!supabase) return [];
   const base = supabase.from("tasks").select(TASK_RELATIONS_SELECT);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = (await (build(base as any) as unknown as Promise<{
     data: TaskWithRelations[] | null;
     error: unknown;
@@ -305,7 +299,6 @@ async function fetchTasks(
     // Surface the cause in dev — silent empty lists made the
     // missing-migration case look like "no tasks exist".
     if (process.env.NODE_ENV !== "production") {
-      // eslint-disable-next-line no-console
       console.error("[fetchTasks] query failed:", error);
     }
     return [];
@@ -351,7 +344,6 @@ export async function getAssignedToMe(): Promise<AssignedSections> {
   // instead of forcing list order. due_at falls back to keep stably
   // ordered between buckets when sort_order ties.
   const useSortOrder = await hasTaskSortOrder();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = await fetchTasks((q: any) => {
     let chain = q
       .eq("assignee_id", profile.id)
@@ -431,7 +423,6 @@ export async function getUpcomingBuckets(): Promise<UpcomingBuckets> {
   nextWeekEnd.setHours(23, 59, 59, 999);
 
   const useSortOrder = await hasTaskSortOrder();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = await fetchTasks((q: any) => {
     let chain = q
       .eq("assignee_id", profile.id)
@@ -468,7 +459,6 @@ export async function getUpcomingBuckets(): Promise<UpcomingBuckets> {
 export async function getCompletedAssignedToMe(): Promise<TaskWithRelations[]> {
   const profile = await getCurrentProfile();
   if (!profile) return [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return fetchTasks((q: any) =>
     q
       .eq("assignee_id", profile.id)
@@ -489,7 +479,6 @@ export async function getUpcomingTasksInRange(
 ): Promise<TaskWithRelations[]> {
   const profile = await getCurrentProfile();
   if (!profile) return [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return fetchTasks((q: any) =>
     q
       .eq("assignee_id", profile.id)
@@ -507,9 +496,7 @@ export async function getUpcomingTasksInRange(
 export async function getInboxAssignments(): Promise<TaskWithRelations[]> {
   const profile = await getCurrentProfile();
   if (!profile) return [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const useSortOrder = await hasTaskSortOrder();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return fetchTasks((q: any) => {
     let chain = q
       .eq("assignee_id", profile.id)
@@ -529,7 +516,6 @@ export async function getInboxAssignments(): Promise<TaskWithRelations[]> {
 export async function getProjectTasks(
   projectId: string
 ): Promise<TaskWithRelations[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // Manual drag order wins over auto-priority on project pages — Linear/
   // Todoist do the same. Tasks that haven't been reordered fall back to
   // their created_at-derived sort_order (set by migration 0015), so the
@@ -722,7 +708,6 @@ export async function getTeammate(id: string): Promise<MemberPulse | null> {
 export async function getTasksAssignedTo(
   userId: string
 ): Promise<TaskWithRelations[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return fetchTasks((q: any) =>
     q
       .eq("assignee_id", userId)
@@ -802,7 +787,6 @@ export async function getRecentActivity(): Promise<ActivityItem[]> {
   since.setDate(since.getDate() - 7);
   const sinceIso = since.toISOString();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = await fetchTasks((q: any) =>
     q
       .or(
