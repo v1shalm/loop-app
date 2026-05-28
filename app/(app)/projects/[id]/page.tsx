@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ProjectStatusPicker } from "@/components/project-status-picker";
 import { ProjectDescription } from "@/components/project-description";
 import { ProjectCompletedSection } from "@/components/project-completed-section";
-import { MemberStack } from "@/components/member-stack";
+import { ProjectMembersBar } from "@/components/project-members-bar";
 import { InviteButton } from "@/components/invite-button";
 import { RelativeTime } from "@/components/relative-time";
 import { Avatar } from "@/components/avatar";
@@ -17,7 +17,9 @@ import {
   getProject,
   getProjectTasks,
   getProjectDoneTasks,
-  getMembersWithPulse,
+  getProjectMembers,
+  getWorkspaceMembers,
+  getCurrentProfile,
 } from "@/lib/queries";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
@@ -33,21 +35,26 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function ProjectPage({ params }: PageProps) {
   const { id } = await params;
-  const [project, openTasks, doneTasks, members, completedCount] =
-    await Promise.all([
-      getProject(id),
-      getProjectTasks(id),
-      getProjectDoneTasks(id),
-      getMembersWithPulse(),
-      countDoneInProject(id),
-    ]);
+  const [
+    project,
+    openTasks,
+    doneTasks,
+    projectMembers,
+    workspaceMembers,
+    profile,
+    completedCount,
+  ] = await Promise.all([
+    getProject(id),
+    getProjectTasks(id),
+    getProjectDoneTasks(id),
+    getProjectMembers(id),
+    getWorkspaceMembers(),
+    getCurrentProfile(),
+    countDoneInProject(id),
+  ]);
 
   if (!project) notFound();
-
-  const activeMemberIds = new Set(
-    openTasks.map((t) => t.assignee_id).filter(Boolean) as string[]
-  );
-  const activeMembers = members.filter((m) => activeMemberIds.has(m.id));
+  if (!profile) notFound();
 
   const total = openTasks.length + completedCount;
   const ratio = total === 0 ? 0 : completedCount / total;
@@ -60,7 +67,12 @@ export default async function ProjectPage({ params }: PageProps) {
         title={project.name}
         right={
           <div className="flex items-center gap-3">
-            <MemberStack members={activeMembers} max={4} size={22} />
+            <ProjectMembersBar
+              projectId={project.id}
+              initialMembers={projectMembers}
+              workspaceMembers={workspaceMembers}
+              currentUserId={profile.id}
+            />
             <InviteButton />
             <ProjectStatusPicker
               projectId={project.id}

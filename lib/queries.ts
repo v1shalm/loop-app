@@ -11,6 +11,9 @@ export type Profile = Tables["profiles"]["Row"] & {
   status?: ProfileStatus;
   role?: string | null;
   avatar_url?: string | null;
+  /** Free-text department label (Design, Engineering, ...). Added in
+   *  migration 0030 as the simple replacement for the teams table. */
+  department?: string | null;
   /** Per-user pinned projects (Notion-style favourites). Insertion
    *  order is the slot order in the sidebar. */
   pinned_project_ids?: string[] | null;
@@ -189,41 +192,76 @@ export const getMyTeamRole = cache(
 );
 
 /**
- * Members of the current user's team — the universe for assignee pickers,
- * Team Pulse, the manage-team page, etc. The brief says "users can only
- * be assigned tasks within their team", so every member-facing surface
- * goes through here instead of returning the whole workspace.
+ * Members of the company workspace. The universe for assignee pickers,
+ * the People directory, and the "add to project" picker. Projects can
+ * pull anyone from the company in (cross-department), so visibility of
+ * a teammate is gated by workspace membership, not team.
  */
 export const getWorkspaceMembers = cache(async (): Promise<Profile[]> => {
   const supabase = await getSupabaseServer();
   if (!supabase) return [];
-  const team = await getMyTeam();
-  if (!team) return [];
+  const ws = await getDefaultWorkspace();
+  if (!ws) return [];
 
   const { data } = await (supabase
-    .from("team_members")
+    .from("workspace_members")
     .select("profile:profiles!inner(*)")
-    .eq("team_id", team.id)
+    .eq("workspace_id", ws.id)
     .order("joined_at") as any);
   return ((data ?? []) as Array<{ profile: Profile }>).map((r) => r.profile);
 });
 
-/** Same as getWorkspaceMembers but each row carries its team role. */
+/** Same as getWorkspaceMembers but each row carries its workspace role. */
 export const getTeamMembersWithRole = cache(
   async (): Promise<TeamMember[]> => {
     const supabase = await getSupabaseServer();
     if (!supabase) return [];
-    const team = await getMyTeam();
-    if (!team) return [];
+    const ws = await getDefaultWorkspace();
+    if (!ws) return [];
 
     const { data } = await (supabase
-      .from("team_members")
+      .from("workspace_members")
       .select("role, profile:profiles!inner(*)")
-      .eq("team_id", team.id)
+      .eq("workspace_id", ws.id)
       .order("joined_at") as any);
     return ((data ?? []) as Array<{ role: string; profile: Profile }>).map(
       (r) => ({ ...r.profile, team_role: r.role as "admin" | "member" })
     );
+  }
+);
+
+/**
+ * Members of a specific project. Project membership gates visibility of
+ * the project and its tasks in the new (post-0030) model, so the project
+ * page surfaces this list and the assignee picker filters against it.
+ */
+export interface ProjectMember extends Profile {
+  project_role: "admin" | "member";
+  joined_at: string;
+}
+
+export const getProjectMembers = cache(
+  async (projectId: string): Promise<ProjectMember[]> => {
+    const supabase = await getSupabaseServer();
+    if (!supabase) return [];
+
+    // project_members is post-0030; not in generated database.types yet.
+    const { data } = await ((supabase as any)
+      .from("project_members")
+      .select("role, joined_at, profile:profiles!inner(*)")
+      .eq("project_id", projectId)
+      .order("joined_at"));
+    return (
+      (data ?? []) as Array<{
+        role: string;
+        joined_at: string;
+        profile: Profile;
+      }>
+    ).map((r) => ({
+      ...r.profile,
+      project_role: r.role as "admin" | "member",
+      joined_at: r.joined_at,
+    }));
   }
 );
 

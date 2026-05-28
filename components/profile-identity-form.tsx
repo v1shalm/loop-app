@@ -3,12 +3,13 @@
 import { useState, useTransition } from "react";
 import { sileo } from "sileo";
 import { CircleNotch } from "@/components/icons";
-import { updateMyProfile } from "@/lib/actions";
+import { updateMyDepartment, updateMyProfile } from "@/lib/actions";
 import { Avatar } from "@/components/avatar";
 
 interface ProfileIdentityFormProps {
   initialName: string;
   initialRole: string | null;
+  initialDepartment?: string | null;
   email: string | null;
   avatarColor: string;
   avatarUrl?: string | null;
@@ -18,6 +19,7 @@ interface ProfileIdentityFormProps {
 export function ProfileIdentityForm({
   initialName,
   initialRole,
+  initialDepartment = null,
   email,
   avatarColor,
   avatarUrl,
@@ -25,20 +27,27 @@ export function ProfileIdentityForm({
 }: ProfileIdentityFormProps) {
   const [name, setName] = useState(initialName);
   const [role, setRole] = useState(initialRole ?? "");
+  const [department, setDepartment] = useState(initialDepartment ?? "");
   const [pending, startTransition] = useTransition();
 
   const dirty =
     name.trim() !== initialName.trim() ||
-    (role.trim() || null) !== (initialRole ?? null);
+    (role.trim() || null) !== (initialRole ?? null) ||
+    (department.trim() || null) !== (initialDepartment ?? null);
 
   const save = () => {
     if (!dirty || pending) return;
     startTransition(async () => {
-      const res = await updateMyProfile({
-        name: name.trim(),
-        role: role.trim() || null,
-      });
-      if (res.error) sileo.error({ title: res.error });
+      // Save name/role and department in parallel; one network turn.
+      const [profileRes, deptRes] = await Promise.all([
+        updateMyProfile({
+          name: name.trim(),
+          role: role.trim() || null,
+        }),
+        updateMyDepartment(department.trim() || null),
+      ]);
+      const err = profileRes.error ?? deptRes.error;
+      if (err) sileo.error({ title: err });
       else sileo.success({ title: "Profile updated" });
     });
   };
@@ -91,12 +100,26 @@ export function ProfileIdentityForm({
           />
         </Field>
 
+        <Field
+          label="Department"
+          hint="Optional. Groups you in the People directory (Design, Engineering...)."
+        >
+          <input
+            type="text"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            placeholder="e.g. Design"
+            className="focus-ring w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors focus:border-ring/40"
+          />
+        </Field>
+
         <div className="mt-1 flex items-center justify-end gap-2">
           {dirty && (
             <button
               onClick={() => {
                 setName(initialName);
                 setRole(initialRole ?? "");
+                setDepartment(initialDepartment ?? "");
               }}
               disabled={pending}
               className="focus-ring rounded-md px-3 py-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"

@@ -48,14 +48,19 @@ export default async function TeamPage() {
             showAction={false}
           />
         ) : (
+          // Sort by department first (people without a department label
+          // bubble to the end), then alphabetically — adjacent cards
+          // visually group by department without needing real sections.
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {members.map((m) => (
-              <MemberCard
-                key={m.id}
-                member={m}
-                isMe={me?.id === m.id}
-              />
-            ))}
+            {[...members]
+              .sort((a, b) => {
+                const da = a.department || "￿";
+                const db = b.department || "￿";
+                return da.localeCompare(db) || a.name.localeCompare(b.name);
+              })
+              .map((m) => (
+                <MemberCard key={m.id} member={m} isMe={me?.id === m.id} />
+              ))}
           </div>
         )}
       </div>
@@ -97,6 +102,11 @@ function MemberCard({
               </span>
             )}
           </p>
+          {member.department && (
+            <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground/80">
+              {member.department}
+            </p>
+          )}
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             {label ? (
               <span>{label}</span>

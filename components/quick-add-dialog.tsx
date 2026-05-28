@@ -425,16 +425,16 @@ export function QuickAddDialog({
           </Popover>
         </section>
 
-        {/* Description: plain inline editable, no card wrapper or
-            section header. Matches the drawer's pattern where body
-            copy reads as continuous content. */}
-        <section className="px-6 pb-5">
+        {/* Description: a visible, bordered field so it clearly reads as
+            something you type into, with room to actually write. Matches
+            the app's other text inputs (border + bg-background). */}
+        <section className="px-6 pb-6">
           <textarea
             placeholder="Add a description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            className="focus-ring w-full resize-none rounded-md bg-transparent px-1 py-1 text-[13px] leading-relaxed text-foreground outline-none placeholder:text-foreground/40"
+            rows={4}
+            className="focus-ring min-h-[104px] w-full resize-none rounded-md border border-border bg-background px-3 py-2.5 text-[13px] leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground/55 focus:border-ring/40"
           />
         </section>
 

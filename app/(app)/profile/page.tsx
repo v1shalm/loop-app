@@ -46,6 +46,7 @@ export default async function ProfilePage() {
           <ProfileIdentityForm
             initialName={profile.name}
             initialRole={profile.role ?? null}
+            initialDepartment={profile.department ?? null}
             email={authEmail}
             avatarColor={profile.avatar_color}
             avatarUrl={profile.avatar_url}

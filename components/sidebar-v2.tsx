@@ -2,12 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
 import { sileo } from "sileo";
 import {
-  CaretDown,
-  Check,
   DotsThree,
   Folder,
   MagnifyingGlass,
@@ -17,7 +15,7 @@ import {
   Trash,
   UserPlus,
 } from "@/components/icons";
-import { deleteProject, setActiveTeam, togglePinnedProject } from "@/lib/actions";
+import { deleteProject, togglePinnedProject } from "@/lib/actions";
 import {
   CompletedIcon,
   InboxIcon,
@@ -25,11 +23,6 @@ import {
   UpcomingIcon,
   type NavIcon,
 } from "@/components/animated-nav-icons";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +39,6 @@ import { cn } from "@/lib/utils";
 import { ProfileMenu } from "@/components/profile-menu";
 import { projectColor } from "@/components/project-dot";
 import { AddProjectPopover } from "@/components/add-project-popover";
-import { CreateWorkspaceDialog } from "@/components/create-workspace-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useInvite } from "@/components/invite-context";
 import { useQuickAdd } from "@/components/quick-add-context";
@@ -104,37 +96,12 @@ export function SidebarV2({
   user,
   workspace,
   team,
-  teams,
-  teamRole,
   projects,
   counts,
   onOpenSearch,
 }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { collapsed, toggle } = useSidebar();
-  const [wsMenuOpen, setWsMenuOpen] = useState(false);
-  const [createWsOpen, setCreateWsOpen] = useState(false);
-  const [, startSwitch] = useTransition();
-  const invite = useInvite();
-  const isAdmin = teamRole === "admin";
-
-  const switchWorkspace = (id: string) => {
-    setWsMenuOpen(false);
-    if (id === team?.id) return;
-    startSwitch(async () => {
-      const res = await setActiveTeam(id);
-      if (res?.error) {
-        sileo.error({ title: res.error });
-        return;
-      }
-      // Land on a workspace-agnostic page. Staying put would 404 if the
-      // current route is a resource of the old workspace (a project,
-      // a member detail) that the new workspace can't see.
-      router.push("/assigned-to-me");
-      router.refresh();
-    });
-  };
 
   if (collapsed) {
     return (
@@ -146,9 +113,10 @@ export function SidebarV2({
       />
     );
   }
-  // Prefer the team name (what V1's WorkspacePill shows in the same
-  // slot) and only fall back to workspace name.
-  const workspaceName = team?.name ?? workspace?.name ?? "Workspace";
+  // The pill shows the company name (one workspace = the company in
+  // the post-0030 model). The legacy team-name fallback is kept only
+  // for the rare case where workspace is null at render time.
+  const workspaceName = workspace?.name ?? team?.name ?? "Workspace";
   const pinIds = new Set(user.pinned_project_ids ?? []);
   const sortedProjects = [...projects].sort((a, b) => {
     const ap = pinIds.has(a.id) ? 0 : 1;
@@ -192,118 +160,20 @@ export function SidebarV2({
 
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-border/40 bg-white dark:bg-[oklch(0.185_0.005_250)]">
-      {/* Workspace header — single-line workspace name in V2's blue
-          accent + caret. Whole pill is a popover trigger for the
-          workspace menu. Right side: search + bell + sidebar-toggle. */}
+      {/* Workspace header — single-line company name. One company,
+          one workspace, so no switcher; the pill is a Link to the
+          People directory. Search + sidebar-toggle sit to the right. */}
       <div className="flex items-center gap-2 px-3 pt-4 pb-3">
-        <Popover open={wsMenuOpen} onOpenChange={setWsMenuOpen}>
-          <PopoverTrigger
-            aria-label={`${workspaceName} workspace menu`}
-            className="focus-ring group/wp inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-foreground/[0.04] data-[popup-open]:bg-foreground/[0.06]"
-          >
-            <WorkspaceBadge color={team?.color} size={20} />
-            <span className="min-w-0 truncate text-[14px] font-semibold tracking-tight text-foreground">
-              {workspaceName}
-            </span>
-            <CaretDown
-              size={14}
-              weight="bold"
-              className="shrink-0 text-muted-foreground/70 transition-transform duration-150 group-data-[popup-open]/wp:rotate-180"
-            />
-          </PopoverTrigger>
-          <PopoverContent
-            side="bottom"
-            align="start"
-            sideOffset={6}
-            className="w-[248px] p-1.5"
-          >
-            {/* Workspace switcher — the departments you belong to. The
-                active one carries a check; picking another re-scopes the
-                whole app (setActiveTeam → my_team_id). */}
-            {teams.length > 1 && (
-              <p className="px-2 pb-1 pt-1 text-[11px] font-medium text-muted-foreground">
-                Switch workspace
-              </p>
-            )}
-            {teams.map((t) => {
-              const active = t.id === team?.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => switchWorkspace(t.id)}
-                  className="focus-ring flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-foreground/[0.04]"
-                >
-                  <WorkspaceBadge color={t.color} size={24} />
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
-                    {t.name}
-                  </span>
-                  {active && (
-                    <Check
-                      size={13}
-                      weight="bold"
-                      className="shrink-0 text-primary-readable"
-                    />
-                  )}
-                </button>
-              );
-            })}
-
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={() => {
-                  setWsMenuOpen(false);
-                  setCreateWsOpen(true);
-                }}
-                className="focus-ring flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] font-medium text-foreground transition-colors hover:bg-foreground/[0.04]"
-              >
-                <span
-                  aria-hidden
-                  className="grid size-6 shrink-0 place-items-center rounded-md border border-dashed border-border text-muted-foreground"
-                >
-                  <Plus size={12} weight="bold" />
-                </span>
-                New workspace
-              </button>
-            )}
-
-            <div className="my-1 h-px bg-border" />
-
-            {isAdmin ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWsMenuOpen(false);
-                    invite.open();
-                  }}
-                  className="focus-ring flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-foreground transition-colors hover:bg-foreground/[0.04]"
-                >
-                  <Plus size={13} className="text-muted-foreground" />
-                  Invite teammates
-                </button>
-                <Link
-                  href="/workspace/manage"
-                  onClick={() => setWsMenuOpen(false)}
-                  className="focus-ring flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-foreground transition-colors hover:bg-foreground/[0.04]"
-                >
-                  <CaretDown size={13} className="rotate-[-90deg] text-muted-foreground" />
-                  Manage workspace
-                </Link>
-              </>
-            ) : (
-              <Link
-                href="/workspace"
-                onClick={() => setWsMenuOpen(false)}
-                className="focus-ring flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-foreground transition-colors hover:bg-foreground/[0.04]"
-              >
-                <CaretDown size={13} className="rotate-[-90deg] text-muted-foreground" />
-                View members
-              </Link>
-            )}
-          </PopoverContent>
-        </Popover>
+        <Link
+          href="/workspace"
+          aria-label={`${workspaceName} workspace`}
+          className="focus-ring inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-foreground/[0.04]"
+        >
+          <WorkspaceBadge color={team?.color} size={20} />
+          <span className="min-w-0 truncate text-[14px] font-semibold tracking-tight text-foreground">
+            {workspaceName}
+          </span>
+        </Link>
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
           <button
             onClick={onOpenSearch}
@@ -321,8 +191,6 @@ export function SidebarV2({
           </button>
         </div>
       </div>
-
-      <CreateWorkspaceDialog open={createWsOpen} onOpenChange={setCreateWsOpen} />
 
       {/* Primary nav */}
       <nav className="mt-2 flex flex-col px-2">

@@ -172,31 +172,22 @@ export async function createProject(
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  const [workspace, team] = await Promise.all([
-    getDefaultWorkspace(),
-    getMyTeam(),
-  ]);
-  if (!workspace) return { error: "No workspace yet." };
-  if (!team)
-    return {
-      error: "Join a team before creating projects.",
-    };
-
-  const { data, error } = await supabase
-    .from("projects")
-    .insert({
-      workspace_id: workspace.id,
-      team_id: team.id,
-      name: trimmed,
-      color: args.color?.trim() || null,
-      emoji: args.emoji?.trim() || null,
-    } as any)
-    .select("id")
-    .single();
+  // Atomic create: the RPC inserts the project AND the creator's
+  // project_members row in one transaction. Without that, RLS would
+  // block the select-back of the new project id (the creator isn't a
+  // member yet at .select() time).
+  const { data, error } = await (supabase as any).rpc(
+    "create_project_for_me",
+    {
+      p_name: trimmed,
+      p_color: args.color?.trim() || null,
+      p_emoji: args.emoji?.trim() || null,
+    }
+  );
 
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
-  return { ok: true, projectId: data?.id };
+  return { ok: true, projectId: data as string };
 }
 
 /**
@@ -675,21 +666,15 @@ export async function createTask(
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  const [profile, workspace, team] = await Promise.all([
+  const [profile, workspace] = await Promise.all([
     getCurrentProfile(),
     getDefaultWorkspace(),
-    getMyTeam(),
   ]);
   if (!profile) return { error: "Not signed in." };
   if (!workspace)
     return {
       error:
         "No workspace yet. Run supabase/seed.sql in the Supabase SQL Editor.",
-    };
-  if (!team)
-    return {
-      error:
-        "You're not on a team yet. Ask an admin to add you to one before creating tasks.",
     };
 
   // Self-assigned tasks are auto-triaged so they don't show up in the Inbox.
@@ -703,7 +688,6 @@ export async function createTask(
   const useSortOrder = await hasTaskSortOrder();
   const insertPayload: Record<string, unknown> = {
     workspace_id: workspace.id,
-    team_id: team.id,
     project_id: input.projectId ?? null,
     title,
     description: input.description ?? null,
@@ -724,6 +708,17 @@ export async function createTask(
     .single();
 
   if (error) return { error: error.message };
+
+  // Auto-add the assignee to the project so the task they own is
+  // visible to them. RLS lets any workspace member do this.
+  if (input.projectId && assigneeId && assigneeId !== profile.id) {
+    await (supabase as any)
+      .from("project_members")
+      .upsert(
+        { project_id: input.projectId, user_id: assigneeId, role: "member" },
+        { onConflict: "project_id,user_id", ignoreDuplicates: true }
+      );
+  }
 
   revalidateTaskRoutes(input.projectId ?? null);
   return { ok: true, taskId: data?.id as string | undefined };
@@ -771,6 +766,30 @@ export async function updateTask(
     .update(update as never)
     .eq("id", id);
   if (error) return { error: error.message };
+
+  // If we just reassigned the task and it lives in a project, make
+  // sure the new assignee is a project member so the task is visible
+  // to them. ignoreDuplicates leaves an existing 'admin' row alone.
+  if (patch.assigneeId) {
+    const { data: t } = await (supabase as any)
+      .from("tasks")
+      .select("project_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (t?.project_id) {
+      await (supabase as any)
+        .from("project_members")
+        .upsert(
+          {
+            project_id: t.project_id,
+            user_id: patch.assigneeId,
+            role: "member",
+          },
+          { onConflict: "project_id,user_id", ignoreDuplicates: true }
+        );
+    }
+  }
+
   revalidateTaskRoutes(patch.projectId ?? undefined);
   return { ok: true };
 }
@@ -1223,7 +1242,7 @@ export async function createSubtask(input: {
 
   const parent = await (supabase as any)
     .from("tasks")
-    .select("id, workspace_id, team_id, project_id, assignee_id")
+    .select("id, workspace_id, project_id, assignee_id")
     .eq("id", input.parentId)
     .maybeSingle();
 
@@ -1235,7 +1254,6 @@ export async function createSubtask(input: {
     .from("tasks")
     .insert({
       workspace_id: parent.data.workspace_id,
-      team_id: parent.data.team_id,
       project_id: parent.data.project_id,
       parent_task_id: input.parentId,
       title,
@@ -1577,4 +1595,77 @@ export async function markNotificationsRead(): Promise<{
   );
   if (error) return { error: error.message };
   return { ok: true, readAt: typeof data === "string" ? data : undefined };
+}
+
+// ── Project membership ───────────────────────────────────────────────────────
+
+/**
+ * Add a teammate to a project. Anyone in the company can invite anyone
+ * else in the company; RLS enforces "must be a workspace member of the
+ * project's workspace." ignoreDuplicates means re-adding an existing
+ * member is a silent no-op (doesn't downgrade an 'admin' to 'member').
+ */
+export async function addProjectMember(
+  projectId: string,
+  userId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const { error } = await (supabase as any)
+    .from("project_members")
+    .upsert(
+      { project_id: projectId, user_id: userId, role: "member" },
+      { onConflict: "project_id,user_id", ignoreDuplicates: true }
+    );
+  if (error) return { error: error.message };
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}
+
+/**
+ * Remove a teammate from a project. Any project member can remove
+ * anyone (including themselves to leave). RLS gates this.
+ */
+export async function removeProjectMember(
+  projectId: string,
+  userId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const { error } = await (supabase as any)
+    .from("project_members")
+    .delete()
+    .eq("project_id", projectId)
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}
+
+// ── Department label ─────────────────────────────────────────────────────────
+
+/**
+ * Update the caller's department label (Design, Engineering, ...). A
+ * free-text field on profiles in the post-0030 model; replaces the
+ * structured teams table for grouping people in the People directory.
+ */
+export async function updateMyDepartment(
+  department: string | null
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+
+  const value = department?.trim() || null;
+  const { error } = await (supabase as any)
+    .from("profiles")
+    .update({ department: value })
+    .eq("id", profile.id);
+  if (error) return { error: error.message };
+  revalidatePath("/profile");
+  revalidatePath("/workspace");
+  return { ok: true };
 }
