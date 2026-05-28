@@ -2,9 +2,17 @@
 
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { format, isToday, isTomorrow } from "date-fns";
 import { motion } from "motion/react";
 import { Avatar } from "@/components/avatar";
-import { Bell, ChatCircle, CircleNotch, X } from "@/components/icons";
+import {
+  Bell,
+  ChatCircle,
+  Check,
+  CircleNotch,
+  Clock,
+  X,
+} from "@/components/icons";
 import { EmptyStateIllustration } from "@/components/empty-state-illustration";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { RelativeTime } from "@/components/relative-time";
@@ -159,21 +167,14 @@ function NotificationRow({
   const isNew =
     !!readAt && new Date(item.at).getTime() > new Date(readAt).getTime();
 
-  const base =
-    pathname && pathname.length > 1
-      ? pathname
-      : item.projectId
-        ? `/projects/${item.projectId}`
-        : "/my-tasks";
-  const href = `${base}?task=${item.taskId}`;
+  const base = pathname && pathname.length > 1 ? pathname : "/my-tasks";
+  const href = item.taskId ? `${base}?task=${item.taskId}` : base;
 
   const onClick = () => {
-    // Same-route case: just sync the URL via the native history API
-    // and let the drawer react to the search-param change. router.push
-    // would refetch the route's RSC payload here, but no server
-    // component on these pages reads ?task — so the refetch is dead
-    // weight, and on a heavy page it stalls the click by hundreds of
-    // ms. Cross-route falls back to the router so layout segments swap.
+    if (!item.taskId) {
+      onClose();
+      return;
+    }
     if (base === pathname) {
       window.history.pushState(null, "", href);
     } else {
@@ -210,45 +211,20 @@ function NotificationRow({
             ?
           </span>
         )}
-        <span
-          aria-hidden
-          className={cn(
-            "absolute -bottom-0.5 -right-0.5 grid size-[14px] place-items-center rounded-full ring-2 ring-popover",
-            item.kind === "assigned"
-              ? "bg-primary text-primary-foreground"
-              : "bg-emerald-600 text-white dark:bg-emerald-500"
-          )}
-        >
-          {item.kind === "assigned" ? (
-            <span className="text-[10px] font-bold leading-none">+</span>
-          ) : (
-            <ChatCircle size={8} weight="fill" />
-          )}
-        </span>
+        <KindBadge kind={item.kind} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[12px] leading-snug text-muted-foreground">
-          {item.kind === "assigned" ? (
-            <>
-              <span className="font-medium text-foreground">{firstName}</span>{" "}
-              assigned you{" "}
-              <span className="font-medium text-foreground">
-                {item.taskTitle}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="font-medium text-foreground">{firstName}</span>{" "}
-              commented on{" "}
-              <span className="font-medium text-foreground">
-                {item.taskTitle}
-              </span>
-            </>
-          )}
+          <KindSentence
+            kind={item.kind}
+            firstName={firstName}
+            taskTitle={item.taskTitle}
+            toDueAt={item.toDueAt}
+          />
         </p>
         {item.preview && (
           <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground/85">
-            {item.preview}
+            {stripMentionMarkup(item.preview)}
           </p>
         )}
         <RelativeTime
@@ -258,6 +234,100 @@ function NotificationRow({
       </div>
     </button>
   );
+}
+
+function KindBadge({ kind }: { kind: NotificationItem["kind"] }) {
+  const styles: Record<NotificationItem["kind"], string> = {
+    assigned: "bg-primary text-primary-foreground",
+    completed: "bg-emerald-600 text-white dark:bg-emerald-500",
+    rescheduled: "bg-amber-500 text-white dark:bg-amber-400",
+    comment: "bg-emerald-600 text-white dark:bg-emerald-500",
+    mention: "bg-primary text-primary-foreground",
+  };
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "absolute -bottom-0.5 -right-0.5 grid size-[14px] place-items-center rounded-full ring-2 ring-popover",
+        styles[kind]
+      )}
+    >
+      {kind === "assigned" && (
+        <span className="text-[10px] font-bold leading-none">+</span>
+      )}
+      {kind === "completed" && <Check size={8} weight="bold" />}
+      {kind === "rescheduled" && <Clock size={8} weight="bold" />}
+      {kind === "comment" && <ChatCircle size={8} weight="fill" />}
+      {kind === "mention" && (
+        <span className="text-[10px] font-bold leading-none">@</span>
+      )}
+    </span>
+  );
+}
+
+function KindSentence({
+  kind,
+  firstName,
+  taskTitle,
+  toDueAt,
+}: {
+  kind: NotificationItem["kind"];
+  firstName: string;
+  taskTitle: string;
+  toDueAt: string | null;
+}) {
+  const title = (
+    <span className="font-medium text-foreground">{taskTitle}</span>
+  );
+  const who = <span className="font-medium text-foreground">{firstName}</span>;
+  switch (kind) {
+    case "assigned":
+      return (
+        <>
+          {who} assigned you {title}
+        </>
+      );
+    case "completed":
+      return (
+        <>
+          {who} completed {title}
+        </>
+      );
+    case "rescheduled":
+      return (
+        <>
+          {who} moved {title} to{" "}
+          <span className="font-medium text-foreground">
+            {formatDue(toDueAt)}
+          </span>
+        </>
+      );
+    case "comment":
+      return (
+        <>
+          {who} commented on {title}
+        </>
+      );
+    case "mention":
+      return (
+        <>
+          {who} mentioned you on {title}
+        </>
+      );
+  }
+}
+
+function formatDue(iso: string | null): string {
+  if (!iso) return "no date";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "a new date";
+  if (isToday(d)) return "today";
+  if (isTomorrow(d)) return "tomorrow";
+  return format(d, "EEE, d MMM");
+}
+
+function stripMentionMarkup(s: string): string {
+  return s.replace(/@\[([^\]]+)\]\([^)]+\)/g, "@$1");
 }
 
 /**
