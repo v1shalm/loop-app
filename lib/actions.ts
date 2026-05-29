@@ -1250,6 +1250,7 @@ export async function createSubtask(input: {
     return { error: "Parent task not found." };
   }
 
+  const subAssignee = parent.data.assignee_id ?? profile.id;
   const ins = await (supabase as any)
     .from("tasks")
     .insert({
@@ -1260,9 +1261,9 @@ export async function createSubtask(input: {
       description: null,
       priority: 4,
       status: "todo",
-      assignee_id: parent.data.assignee_id ?? profile.id,
+      assignee_id: subAssignee,
       author_id: profile.id,
-      triaged_at: new Date().toISOString(),
+      triaged_at: subAssignee === profile.id ? new Date().toISOString() : null,
     })
     .select("id")
     .single();

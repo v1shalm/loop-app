@@ -139,9 +139,29 @@ export function RealtimeBridge({
       )
       .subscribe();
 
+    // Project-membership changes for the current user. When you're
+    // added to (or removed from) a project, the sidebar's project list
+    // is stale until the next navigation; refresh so it updates live.
+    const membershipChannel = supabase
+      .channel(`project_members:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "project_members",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          navRef.current.router.refresh();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(notificationsChannel);
       supabase.removeChannel(tasksChannel);
+      supabase.removeChannel(membershipChannel);
     };
   }, [userId, workspaceId]);
 
