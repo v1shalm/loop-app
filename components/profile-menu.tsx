@@ -7,14 +7,13 @@ import {
   Bell,
   BellSlash,
   CaretDown,
-  Desktop,
+  CaretRight,
   Gear,
   MoonStars,
   Question,
   SignOut,
   SpeakerHigh,
   SpeakerSlash,
-  Sun,
   UsersThree,
 } from "@/components/icons";
 import { useTheme } from "@/components/theme-provider";
@@ -106,12 +105,10 @@ export function ProfileMenu({
   const soundsOn = mounted && !muted;
   const notificationsPaused = mounted && paused;
 
-  const { theme, setTheme } = useTheme();
-  const THEMES: { key: "light" | "dark" | "system"; label: string; Icon: typeof Sun }[] = [
-    { key: "light", label: "Light", Icon: Sun },
-    { key: "dark", label: "Dark", Icon: MoonStars },
-    { key: "system", label: "System", Icon: Desktop },
-  ];
+  const { theme, accentColor, openThemeModal } = useTheme();
+  const themeLabel =
+    theme === "light" ? "Light" : theme === "dark" ? "Dark" : "System";
+  const accentSwatch = accentColor;
 
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -268,41 +265,27 @@ export function ProfileMenu({
 
           <div className="my-1 h-px bg-border/60" />
 
-          {/* Theme segmented control — larger on mobile for touch */}
-          <div
-            role="radiogroup"
-            aria-label="Theme"
-            className="mx-3 my-2 grid grid-cols-3 gap-1 rounded-lg border border-border/70 bg-muted/40 p-1"
+          {/* Theme — opens the modal (appearance + accent) */}
+          <SheetRow
+            icon={
+              <span
+                aria-hidden
+                className="size-[18px] rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15"
+                style={{ backgroundColor: accentSwatch }}
+              />
+            }
+            onClick={() => {
+              openThemeModal();
+              closeMobile();
+            }}
+            trailing={
+              <span className="text-[12px] text-muted-foreground">
+                {themeLabel}
+              </span>
+            }
           >
-            {THEMES.map((t) => {
-              const active = theme === t.key;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Only chime when the theme actually changes — clicking
-                    // the already-active theme should be silent (otherwise
-                    // every re-click makes a sound for nothing).
-                    if (!active) playSound("pin");
-                    setTheme(t.key);
-                  }}
-                  className={cn(
-                    "focus-ring flex min-h-[40px] items-center justify-center gap-1.5 rounded-md text-[13px] font-medium transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
-                    active
-                      ? "surface-active text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <t.Icon size={14} weight={active ? "fill" : "regular"} />
-                  <span>{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
+            Theme
+          </SheetRow>
 
           <div className="my-1 h-px bg-border/60" />
 
@@ -497,39 +480,21 @@ export function ProfileMenu({
 
         <div className="my-1" />
 
-        {/* Theme segmented control — text-first, three options, the
-            active one lit on the brand color. Slack-style. */}
-        <div
-          role="radiogroup"
-          aria-label="Theme"
-          className="m-1 grid grid-cols-3 gap-1 rounded-lg border border-border/70 bg-muted/40 p-1"
-        >
-          {THEMES.map((t) => {
-            const active = theme === t.key;
-            return (
-              <button
-                key={t.key}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (!active) playSound("pin");
-                  setTheme(t.key);
-                }}
-                className={cn(
-                  "focus-ring flex items-center justify-center gap-1.5 rounded-md py-1.5 text-[12px] font-medium transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
-                  active
-                    ? "surface-active text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <t.Icon size={12} weight={active ? "fill" : "regular"} />
-                <span>{t.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Theme — opens the modal with appearance + accent. Replaces the
+            old inline segmented control. Leading dot previews the current
+            accent; trailing shows the current appearance. */}
+        <DropdownMenuItem onClick={openThemeModal}>
+          <span
+            aria-hidden
+            className="size-[15px] shrink-0 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15"
+            style={{ backgroundColor: accentSwatch }}
+          />
+          <span className="flex-1">Theme</span>
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            {themeLabel}
+            <CaretRight size={12} className="text-muted-foreground/60" />
+          </span>
+        </DropdownMenuItem>
 
         <div className="my-1" />
 

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, ThemeInitScript } from "@/components/theme-provider";
+import { ThemeModal } from "@/components/theme-modal";
 import { ThemedToaster } from "@/components/themed-toaster";
 import "sileo/styles.css";
 import "./globals.css";
@@ -100,6 +101,7 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider>
             {children}
+            <ThemeModal />
             <ThemedToaster />
           </TooltipProvider>
         </ThemeProvider>
