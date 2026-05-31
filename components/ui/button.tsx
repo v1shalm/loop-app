@@ -20,7 +20,7 @@ const buttonVariants = cva(
         // shared --shadow-cta layered shadow so a Button looks
         // identical to the hand-rolled <button> CTAs without each
         // site re-declaring the classes.
-        cta: "surface-brand surface-brand-hover text-white shadow-[var(--shadow-cta)] hover:text-white active:scale-[0.985]",
+        cta: "surface-brand surface-brand-hover text-primary-foreground shadow-[var(--shadow-cta)] hover:text-primary-foreground active:scale-[0.985]",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

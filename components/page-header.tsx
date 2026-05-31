@@ -100,7 +100,7 @@ function AddTaskTrigger({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label="Add task"
-      className="focus-ring surface-brand surface-brand-hover inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] md:px-3"
+      className="focus-ring surface-brand surface-brand-hover inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985] md:px-3"
     >
       <Plus size={14} weight="bold" />
       <span className="max-md:hidden">Add task</span>

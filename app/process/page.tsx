@@ -68,7 +68,7 @@ function Hero() {
       <div className="mt-9 flex flex-wrap items-center gap-3">
         <Link
           href="/login"
-          className="focus-ring surface-brand surface-brand-hover inline-flex h-11 items-center rounded-md px-5 text-[14px] font-semibold text-white shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
+          className="focus-ring surface-brand surface-brand-hover inline-flex h-11 items-center rounded-md px-5 text-[14px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.985]"
         >
           Try the app
         </Link>
