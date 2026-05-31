@@ -11,6 +11,8 @@ import {
   Check,
   CircleNotch,
   Clock,
+  Tag,
+  UserPlus,
   X,
 } from "@/components/icons";
 import { EmptyStateIllustration } from "@/components/empty-state-illustration";
@@ -139,7 +141,7 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center px-6 py-10 text-center">
       <EmptyStateIllustration
-        tone="blue"
+        tone="accent"
         size={150}
         glyph={<Bell size={18} weight="bold" />}
       />
@@ -252,14 +254,12 @@ function KindBadge({ kind }: { kind: NotificationItem["kind"] }) {
         styles[kind]
       )}
     >
-      {kind === "assigned" && (
-        <span className="text-[10px] font-bold leading-none">+</span>
-      )}
+      {kind === "assigned" && <UserPlus size={9} weight="bold" />}
       {kind === "completed" && <Check size={8} weight="bold" />}
       {kind === "rescheduled" && <Clock size={8} weight="bold" />}
       {kind === "comment" && <ChatCircle size={8} weight="fill" />}
       {kind === "mention" && (
-        <span className="text-[10px] font-bold leading-none">@</span>
+        <Tag size={8} weight="bold" />
       )}
     </span>
   );
@@ -362,10 +362,13 @@ export function NotificationsBell({ className }: { className?: string }) {
             aria-hidden
             className="absolute right-1.5 top-1.5 grid size-1.5 place-items-center"
           >
+            {/* Pulses a couple of times when unread arrives, then rests —
+                the solid dot below carries the state. A forever-pulsing
+                dot reads as restless. */}
             <motion.span
               initial={{ scale: 0.6, opacity: 0.9 }}
               animate={{ scale: [0.6, 1.6, 0.6], opacity: [0.9, 0, 0.9] }}
-              transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+              transition={{ duration: 1.8, repeat: 2, ease: "easeOut" }}
               className="absolute inline-flex size-1.5 rounded-full bg-rose-400"
             />
             <span className="relative size-1.5 rounded-full bg-rose-500 ring-2 ring-background" />

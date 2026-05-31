@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format, isPast, isToday } from "date-fns";
-import { CaretRight, UsersThree } from "@/components/icons";
+import { CaretRight, CheckCircle, UsersThree } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { SectionCount } from "@/components/section-count";
 import { TaskRow } from "@/components/task-row";
@@ -116,7 +116,9 @@ export default async function TeammatePage({ params }: TeammatePageProps) {
 
         {openTasks.length === 0 && (
           <div className="grid place-items-center rounded-2xl border border-border/60 bg-card py-14 text-center shadow-soft-sm">
-            <div className="text-3xl">✨</div>
+            <span className="grid size-11 place-items-center rounded-full bg-primary/10 text-primary">
+              <CheckCircle size={20} weight="fill" />
+            </span>
             <p className="mt-3 text-[14px] font-medium text-foreground">
               {isMe ? "You're clear" : `${member.name} is clear`}
             </p>

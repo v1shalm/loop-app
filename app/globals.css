@@ -175,8 +175,10 @@
     var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, ui-sans-serif, system-ui, sans-serif;
 
-  /* Cool blue-grey neutrals — resume-builder palette */
-  --background: oklch(1 0 0);
+  /* Cool blue-grey neutrals — resume-builder palette. Paper carries a
+     whisper of cool tint (not pure #fff) so the page doesn't read flat;
+     cards stay at full white below so they still lift off it. */
+  --background: oklch(0.994 0.002 250);
   --foreground: oklch(0.2 0.008 250);
 
   --card: oklch(1 0 0);
@@ -254,8 +256,8 @@
      and the slightly-tinted sidebar visually lift off the page instead
      of dissolving into it. Net contrast between body and surfaces is
      now closer to what dark mode delivers. */
-  --rb-body-top: oklch(1 0 0);
-  --rb-body-bot: oklch(1 0 0);
+  --rb-body-top: oklch(0.997 0.0015 250);
+  --rb-body-bot: oklch(0.991 0.003 250);
   --rb-scrollbar-thumb: oklch(0.8 0.006 250);
   --rb-scrollbar-thumb-hover: oklch(0.7 0.008 250);
   --rb-focus: oklch(0.612 0.219 252 / 0.7);

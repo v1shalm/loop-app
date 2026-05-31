@@ -125,7 +125,7 @@ export default async function ProjectPage({ params }: PageProps) {
               />
             ) : (
               <EmptyState
-                tone="purple"
+                tone="accent"
                 icon={<Hash size={20} weight="bold" />}
                 title="This project is empty"
                 hint="Add the first task and tag it to this project."
@@ -294,9 +294,12 @@ async function RecentActivity({ projectId }: { projectId: string }) {
                   {completed ? "completed" : "added"}{" "}
                   <span className="text-foreground">{r.title}</span>
                   {completed && (
-                    <span aria-hidden className="ml-1">
-                      🎉
-                    </span>
+                    <CheckCircle
+                      size={13}
+                      weight="fill"
+                      aria-hidden
+                      className="ml-1 inline-block shrink-0 -translate-y-px text-emerald-500"
+                    />
                   )}
                 </p>
                 <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">

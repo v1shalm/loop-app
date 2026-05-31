@@ -107,7 +107,7 @@ export function ThemeModal() {
             <p className="mb-2.5 text-[12px] font-medium text-foreground">
               Accent
             </p>
-            <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/60 bg-card shadow-soft-xs">
+            <div className="divide-y divide-border/40 overflow-hidden rounded-xl bg-muted/40">
               {ACCENT_GROUPS.map((group) => (
                 <div
                   key={group.name}
@@ -161,7 +161,7 @@ export function ThemeModal() {
             <p className="mb-2.5 text-[12px] font-medium text-foreground">
               Preview
             </p>
-            <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-card p-3.5 shadow-soft-xs">
+            <div className="flex items-center gap-2.5 rounded-xl bg-muted/40 p-3.5">
               <span className="surface-brand inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)]">
                 <Check size={13} weight="bold" />
                 Add task

@@ -21,7 +21,13 @@ import { motion } from "motion/react";
  *   7. Optional frosted-glass glyph badge floating off the bottom-right.
  */
 
-export type IllustrationTone = "green" | "pink" | "blue" | "purple" | "amber";
+export type IllustrationTone =
+  | "accent"
+  | "green"
+  | "pink"
+  | "blue"
+  | "purple"
+  | "amber";
 
 interface ToneSpec {
   /** Inner bright highlight (near-white tinted with the hue). */
@@ -39,6 +45,17 @@ interface ToneSpec {
 }
 
 const TONES: Record<IllustrationTone, ToneSpec> = {
+  // Follows the user's chosen accent: the hand-tuned lightness/chroma
+  // of the blue blob, with the hue swapped to --accent-h so the mascot
+  // matches the brand instead of fighting it. Default tone.
+  accent: {
+    light: "oklch(0.93 0.10 var(--accent-h, 252))",
+    mid: "oklch(0.66 0.24 var(--accent-h, 252))",
+    deep: "oklch(0.51 0.24 var(--accent-h, 252))",
+    halo: "oklch(0.88 0.12 var(--accent-h, 252) / 0.55)",
+    spark: "oklch(0.63 0.24 var(--accent-h, 252))",
+    glow: "oklch(0.66 0.24 var(--accent-h, 252) / 0.55)",
+  },
   green: {
     light: "oklch(0.96 0.12 152)",
     mid: "oklch(0.78 0.28 148)",
@@ -102,7 +119,7 @@ interface Props {
 }
 
 export function EmptyStateIllustration({
-  tone = "blue",
+  tone = "accent",
   glyph,
   size = 200,
   className,

@@ -80,7 +80,7 @@ function deriveContext(pathname: string, currentUserId: string): Context {
       dueAt: eod.toISOString(),
       assigneeId: currentUserId,
       projectId: null,
-      placeholder: 'Add a task. Try "review designs tomorrow p1"',
+      placeholder: "Add a task. Try “review designs tomorrow p1”",
     };
   }
   if (pathname === "/inbox") {
@@ -88,7 +88,7 @@ function deriveContext(pathname: string, currentUserId: string): Context {
       dueAt: null,
       assigneeId: currentUserId,
       projectId: null,
-      placeholder: 'Add to Inbox. Try "@maya draft post #blog"',
+      placeholder: "Add to Inbox. Try “@maya draft post #blog”",
     };
   }
   if (pathname === "/upcoming") {
@@ -96,7 +96,7 @@ function deriveContext(pathname: string, currentUserId: string): Context {
       dueAt: null,
       assigneeId: currentUserId,
       projectId: null,
-      placeholder: 'Add an upcoming task. Try "sync meeting next week"',
+      placeholder: "Add an upcoming task. Try “sync meeting next week”",
     };
   }
   if (pathname.startsWith("/projects/")) {
@@ -105,7 +105,7 @@ function deriveContext(pathname: string, currentUserId: string): Context {
       dueAt: null,
       assigneeId: currentUserId,
       projectId,
-      placeholder: 'Add a task. Try "ship hero copy friday"',
+      placeholder: "Add a task. Try “ship hero copy friday”",
     };
   }
   return {

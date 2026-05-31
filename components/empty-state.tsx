@@ -59,7 +59,7 @@ const enterMotion = {
  */
 export function EmptyState({
   icon,
-  tone = "blue",
+  tone = "accent",
   illustrationSrc,
   illustrationSize = 200,
   title,
@@ -86,7 +86,7 @@ export function EmptyState({
         className="mx-auto flex w-full max-w-[440px] flex-col items-center pt-8 text-center"
       >
         <EmptyStateIllustration
-          tone="purple"
+          tone="accent"
           glyph={<FunnelSimple size={20} weight="duotone" />}
         />
         <h3 className="mt-6 text-[20px] font-semibold tracking-tight text-foreground">

@@ -25,13 +25,13 @@ export default async function TeamPage() {
 
       <div className="mx-auto w-full max-w-[960px] px-8 pb-24 pt-8">
         {role === "admin" && (
-          <div className="mb-5 flex items-center justify-between rounded-xl border border-violet-200/60 bg-violet-50/50 px-4 py-3 dark:border-violet-400/25 dark:bg-violet-500/10">
-            <p className="text-[12px] text-violet-700 dark:text-violet-300">
+          <div className="mb-5 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/8 px-4 py-3">
+            <p className="text-[12px] text-primary-readable">
               You&apos;re an admin. Add or remove members, change roles.
             </p>
             <Link
               href="/workspace/manage"
-              className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-violet-300/70 bg-white px-2.5 py-1.5 text-[12px] font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-400/40 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/25"
+              className="focus-ring inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-card px-2.5 py-1.5 text-[12px] font-medium text-primary-readable transition-colors hover:bg-primary/10"
             >
               <Gear size={13} />
               Manage workspace
@@ -41,7 +41,7 @@ export default async function TeamPage() {
 
         {members.length === 0 ? (
           <EmptyState
-            tone="blue"
+            tone="accent"
             icon={<UsersThree size={20} weight="bold" />}
             title="Just you for now"
             hint="Invite teammates to assign work. They'll see anything you assign in their Inbox."
