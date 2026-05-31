@@ -129,16 +129,32 @@ const contrastRatio = (y1: number, y2: number) =>
   (Math.max(y1, y2) + 0.05) / (Math.min(y1, y2) + 0.05);
 
 /**
- * The legible foreground for a colored fill: white, or a dark tint of
- * the same hue, whichever has more contrast against the fill.
+ * Text color for a colored fill: the darker the color, the whiter the
+ * text; the lighter the color, the darker the text.
+ *
+ * Decided by perceived luminance, not raw max-contrast. The ~0.27
+ * threshold matches the convention max-contrast gets wrong: rich,
+ * saturated colors (blue, magenta, red) read as "dark" and carry white
+ * text even though black is technically higher contrast, while luminous
+ * colors (green, amber, lime, cyan) and pastels carry dark text. A
+ * guardrail flips the choice only if it would be nearly illegible and
+ * the other option is clearly fine.
  */
 function foregroundFor(l: number, c: number, h: number): string {
+  const white = oklch(1, 0, 0);
+  // Near-black, faintly tinted toward the hue so it doesn't read as a
+  // dead pure black on the colored fill.
+  const dark = oklch(0.2, Math.min(c * 0.18, 0.035), h);
+
   const y = luminance(l, c, h);
+  const wantWhite = y < 0.27;
+
   const onWhite = contrastRatio(y, 1);
-  const onDark = contrastRatio(y, luminance(0.18, Math.min(c * 0.2, 0.04), h));
-  return onDark >= onWhite
-    ? oklch(0.18, Math.min(c * 0.2, 0.04), h)
-    : oklch(0.99, 0, 0);
+  const onDark = contrastRatio(y, luminance(0.2, Math.min(c * 0.18, 0.035), h));
+  if (wantWhite && onWhite < 2.6 && onDark >= 4.5) return dark;
+  if (!wantWhite && onDark < 2.6 && onWhite >= 4.5) return white;
+
+  return wantWhite ? white : dark;
 }
 
 /** Convert a #rrggbb hex to an OKLCH base (Björn Ottosson's transform). */
