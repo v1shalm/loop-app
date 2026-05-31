@@ -2,109 +2,107 @@
 
 /**
  * Heavy half of the sound module — only loaded on first playSound() call.
- * Keeps @web-kits/audio + the crisp patch out of the initial JS bundle.
+ * Keeps @web-kits/audio + the patch out of the initial JS bundle.
+ *
+ * Uses the Core patch (raphaelsalaja/audio), a rich vocabulary of ~65
+ * distinct UI sounds. Each named event below maps to a *different* base
+ * sound (not the same one detuned), so actions actually sound different:
+ * a create pops, a delete thuds, a drop ticks, a completion chimes.
  */
 import { definePatch, type AudioPatch } from "@web-kits/audio";
-import { _patch as crispPatch } from "@/.web-kits/crisp";
+import { _patch as corePatch } from "@/.web-kits/core";
 import type { SoundName } from "./sounds";
+
+// Nudge everything up a touch — the raw patch gains are conservative.
+// `volume` on a play() call scales the sound's base gain (1 = as-authored).
+const MASTER = 1.35;
 
 let patch: AudioPatch | null = null;
 function getPatch(): AudioPatch | null {
   if (typeof window === "undefined") return null;
-  if (!patch) patch = definePatch(crispPatch);
+  if (!patch) patch = definePatch(corePatch);
   return patch;
 }
 
 /**
- * Sound vocabulary, mapped onto the four underlying patches in the
- * crisp pack (send / notification / success / error). We layer plays
- * with setTimeout + tweak detune/volume to give each named event its
- * own character — without needing to ship more audio assets.
+ * Map of our event vocabulary onto distinct Core sounds:
  *
- *   added       send, +80 cents — quick, snappy
- *   assignedToMe notification ×2, second a fourth up — gentle two-tone ping
- *   completed   success with priority-driven detune + sparkle overtone
- *   uncomplete  send, low + half volume — soft "tuck back" reverse
- *   streak      success arpeggio (root / third / fifth) at +volume
- *   reaction    send, very high + half volume — bright pop
- *   dropped     send ×2, high-then-mid detune — tactile dial detent click
- *   pin         send, sparkly high + low volume — crisp click
- *   deleted     send, deep down-shift + low volume — "tucked away forever"
- *   error       error
+ *   added        pop          — a task springs into the list
+ *   assignedToMe notification + mention — "someone handed you a thing"
+ *   completed    complete (+ sparkle) — reward chime, brighter for higher priority
+ *   uncomplete   undo         — soft reverse
+ *   streak       level-up + confetti — milestone celebration
+ *   reaction     heart        — warm little pop for an emoji reaction
+ *   dropped      tick         — mechanical detent as a drag settles
+ *   pin          select       — crisp pick (theme swatch, pin, small toggles)
+ *   deleted      delete       — downward "tucked away"
+ *   error        error        — something went wrong
  */
 export function play(name: SoundName, ...args: unknown[]): void {
   const p = getPatch();
   if (!p) return;
 
+  // Helper: play with the master volume applied on top of any per-call
+  // scale, so the relative mix the patch authored is preserved.
+  const ping = (
+    sound: string,
+    opts: { detune?: number; volume?: number } = {}
+  ) =>
+    p.play(sound, {
+      detune: opts.detune,
+      volume: (opts.volume ?? 1) * MASTER,
+    });
+
   switch (name) {
     case "added":
-      p.play("send", { detune: 80 });
+      ping("pop");
       return;
 
     case "assignedToMe":
-      // Two-note "you have a thing" — first plain, second a fourth up.
-      p.play("notification");
-      setTimeout(() => p.play("notification", { detune: 500, volume: 0.85 }), 110);
+      // Two-beat "you've got something": the notification, then a softer
+      // mention tone just behind it.
+      ping("notification");
+      setTimeout(() => ping("mention", { volume: 0.8 }), 100);
       return;
 
     case "completed": {
+      // Brighter the higher the priority. A sparkle overtone trails it so
+      // finishing something feels like a small reward.
       const priority = (args[0] as 1 | 2 | 3 | 4 | undefined) ?? 4;
-      const baseDetune = (4 - priority) * 80;
-      p.play("success", { detune: baseDetune });
-      // Sparkle overtone — quieter, an octave + a bit, slightly delayed.
-      setTimeout(
-        () => p.play("success", { detune: baseDetune + 700, volume: 0.45 }),
-        60
-      );
+      const detune = (4 - priority) * 70;
+      ping("complete", { detune });
+      setTimeout(() => ping("sparkle", { detune, volume: 0.5 }), 70);
       return;
     }
 
     case "uncomplete":
-      // Soft "put it back" — same patch as added but darker + quieter.
-      p.play("send", { detune: -180, volume: 0.55 });
+      ping("undo", { volume: 0.9 });
       return;
 
-    case "streak": {
-      // Three-note arpeggio for milestones (e.g. ring fills to 100%).
-      // Root → major third → fifth, escalating volume.
-      p.play("success", { detune: 0, volume: 0.9 });
-      setTimeout(() => p.play("success", { detune: 400, volume: 1.0 }), 90);
-      setTimeout(() => p.play("success", { detune: 700, volume: 1.15 }), 180);
+    case "streak":
+      // Milestone — level-up, then confetti just behind it.
+      ping("level-up");
+      setTimeout(() => ping("confetti", { volume: 0.9 }), 120);
       return;
-    }
 
     case "reaction":
-      // Bright pop — high detune, half volume, no layering.
-      p.play("send", { detune: 350, volume: 0.6 });
+      ping("heart", { volume: 0.95 });
       return;
 
     case "dropped":
-      // Tactile dial-click on drop. Two send-patch hits layered ~40ms
-      // apart: a bright high "tick" followed by a softer mid "settle,"
-      // so the release lands like a knob clicking into its next detent
-      // instead of a soft thud disappearing into the carpet.
-      p.play("send", { detune: 340, volume: 0.6 });
-      setTimeout(
-        () => p.play("send", { detune: 160, volume: 0.32 }),
-        42
-      );
+      ping("tick");
       return;
 
     case "pin":
-      // Crisp short click — very high, very quiet.
-      p.play("send", { detune: 500, volume: 0.55 });
+      ping("select", { volume: 0.9 });
       return;
 
     case "deleted":
-      // Destructive but quiet — "tucked away forever". Deeper than
-      // `uncomplete` (which is a same-day reverse) and softer than
-      // `error` (which means something went wrong, not that the
-      // user *chose* to remove something).
-      p.play("send", { detune: -360, volume: 0.5 });
+      ping("delete", { volume: 0.9 });
       return;
 
     case "error":
-      p.play("error");
+      ping("error");
       return;
   }
 }

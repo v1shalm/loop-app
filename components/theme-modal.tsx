@@ -17,9 +17,10 @@ const MODES: { key: Mode; label: string; Icon: typeof Sun }[] = [
 
 /**
  * Theme modal — appearance (light/dark/system) and accent color in one
- * place, opened from the "Theme" row in the profile menu. Both controls
- * apply instantly to the whole app, so the modal itself recolors live as
- * you pick. That live recolor is the preview.
+ * place, opened from the "Theme" row in the profile menu. Everything
+ * applies instantly, so the modal recolors live as you pick: the brand
+ * tile in the header, the swatches, and the preview all track the
+ * current accent. That live recolor is the preview.
  */
 export function ThemeModal() {
   const {
@@ -43,26 +44,39 @@ export function ThemeModal() {
     >
       <DialogContent
         showCloseButton={false}
-        className="block w-full max-w-[calc(100%-2rem)] gap-0 overflow-hidden p-0 sm:max-w-[468px]"
+        className="block w-full max-w-[calc(100%-2rem)] gap-0 overflow-hidden p-0 sm:max-w-[440px]"
       >
-        <div className="flex items-center justify-between border-b border-border/60 px-5 py-3.5">
-          <p className="text-[14px] font-semibold tracking-tight text-foreground">
-            Theme
-          </p>
+        {/* Header: brand tile + title (ElevenLabs-style), X to close. The
+            tile is painted with the live accent so it doubles as a
+            preview of the current color. */}
+        <div className="flex items-center gap-3 border-b border-border/60 px-5 py-4">
+          <span
+            aria-hidden
+            className="size-9 shrink-0 rounded-xl shadow-[var(--shadow-brand-tile)]"
+            style={{ backgroundColor: accentColor }}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-[14px] font-semibold tracking-tight text-foreground">
+              Theme
+            </p>
+            <p className="truncate text-[12px] text-muted-foreground">
+              How Loop looks on this device
+            </p>
+          </div>
           <button
             type="button"
             onClick={closeThemeModal}
             aria-label="Close"
-            className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground active:scale-[0.94]"
+            className="focus-ring -mr-1 grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground active:scale-[0.94]"
           >
             <X size={14} weight="bold" />
           </button>
         </div>
 
-        <div className="flex max-h-[70vh] flex-col gap-5 overflow-y-auto px-5 py-5">
+        <div className="flex max-h-[64vh] flex-col gap-6 overflow-y-auto px-5 py-5">
           {/* Appearance */}
           <section>
-            <p className="mb-2 text-[12px] font-medium text-foreground">
+            <p className="mb-2.5 text-[12px] font-medium text-foreground">
               Appearance
             </p>
             <div
@@ -87,21 +101,25 @@ export function ThemeModal() {
             </div>
           </section>
 
-          {/* Accent color — grouped presets + custom */}
+          {/* Accent — one module, a labelled row per family so the
+              groups read as distinct units instead of one long grid. */}
           <section>
             <p className="mb-2.5 text-[12px] font-medium text-foreground">
-              Accent color
+              Accent
             </p>
-            <div className="flex flex-col gap-3.5">
+            <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/60 bg-card shadow-soft-xs">
               {ACCENT_GROUPS.map((group) => (
-                <div key={group.name}>
-                  <p className="mb-2 text-[11px] text-muted-foreground">
+                <div
+                  key={group.name}
+                  className="flex items-center gap-3 px-3.5 py-2.5"
+                >
+                  <span className="w-[52px] shrink-0 text-[12px] text-muted-foreground">
                     {group.name}
-                  </p>
+                  </span>
                   <div
                     role="radiogroup"
                     aria-label={`${group.name} accents`}
-                    className="flex flex-wrap items-center gap-2.5"
+                    className="flex flex-1 items-center justify-between"
                   >
                     {group.presets.map((preset) => (
                       <Swatch
@@ -119,24 +137,26 @@ export function ThemeModal() {
                 </div>
               ))}
 
-              {/* Custom */}
-              <div>
-                <p className="mb-2 text-[11px] text-muted-foreground">Custom</p>
-                <div className="flex items-center gap-2.5">
+              {/* Custom — same row rhythm; opens the OS color picker. */}
+              <div className="flex items-center gap-3 px-3.5 py-2.5">
+                <span className="w-[52px] shrink-0 text-[12px] text-muted-foreground">
+                  Custom
+                </span>
+                <div className="flex flex-1 items-center gap-2.5">
                   <CustomSwatch
                     hex={customHex}
                     active={accentId === "custom"}
                     onPick={(hex) => setCustom(hex)}
                   />
                   <span className="text-[12px] text-muted-foreground">
-                    Pick any color
+                    {accentId === "custom" ? customHex.toUpperCase() : "Pick any color"}
                   </span>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Live preview — real tokens, reflects mode + accent */}
+          {/* Preview — real tokens, reflects mode + accent */}
           <section>
             <p className="mb-2.5 text-[12px] font-medium text-foreground">
               Preview
@@ -155,6 +175,18 @@ export function ThemeModal() {
               </span>
             </div>
           </section>
+        </div>
+
+        {/* Footer — a single confirming CTA. Everything already applied
+            live; Done just dismisses. */}
+        <div className="flex items-center justify-end border-t border-border/60 bg-muted/30 px-5 py-3">
+          <button
+            type="button"
+            onClick={closeThemeModal}
+            className="focus-ring surface-brand surface-brand-hover inline-flex h-9 items-center rounded-md px-4 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97]"
+          >
+            Done
+          </button>
         </div>
       </DialogContent>
     </Dialog>
@@ -181,8 +213,10 @@ function Swatch({
       title={label}
       onClick={onSelect}
       className={cn(
-        "focus-ring grid size-8 place-items-center rounded-full transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.9]",
-        active ? "ring-2 ring-offset-2 ring-offset-popover" : "hover:scale-[1.1]"
+        "focus-ring grid size-7 place-items-center rounded-full transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.88]",
+        active
+          ? "ring-2 ring-offset-2 ring-offset-card"
+          : "hover:scale-[1.12]"
       )}
       style={
         active
@@ -193,10 +227,10 @@ function Swatch({
     >
       <span
         aria-hidden
-        className="grid size-7 place-items-center rounded-full text-white shadow-soft-xs ring-1 ring-inset ring-black/10"
+        className="grid size-6 place-items-center rounded-full text-white shadow-soft-xs ring-1 ring-inset ring-black/10"
         style={{ backgroundColor: color }}
       >
-        {active && <Check size={13} weight="bold" />}
+        {active && <Check size={12} weight="bold" />}
       </span>
     </button>
   );
@@ -215,8 +249,8 @@ function CustomSwatch({
   return (
     <label
       className={cn(
-        "focus-within:focus-ring grid size-8 cursor-pointer place-items-center rounded-full transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.9]",
-        active ? "ring-2 ring-offset-2 ring-offset-popover" : "hover:scale-[1.1]"
+        "focus-within:focus-ring grid size-7 cursor-pointer place-items-center rounded-full transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.88]",
+        active ? "ring-2 ring-offset-2 ring-offset-card" : "hover:scale-[1.12]"
       )}
       style={
         active
@@ -235,15 +269,14 @@ function CustomSwatch({
       />
       <span
         aria-hidden
-        className="grid size-7 place-items-center rounded-full text-white shadow-soft-xs ring-1 ring-inset ring-black/10"
-        // Conic ring hints "any color"; the chosen hex fills the center.
+        className="grid size-6 place-items-center rounded-full text-white shadow-soft-xs ring-1 ring-inset ring-black/10"
         style={{
           background: active
             ? hex
             : `conic-gradient(from 0deg, oklch(0.7 0.2 20), oklch(0.8 0.2 90), oklch(0.7 0.2 150), oklch(0.7 0.2 240), oklch(0.7 0.2 320), oklch(0.7 0.2 20))`,
         }}
       >
-        {active && <Check size={13} weight="bold" />}
+        {active && <Check size={12} weight="bold" />}
       </span>
     </label>
   );
@@ -279,7 +312,7 @@ function AppearanceTile({
       className={cn(
         "focus-ring group relative flex flex-col items-stretch gap-2 rounded-xl border p-1.5 text-left transition-[border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.98]",
         active
-          ? "border-primary ring-2 ring-primary/30"
+          ? "border-primary ring-2 ring-primary/25"
           : "border-border/70 hover:border-foreground/30"
       )}
     >

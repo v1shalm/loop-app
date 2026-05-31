@@ -105,6 +105,42 @@ export function baseToCss(base: AccentBase, alpha?: number): string {
   return oklch(base.l, base.c, base.h, alpha);
 }
 
+// ── Contrast ───────────────────────────────────────────────────────────
+// Choose text color on a colored fill by real WCAG luminance, not a
+// lightness guess — so saturated mid-tones (vivid blue, lime) get the
+// legible choice rather than a hopeful one.
+
+/** OKLCH → WCAG relative luminance (0..1) via linear sRGB. */
+function luminance(l: number, c: number, h: number): number {
+  const hr = (h * Math.PI) / 180;
+  const a = c * Math.cos(hr);
+  const b = c * Math.sin(hr);
+  const l_ = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m_ = (l - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s_ = (l - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  const lin = (v: number) => Math.min(1, Math.max(0, v));
+  const r = lin(4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_);
+  const g = lin(-1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_);
+  const bl = lin(-0.0041960863 * l_ - 0.7034186147 * m_ + 1.707614701 * s_);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+}
+
+const contrastRatio = (y1: number, y2: number) =>
+  (Math.max(y1, y2) + 0.05) / (Math.min(y1, y2) + 0.05);
+
+/**
+ * The legible foreground for a colored fill: white, or a dark tint of
+ * the same hue, whichever has more contrast against the fill.
+ */
+function foregroundFor(l: number, c: number, h: number): string {
+  const y = luminance(l, c, h);
+  const onWhite = contrastRatio(y, 1);
+  const onDark = contrastRatio(y, luminance(0.18, Math.min(c * 0.2, 0.04), h));
+  return onDark >= onWhite
+    ? oklch(0.18, Math.min(c * 0.2, 0.04), h)
+    : oklch(0.99, 0, 0);
+}
+
 /** Convert a #rrggbb hex to an OKLCH base (Björn Ottosson's transform). */
 export function hexToBase(hex: string): AccentBase {
   const m = hex.trim().replace(/^#/, "");
@@ -187,9 +223,8 @@ export function computeThemeVars(
   if (mode === "light") {
     const L = base.l;
     const primary = oklch(L, C, H);
-    // White text unless the accent itself is light (pastels) — then a
-    // dark, faintly tinted text keeps the primary button legible.
-    const fg = L > 0.62 ? oklch(0.2, Math.min(C * 0.2, 0.04), H) : oklch(0.99, 0, 0);
+    // Legible text on the fill, chosen by real luminance contrast.
+    const fg = foregroundFor(L, C, H);
     return {
       "--primary": primary,
       "--primary-foreground": fg,
@@ -212,7 +247,7 @@ export function computeThemeVars(
   // Dark: lift lightness so the color pops on the deep background.
   const dl = clamp(base.l + (base.l < 0.6 ? 0.12 : 0.08), 0.6, 0.86);
   const primary = oklch(dl, C, H);
-  const fg = dl > 0.6 ? oklch(0.16, Math.min(C * 0.3, 0.06), H) : oklch(0.98, 0, 0);
+  const fg = foregroundFor(dl, C, H);
   return {
     "--primary": primary,
     "--primary-foreground": fg,
