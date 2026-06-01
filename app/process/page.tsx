@@ -161,7 +161,7 @@ function Problems() {
           >
             <span
               aria-hidden
-              className="mt-[10px] size-1.5 shrink-0 rounded-full bg-primary"
+              className="mt-2.5 size-1.5 shrink-0 rounded-full bg-primary"
             />
             <span>{p}</span>
           </li>
