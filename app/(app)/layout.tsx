@@ -7,8 +7,9 @@ import {
   getMyTeams,
   getMyTeamRole,
   getProjects,
-  getMembersWithPulse,
+  getWorkspaceMembers,
   getSidebarCounts,
+  hasTaskSortOrder,
 } from "@/lib/queries";
 
 export default async function AppLayout({
@@ -21,6 +22,17 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  // The shell only needs the plain member list (assignee pickers,
+  // teammate display). The per-member pulse counts (open/done today)
+  // are read solely by /workspace and /workspace/[id], which fetch them
+  // themselves — so we avoid the two extra task-table scans
+  // getMembersWithPulse runs on every navigation.
+  //
+  // hasTaskSortOrder is warmed here purely for its React cache() entry:
+  // every list query awaits it before fetching, so resolving it
+  // concurrently with the layout's other queries keeps it off the
+  // page's serial critical path (the page reads the cached result
+  // instantly instead of issuing a fresh round-trip).
   const [workspace, team, teams, teamRole, projects, members, counts] =
     await Promise.all([
       getDefaultWorkspace(),
@@ -28,8 +40,9 @@ export default async function AppLayout({
       getMyTeams(),
       getMyTeamRole(),
       getProjects(),
-      getMembersWithPulse(),
+      getWorkspaceMembers(),
       getSidebarCounts(),
+      hasTaskSortOrder(),
     ]);
 
   // A signed-in user without a team has no scope. Bounce them through

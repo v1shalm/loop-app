@@ -821,19 +821,33 @@ export async function getRecentActivity(): Promise<ActivityItem[]> {
   const profile = await getCurrentProfile();
   if (!profile) return [];
 
+  const supabase = await getSupabaseServer();
+  if (!supabase) return [];
+
   const since = new Date();
   since.setDate(since.getDate() - 7);
   const sinceIso = since.toISOString();
 
-  const rows = await fetchTasks((q: any) =>
-    q
-      .or(
-        `and(assignee_id.eq.${profile.id},author_id.neq.${profile.id},created_at.gte.${sinceIso}),and(assignee_id.eq.${profile.id},status.eq.done,completed_at.gte.${sinceIso})`
-      )
-      .order("created_at", { ascending: false })
-      .limit(50)
-  );
+  // Lean select on purpose: the activity feed (right rail) shows only
+  // the top 4 entries and reads just the task title + author. Fetching
+  // through TASK_RELATIONS_SELECT here pulled 50 rows hydrated with the
+  // comment/attachment count subqueries and the project/assignee joins —
+  // none of which the feed renders — on every My Day and Inbox load.
+  // Limit 8 leaves a small buffer above the 4 shown after the in-memory
+  // sort.
+  const { data } = await supabase
+    .from("tasks")
+    .select(
+      `id, title, status, created_at, completed_at,
+       author:profiles!tasks_author_id_fkey(id, name, initials, avatar_color, avatar_url)`
+    )
+    .or(
+      `and(assignee_id.eq.${profile.id},author_id.neq.${profile.id},created_at.gte.${sinceIso}),and(assignee_id.eq.${profile.id},status.eq.done,completed_at.gte.${sinceIso})`
+    )
+    .order("created_at", { ascending: false })
+    .limit(8);
 
+  const rows = (data ?? []) as unknown as TaskWithRelations[];
   const items: ActivityItem[] = rows.map((t) => {
     if (t.status === "done" && t.completed_at) {
       return { kind: "i-completed", task: t, at: t.completed_at };

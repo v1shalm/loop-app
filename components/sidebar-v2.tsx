@@ -45,7 +45,6 @@ import { useQuickAdd } from "@/components/quick-add-context";
 import { WorkspaceBadge } from "@/components/workspace-badge";
 import { useSidebar } from "@/components/sidebar-context";
 import type {
-  MemberPulse,
   Profile,
   Project,
   SidebarCounts,
@@ -66,7 +65,7 @@ export interface SidebarProps {
   teams: Team[];
   teamRole: "admin" | "member" | null;
   projects: Project[];
-  members: MemberPulse[];
+  members: Profile[];
   counts: SidebarCounts;
   onOpenSearch?: () => void;
 }
@@ -255,6 +254,14 @@ function NavRow({
   return (
     <MotionLink
       href={href}
+      // Full-data prefetch (not just the loading boundary). These are
+      // dynamic routes, and the realtime bridge's router.refresh()
+      // invalidates the router cache on workspace task changes — without
+      // forced prefetch every sidebar switch goes cold and re-runs the
+      // page's queries, which is the lag between e.g. My Day and Inbox.
+      // The sidebar is always on screen, so Next re-prefetches these the
+      // moment the cache is invalidated, keeping the target warm.
+      prefetch
       // Hovering anywhere on the row drives the icon's internal motion
       // (rays pulse, letter drops, page lifts, check draws) via variant
       // propagation — not a per-icon hover.
