@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Image from "next/image";
 import { LoginForm } from "./login-form";
 
 export const metadata = {
@@ -11,9 +12,18 @@ export default function LoginPage() {
       <div className="w-full max-w-[400px]">
         <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-soft-sm">
           <div className="px-7 pb-7 pt-8">
-            <p className="text-center text-[14px] font-semibold tracking-tight text-foreground">
-              Loop
-            </p>
+            <div className="flex flex-col items-center gap-2.5">
+              <Image
+                src="/loop-logo.svg"
+                alt="Loop"
+                width={40}
+                height={40}
+                priority
+              />
+              <p className="text-[14px] font-semibold tracking-tight text-foreground">
+                Loop
+              </p>
+            </div>
             <h1 className="mt-6 text-center text-[22px] font-semibold tracking-[-0.01em] text-foreground">
               Sign in
             </h1>

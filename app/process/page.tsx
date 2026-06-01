@@ -58,6 +58,14 @@ export default function ProcessPage() {
 function Hero() {
   return (
     <section className="mb-20">
+      <Image
+        src="/loop-logo.svg"
+        alt=""
+        width={68}
+        height={68}
+        priority
+        className="mb-6"
+      />
       <h1 className="text-[56px] font-semibold leading-[1.04] tracking-[-0.02em] text-foreground sm:text-[72px]">
         Loop
       </h1>
