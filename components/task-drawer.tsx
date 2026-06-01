@@ -176,7 +176,7 @@ export function TaskDrawer({
           <motion.div
             key="backdrop"
             onClick={close}
-            className="absolute inset-0 bg-black/40 supports-backdrop-filter:backdrop-blur-sm md:bg-black/45"
+            className="absolute inset-0 bg-scrim/40 supports-backdrop-filter:backdrop-blur-sm md:bg-scrim/45"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -515,22 +515,32 @@ function DrawerInner({
   const actuallyDelete = () => {
     if (!task) return;
     const id = task.id;
-    // Optimistic on every layer: close the drawer immediately, hide
-    // the row in the list immediately (via the shared store), then
-    // run the server delete in a transition. On error, un-hide the
-    // row and surface the failure — the user can re-try without
-    // losing the task.
-    optimisticDeletes.hide(id);
-    onClose();
-    playSound("deleted");
-    startTransition(async () => {
+    const title = task.title;
+    // Optimistic + undoable, matching the task row: close the drawer and
+    // hide the row immediately, but defer the real server delete so the
+    // Undo toast can cancel it. The timer lives in the app-level store,
+    // so it fires (or cancels) regardless of this drawer unmounting.
+    optimisticDeletes.scheduleDelete(id, async () => {
       const res = await deleteTask(id);
       if (res.error) {
         sileo.error({ title: res.error });
         optimisticDeletes.unhide(id);
-      } else {
-        sileo.success({ title: "Task deleted" });
       }
+    });
+    onClose();
+    playSound("deleted");
+    const toastId = sileo.success({
+      title: "Task deleted",
+      description: title,
+      button: {
+        title: "Undo",
+        onClick: () => {
+          sileo.dismiss(toastId);
+          optimisticDeletes.cancelDelete(id);
+          playSound("uncomplete");
+        },
+      },
+      duration: 5000,
     });
   };
 
@@ -1949,7 +1959,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
                   s.status === "done" ? "Mark not done" : "Mark complete"
                 }
                 className={cn(
-                  "focus-ring grid size-6 shrink-0 place-items-center rounded-[6px] border-[1.5px] transition-colors duration-150 ease-[var(--ease-out)] active:scale-95",
+                  "focus-ring grid size-6 shrink-0 place-items-center rounded-[6px] border transition-colors duration-150 ease-[var(--ease-out)] active:scale-95",
                   s.status === "done"
                     ? "border-primary bg-primary"
                     : "border-border hover:border-foreground/40 bg-background"
@@ -1990,7 +2000,7 @@ function SubtasksSection({ taskId }: { taskId: string }) {
           keeps focus so users can hammer in a checklist quickly. */}
       {adding ? (
         <form onSubmit={submit} className="mt-1 flex items-center gap-2 px-1">
-          <span className="grid size-6 shrink-0 place-items-center rounded-[6px] border-[1.5px] border-dashed border-muted-foreground/40" />
+          <span className="grid size-6 shrink-0 place-items-center rounded-[6px] border border-dashed border-muted-foreground/40" />
           <input
             ref={addInputRef}
             autoFocus

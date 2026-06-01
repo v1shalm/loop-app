@@ -38,7 +38,7 @@ export default async function InboxPage() {
                 icon={<Tray size={28} weight="bold" />}
                 title="Inbox is empty"
                 hint="New assignments from teammates land here. Nothing to triage right now."
-                actionLabel="Assign your first task"
+                actionLabel="Assign work to a teammate"
                 secondarySlot={<InviteCTA />}
                 tips={[
                   "Tasks someone else assigns to you appear here first.",

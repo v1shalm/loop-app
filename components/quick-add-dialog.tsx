@@ -256,6 +256,22 @@ export function QuickAddDialog({
           />
         </section>
 
+        {/* Syntax affordance — only while the field is empty, so the NL
+            shortcuts are announced up front, then yield to the live
+            parse chips below once the user starts typing. */}
+        {title.trim() === "" && (
+          <section className="px-6 pb-1 pt-2">
+            <p className="text-[11px] text-muted-foreground/60">
+              Try{" "}
+              <span className="font-medium text-muted-foreground">#project</span>
+              ,{" "}
+              <span className="font-medium text-muted-foreground">@teammate</span>
+              , or a date like{" "}
+              <span className="font-medium text-muted-foreground">friday 3pm</span>
+            </p>
+          </section>
+        )}
+
         {/* Parse hint strip. Only appears when the parser actually
             resolved a token. Tutorial-by-demo: typing "#plat" makes a
             project chip appear, teaching the syntax visually. */}
@@ -446,18 +462,26 @@ export function QuickAddDialog({
           >
             Cancel
           </button>
-          <button
-            onClick={submit}
-            disabled={pending || !title.trim()}
-            className="focus-ring surface-brand surface-brand-hover inline-flex h-9 items-center gap-1.5 rounded-md px-4 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
-          >
-            {pending ? (
-              <CircleNotch size={13} className="animate-spin" />
-            ) : (
-              <PaperPlaneTilt size={13} weight="fill" />
-            )}
-            {pending ? "Creating..." : "Create task"}
-          </button>
+          <div className="flex items-center gap-2.5">
+            <span className="hidden items-center gap-1 text-[11px] text-muted-foreground/60 sm:flex">
+              <kbd className="rounded border border-border bg-muted px-1 py-px text-[10px] font-medium leading-none">
+                ⌘↵
+              </kbd>
+              to add
+            </span>
+            <button
+              onClick={submit}
+              disabled={pending || !title.trim()}
+              className="focus-ring surface-brand surface-brand-hover inline-flex h-9 items-center gap-1.5 rounded-md px-4 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
+            >
+              {pending ? (
+                <CircleNotch size={13} className="animate-spin" />
+              ) : (
+                <PaperPlaneTilt size={13} weight="fill" />
+              )}
+              {pending ? "Creating..." : "Create task"}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

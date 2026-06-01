@@ -66,7 +66,7 @@ export function MobileSheet({
         <div className="fixed inset-0 z-[60]">
           <motion.div
             onClick={onClose}
-            className="absolute inset-0 bg-black/25 supports-backdrop-filter:backdrop-blur-sm"
+            className="absolute inset-0 bg-scrim/25 supports-backdrop-filter:backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

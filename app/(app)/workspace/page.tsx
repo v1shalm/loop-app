@@ -156,7 +156,7 @@ function ProgressRing({ ratio }: { ratio: number }) {
         cx={size / 2}
         cy={size / 2}
         r={r}
-        stroke="oklch(0.92 0.007 75)"
+        stroke="var(--color-border)"
         strokeWidth={stroke}
         fill="none"
       />

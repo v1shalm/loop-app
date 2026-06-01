@@ -316,19 +316,31 @@ function TaskRowInner({
   // dialog; actuallyRemove runs only after the user confirms.
   const remove = () => setConfirmDeleteOpen(true);
   const actuallyRemove = () => {
-    // Optimistic: hide the row immediately so the user sees an instant
-    // response, then run the server delete in a transition. The
-    // AnimatePresence exit animation runs during the server round-trip
-    // so the row is already off-screen by the time revalidation lands.
-    // On error, un-hide and surface the failure.
-    optimisticDeletes.hide(task.id);
-    playSound("deleted");
-    startTransition(async () => {
+    // Optimistic + undoable: hide the row immediately, but defer the
+    // real server delete by a few seconds so the Undo toast can cancel
+    // it. The timer lives in the app-level optimistic-deletes provider,
+    // so it still fires (or cancels) even if this row unmounts when the
+    // user navigates away. On server error, un-hide and surface it.
+    optimisticDeletes.scheduleDelete(task.id, async () => {
       const res = await deleteTask(task.id);
       if (res.error) {
         sileo.error({ title: res.error });
         optimisticDeletes.unhide(task.id);
       }
+    });
+    playSound("deleted");
+    const toastId = sileo.success({
+      title: "Task deleted",
+      description: task.title,
+      button: {
+        title: "Undo",
+        onClick: () => {
+          sileo.dismiss(toastId);
+          optimisticDeletes.cancelDelete(task.id);
+          playSound("uncomplete");
+        },
+      },
+      duration: 5000,
     });
   };
 

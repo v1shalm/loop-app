@@ -145,14 +145,14 @@ export function SidebarV2({
       href: "/upcoming",
       icon: UpcomingIcon,
       label: "Upcoming",
-      count: 0,
+      count: undefined, // browse view, not an attention queue - no badge
       active: pathname === "/upcoming",
     },
     {
       href: "/completed",
       icon: CompletedIcon,
       label: "Completed",
-      count: 0,
+      count: undefined, // browse view, not an attention queue - no badge
       active: pathname === "/completed",
     },
   ];
@@ -174,13 +174,27 @@ export function SidebarV2({
           </span>
         </Link>
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
-          <button
-            onClick={onOpenSearch}
-            aria-label="Search"
-            className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:text-primary"
-          >
-            <MagnifyingGlass size={17} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  onClick={onOpenSearch}
+                  aria-label="Search"
+                  className="focus-ring grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:text-primary"
+                >
+                  <MagnifyingGlass size={17} />
+                </button>
+              }
+            />
+            <TooltipContent side="bottom">
+              <span className="flex items-center gap-1.5">
+                Search
+                <kbd className="rounded bg-white/15 px-1 py-px text-[10px] font-medium leading-none text-white/90 dark:bg-white/10">
+                  ⌘K
+                </kbd>
+              </span>
+            </TooltipContent>
+          </Tooltip>
           <button
             onClick={toggle}
             aria-label="Collapse sidebar"
@@ -218,6 +232,7 @@ export function SidebarV2({
               active={pathname === `/projects/${p.id}`}
               color={projectColor(p)}
               pinned={pinIds.has(p.id)}
+              taskCount={counts.projectCounts[p.id] ?? 0}
             />
           ))}
           {projects.length === 0 && (
@@ -358,14 +373,14 @@ function SidebarRail({
       icon: UpcomingIcon,
       label: "Upcoming",
       active: pathname === "/upcoming",
-      count: 0,
+      count: undefined, // browse view, not an attention queue - no badge
     },
     {
       href: "/completed",
       icon: CompletedIcon,
       label: "Completed",
       active: pathname === "/completed",
-      count: 0,
+      count: undefined, // browse view, not an attention queue - no badge
     },
   ];
 
@@ -545,12 +560,14 @@ function ProjectRow({
   active,
   color,
   pinned,
+  taskCount,
 }: {
   id: string;
   name: string;
   active: boolean;
   color: string;
   pinned: boolean;
+  taskCount: number;
 }) {
   // The row is a wrapper (not the Link itself) so the `…` menu can sit
   // as a sibling button — nesting a button inside the <a> would be
@@ -596,7 +613,7 @@ function ProjectRow({
           )}
         />
       )}
-      <ProjectRowMenu id={id} name={name} pinned={pinned} />
+      <ProjectRowMenu id={id} name={name} pinned={pinned} taskCount={taskCount} />
     </div>
   );
 }
@@ -611,10 +628,12 @@ function ProjectRowMenu({
   id,
   name,
   pinned,
+  taskCount,
 }: {
   id: string;
   name: string;
   pinned: boolean;
+  taskCount: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -697,7 +716,11 @@ function ProjectRowMenu({
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={`Delete ${name}?`}
-        description="This removes the project for everyone in the workspace. Its tasks aren't deleted; they move to your Inbox."
+        description={
+          taskCount > 0
+            ? `This removes the project for everyone in the workspace. Its ${taskCount} open ${taskCount === 1 ? "task moves" : "tasks move"} to your Inbox, not deleted.`
+            : "This removes the project for everyone in the workspace. Any tasks it holds move to your Inbox, not deleted."
+        }
         confirmLabel="Delete project"
         onConfirm={remove}
       />

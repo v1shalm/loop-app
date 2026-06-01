@@ -18,6 +18,7 @@ import { AppControlsProvider } from "@/components/app-controls-context";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { MobileMenuSheet } from "@/components/mobile-menu-sheet";
 import { BottomAddTaskBar } from "@/components/bottom-add-task-bar";
+import { deriveTaskDefaults } from "@/lib/task-defaults";
 
 // Heavy client modules — only ship their code once the user actually triggers
 // them. Each carries motion + popovers + date-picker code that would
@@ -144,6 +145,20 @@ export function AppShell({
             if (defaults?.dueAt instanceof Date) seed.dueAt = defaults.dueAt;
             if (typeof defaults?.projectId === "string")
               seed.projectId = defaults.projectId;
+            // No explicit seed (top-nav CTA, empty-state add)? Fall back to
+            // the current route's defaults via the same shared helper the
+            // bottom composer bar uses, so the modal and the bar agree on
+            // what "add here" means. Read the path at click time so the
+            // shell doesn't have to subscribe to navigation.
+            if (
+              seed.dueAt === undefined &&
+              seed.projectId === undefined &&
+              typeof window !== "undefined"
+            ) {
+              const d = deriveTaskDefaults(window.location.pathname);
+              if (d.dueAt) seed.dueAt = new Date(d.dueAt);
+              if (d.projectId) seed.projectId = d.projectId;
+            }
             setQuickDefaults(Object.keys(seed).length ? seed : undefined);
             setQuickOpen(true);
           }}

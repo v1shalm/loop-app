@@ -149,7 +149,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
                   "grid size-9 place-items-center rounded-full transition-colors",
                   isSel
                     ? "bg-primary font-semibold text-primary-foreground shadow-[0_1px_2px_oklch(0_0_0/0.1)]"
-                    : "group-hover:bg-accent/50 hover:bg-accent/50"
+                    : "hover:bg-accent/50"
                 )}
               >
                 {format(d, "d")}

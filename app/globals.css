@@ -46,6 +46,10 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  /* Modal/sheet backdrop. A cool-tinted near-black rather than pure
+     #000 so overlays read as part of the app's neutral palette, not a
+     harsh black wash. Use with an opacity modifier, e.g. bg-scrim/55. */
+  --color-scrim: oklch(0.14 0.012 250);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);

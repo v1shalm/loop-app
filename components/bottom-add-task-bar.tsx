@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { sileo } from "sileo";
+import { deriveTaskDefaults } from "@/lib/task-defaults";
 import {
   ArrowsClockwise,
   ArrowUp,
@@ -68,51 +69,25 @@ interface Context {
   placeholder: string;
 }
 
+// The data defaults (dueAt, projectId) come from the shared
+// deriveTaskDefaults so this bar and the quick-add modal never disagree.
+// Only the placeholder copy is bar-specific.
+function placeholderFor(pathname: string): string {
+  if (pathname === "/inbox") return "Add to Inbox. Try “@maya draft post #blog”";
+  if (pathname === "/upcoming")
+    return "Add an upcoming task. Try “sync meeting next week”";
+  if (pathname.startsWith("/projects/"))
+    return "Add a task. Try “ship hero copy friday”";
+  return "Add a task. Try “review designs tomorrow p1”";
+}
+
 function deriveContext(pathname: string, currentUserId: string): Context {
-  if (
-    pathname === "/assigned-to-me" ||
-    pathname === "/today" ||
-    pathname === "/my-tasks"
-  ) {
-    const eod = new Date();
-    eod.setHours(23, 59, 0, 0);
-    return {
-      dueAt: eod.toISOString(),
-      assigneeId: currentUserId,
-      projectId: null,
-      placeholder: "Add a task. Try “review designs tomorrow p1”",
-    };
-  }
-  if (pathname === "/inbox") {
-    return {
-      dueAt: null,
-      assigneeId: currentUserId,
-      projectId: null,
-      placeholder: "Add to Inbox. Try “@maya draft post #blog”",
-    };
-  }
-  if (pathname === "/upcoming") {
-    return {
-      dueAt: null,
-      assigneeId: currentUserId,
-      projectId: null,
-      placeholder: "Add an upcoming task. Try “sync meeting next week”",
-    };
-  }
-  if (pathname.startsWith("/projects/")) {
-    const projectId = pathname.split("/")[2] ?? null;
-    return {
-      dueAt: null,
-      assigneeId: currentUserId,
-      projectId,
-      placeholder: "Add a task. Try “ship hero copy friday”",
-    };
-  }
+  const { dueAt, projectId } = deriveTaskDefaults(pathname);
   return {
-    dueAt: null,
+    dueAt,
     assigneeId: currentUserId,
-    projectId: null,
-    placeholder: 'Add a task. Try "review designs tomorrow p1"',
+    projectId,
+    placeholder: placeholderFor(pathname),
   };
 }
 
