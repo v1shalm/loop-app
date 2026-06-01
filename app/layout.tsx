@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, ThemeInitScript } from "@/components/theme-provider";
 import { ThemeModal } from "@/components/theme-modal";
 import { ThemedToaster } from "@/components/themed-toaster";
+import { Agentation } from "agentation";
 import "sileo/styles.css";
 import "./globals.css";
 
@@ -105,6 +106,10 @@ export default function RootLayout({
             <ThemedToaster />
           </TooltipProvider>
         </ThemeProvider>
+        {/* Agentation visual-feedback toolbar — dev only. Annotate the UI
+            in the browser and it syncs to the coding agent via the MCP
+            server. Guarded by NODE_ENV so it never ships to production. */}
+        {process.env.NODE_ENV === "development" && <Agentation />}
         {/* Placeholder for @vercel/analytics */}
         {/* <Analytics /> */}
       </body>
