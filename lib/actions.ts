@@ -448,16 +448,39 @@ export async function removeTeamMember(
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  const team = await getMyTeam();
-  if (!team) return { error: "You're not on a team." };
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+  if (userId === profile.id) {
+    return { error: "You can't remove yourself from the workspace." };
+  }
 
+  const ws = await getDefaultWorkspace();
+  if (!ws) return { error: "No workspace found." };
+
+  // The roster (the People directory, assignee pickers, the manage
+  // dialog) reads public.workspace_members, so removing someone has to
+  // delete that row — deleting only team_members left them in the
+  // roster, which read as "remove did nothing". Requires the
+  // workspace_members_delete policy from migration 0034.
   const { error } = await supabase
-    .from("team_members")
+    .from("workspace_members")
     .delete()
-    .eq("team_id", team.id)
+    .eq("workspace_id", ws.id)
     .eq("user_id", userId);
-
   if (error) return { error: error.message };
+
+  // Also detach them from any team in the workspace so they're not left
+  // as an orphaned team member. Best-effort: the roster removal above is
+  // what the UI reflects.
+  const team = await getMyTeam();
+  if (team) {
+    await supabase
+      .from("team_members")
+      .delete()
+      .eq("team_id", team.id)
+      .eq("user_id", userId);
+  }
+
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -469,16 +492,30 @@ export async function changeTeamMemberRole(
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  const team = await getMyTeam();
-  if (!team) return { error: "You're not on a team." };
+  const ws = await getDefaultWorkspace();
+  if (!ws) return { error: "No workspace found." };
 
+  // Same source-of-truth fix as removal: the manage dialog reads the
+  // role from workspace_members, so the role change must update that
+  // row (updating only team_members left the displayed role stale).
+  // Requires the workspace_members_update policy from migration 0034.
   const { error } = await (supabase
-    .from("team_members")
+    .from("workspace_members")
     .update({ role })
-    .eq("team_id", team.id)
+    .eq("workspace_id", ws.id)
     .eq("user_id", userId) as any);
-
   if (error) return { error: error.message };
+
+  // Keep any team membership row in sync so the two tables don't drift.
+  const team = await getMyTeam();
+  if (team) {
+    await (supabase
+      .from("team_members")
+      .update({ role })
+      .eq("team_id", team.id)
+      .eq("user_id", userId) as any);
+  }
+
   revalidatePath("/", "layout");
   return { ok: true };
 }
