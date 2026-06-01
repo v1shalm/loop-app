@@ -19,11 +19,11 @@ export interface EmptyStateAction {
 }
 
 interface EmptyStateProps {
-  /** Optional glyph badge floating next to the blob. A small icon
-   *  (check, plus, bell, calendar). Skip for a clean blob-only state. */
+  /** Icon shown at the centre of the achievement badge. A small glyph
+   *  (check, plus, bell, calendar). Skip for a clean badge-only state. */
   icon?: React.ReactNode;
-  /** Colour tone of the blob illustration. Defaults to "blue". Ignored
-   *  when illustrationSrc is provided. */
+  /** Colour tone of the badge illustration. Defaults to "accent".
+   *  Ignored when illustrationSrc is provided. */
   tone?: IllustrationTone;
   /** Optional custom illustration (PNG/SVG path under /public). When
    *  provided, replaces the generated blob — useful for hand-illustrated
@@ -52,10 +52,10 @@ const enterMotion = {
 };
 
 /**
- * Page-level empty state. Free-floating blob illustration on top, then
- * title, hint, and CTAs stacked below. No outer card chrome — the
- * canvas itself is the background. Per /gpt-taste reference: premium,
- * minimal, illustration does the heavy lifting.
+ * Page-level empty state. Free-floating achievement-badge illustration
+ * on top, then title, hint, and CTAs stacked below. No outer card
+ * chrome — the canvas itself is the background. Reaching an empty state
+ * means the work is cleared, so the illustration reads as a reward.
  */
 export function EmptyState({
   icon,

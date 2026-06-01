@@ -204,6 +204,10 @@ export function hexToBase(hex: string): AccentBase {
 
 /** Every brand var the app reads. Used to apply and to clear. */
 export const THEME_VAR_NAMES = [
+  // Raw accent hue (degrees), exposed so illustrations and any
+  // hue-driven art (e.g. the empty-state badge) can build their own
+  // oklch() colours that track the theme. Set in both modes.
+  "--accent-h",
   "--primary",
   "--primary-foreground",
   "--primary-readable",
@@ -242,6 +246,7 @@ export function computeThemeVars(
     // Legible text on the fill, chosen by real luminance contrast.
     const fg = foregroundFor(L, C, H);
     return {
+      "--accent-h": String(H),
       "--primary": primary,
       "--primary-foreground": fg,
       "--primary-readable": oklch(Math.min(L - 0.12, 0.5), Math.min(C, 0.2), H),
@@ -265,6 +270,7 @@ export function computeThemeVars(
   const primary = oklch(dl, C, H);
   const fg = foregroundFor(dl, C, H);
   return {
+    "--accent-h": String(H),
     "--primary": primary,
     "--primary-foreground": fg,
     "--primary-readable": oklch(clamp(dl + 0.08, 0.74, 0.92), Math.min(C * 0.85, 0.16), H),

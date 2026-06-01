@@ -118,7 +118,7 @@ export default async function ProjectPage({ params }: PageProps) {
               // Not empty — done. Don't tell someone who just cleared the
               // board that their project is "empty".
               <EmptyState
-                tone="green"
+                tone="accent"
                 icon={<CheckCircle size={20} weight="bold" />}
                 title="All wrapped up"
                 hint="Every task in this project is done. Add another whenever you're ready."
