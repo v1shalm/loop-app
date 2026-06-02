@@ -297,6 +297,13 @@ export function SaturationSlider({
 
 // ── Grain knob: dotted ring + rotating indicator, with ticks + haptics ───────
 
+// The dial sweeps 270°, with a gap at the bottom: value 0 = 7:30 (lower-left),
+// 0.5 = 12:00 (top), 1 = 4:30 (lower-right). Rotation is measured from the top,
+// clockwise — the same frame the pointer angle is converted into, so the
+// indicator always lands exactly under the finger.
+const SWEEP = 135;
+const rotForValue = (v: number) => -SWEEP + clamp01(v) * (SWEEP * 2);
+
 export function GrainDial({
   value,
   onChange,
@@ -304,10 +311,10 @@ export function GrainDial({
   value: number;
   onChange: (n: number) => void;
 }) {
-  const drag = useRef<{ y: number; v: number } | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
   const lastNotch = useRef(Math.round(value * 20));
   const pct = clamp01(value);
-  const angle = -135 + pct * 270; // sweep lower-left → lower-right
 
   // Emit a change, with a soft tick + haptic when crossing a notch.
   const emit = (n: number) => {
@@ -316,21 +323,36 @@ export function GrainDial({
     if (notch !== lastNotch.current) {
       lastNotch.current = notch;
       playSound("pin");
-      haptic(c === 0 ? 12 : 5);
+      haptic(c === 0 || c === 1 ? 12 : 4);
     }
     onChange(c);
   };
 
+  // Rotary: the value is simply where the pointer sits around the knob.
+  const valueFromPointer = (clientX: number, clientY: number) => {
+    const el = ref.current;
+    if (!el) return pct;
+    const r = el.getBoundingClientRect();
+    const deg =
+      (Math.atan2(clientY - (r.top + r.height / 2), clientX - (r.left + r.width / 2)) *
+        180) /
+      Math.PI;
+    let topCW = deg + 90; // 0 = top, clockwise positive
+    if (topCW > 180) topCW -= 360;
+    const clamped = Math.max(-SWEEP, Math.min(SWEEP, topCW));
+    return (clamped + SWEEP) / (SWEEP * 2);
+  };
+
   const down = (e: React.PointerEvent) => {
-    drag.current = { y: e.clientY, v: pct };
+    dragging.current = true;
     e.currentTarget.setPointerCapture(e.pointerId);
+    emit(valueFromPointer(e.clientX, e.clientY));
   };
   const move = (e: React.PointerEvent) => {
-    if (drag.current)
-      emit(drag.current.v + (drag.current.y - e.clientY) / 130);
+    if (dragging.current) emit(valueFromPointer(e.clientX, e.clientY));
   };
   const up = (e: React.PointerEvent) => {
-    drag.current = null;
+    dragging.current = false;
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {}
@@ -355,6 +377,7 @@ export function GrainDial({
   const dots = Array.from({ length: 24 });
   return (
     <div
+      ref={ref}
       role="slider"
       tabIndex={0}
       aria-label="Grain"
@@ -367,8 +390,8 @@ export function GrainDial({
       onPointerUp={up}
       onPointerCancel={up}
       onKeyDown={key}
-      title="Grain — drag up/down"
-      className="focus-ring relative grid size-[84px] shrink-0 cursor-ns-resize touch-none place-items-center rounded-full text-muted-foreground"
+      title="Grain — drag around the dial"
+      className="focus-ring relative grid size-[84px] shrink-0 cursor-grab touch-none place-items-center rounded-full text-muted-foreground active:cursor-grabbing"
     >
       {dots.map((_, i) => {
         const a = ((-240 + (i / (dots.length - 1)) * 300) * Math.PI) / 180;
@@ -389,11 +412,13 @@ export function GrainDial({
         aria-hidden
         className="relative grid size-[62px] place-items-center rounded-full bg-card shadow-[0_2px_8px_rgba(0,0,0,0.18)] ring-1 ring-inset ring-border"
       >
-        {/* indicator: a short bar pointing outward at the value angle */}
+        {/* indicator: a short tick that points where you're dragging */}
         <span
-          className="absolute h-[5px] w-[15px] rounded-full bg-foreground/75"
+          className="absolute left-1/2 top-1/2 h-[13px] w-[4px] rounded-full bg-foreground/80"
           style={{
-            transform: `rotate(${angle}deg) translateX(13px)`,
+            transform: `translate(-50%, -50%) rotate(${rotForValue(
+              pct
+            )}deg) translateY(-19px)`,
           }}
         />
       </span>
