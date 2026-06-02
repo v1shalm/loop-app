@@ -18,6 +18,7 @@ import {
   LinkSimple,
   MagnifyingGlass,
   PaperPlaneTilt,
+  ShieldCheck,
   Trash,
   X,
 } from "@/components/icons";
@@ -370,7 +371,13 @@ function MemberRow({
   isMe: boolean;
 }) {
   const [pending, startTransition] = useTransition();
-  const [optRole, setOptRole] = useState<Role>(member.team_role);
+  // Superadmin is a workspace-wide tier managed only in /admin (migration
+  // 0035) — RLS blocks an ordinary admin from touching it. Here we surface
+  // it read-only and clamp the editable role to admin/member.
+  const isSuper = member.team_role === "superadmin";
+  const [optRole, setOptRole] = useState<Role>(
+    member.team_role === "member" ? "member" : "admin"
+  );
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const setRole = (next: Role) => {
@@ -419,6 +426,15 @@ function MemberRow({
           </p>
         )}
       </div>
+      {isSuper ? (
+        <span
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[12px] font-semibold text-primary-readable"
+          title="Superadmin — managed in Workspace admin"
+        >
+          <ShieldCheck size={12} weight="fill" />
+          Superadmin
+        </span>
+      ) : (
       <Popover>
         <PopoverTrigger
           disabled={pending || isMe}
@@ -461,6 +477,7 @@ function MemberRow({
           )}
         </PopoverContent>
       </Popover>
+      )}
 
       <ConfirmDialog
         open={confirmOpen}

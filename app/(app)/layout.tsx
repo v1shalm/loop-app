@@ -6,6 +6,9 @@ import {
   getMyTeam,
   getMyTeams,
   getMyTeamRole,
+  getMyWorkspaceRole,
+  getMyManagedTeamIds,
+  getApprovalQueueCount,
   getProjects,
   getWorkspaceMembers,
   getSidebarCounts,
@@ -33,23 +36,39 @@ export default async function AppLayout({
   // concurrently with the layout's other queries keeps it off the
   // page's serial critical path (the page reads the cached result
   // instantly instead of issuing a fresh round-trip).
-  const [workspace, team, teams, teamRole, projects, members, counts] =
-    await Promise.all([
-      getDefaultWorkspace(),
-      getMyTeam(),
-      getMyTeams(),
-      getMyTeamRole(),
-      getProjects(),
-      getWorkspaceMembers(),
-      getSidebarCounts(),
-      hasTaskSortOrder(),
-    ]);
+  const [
+    workspace,
+    team,
+    teams,
+    teamRole,
+    workspaceRole,
+    managedTeamIds,
+    approvalCount,
+    projects,
+    members,
+    counts,
+  ] = await Promise.all([
+    getDefaultWorkspace(),
+    getMyTeam(),
+    getMyTeams(),
+    getMyTeamRole(),
+    getMyWorkspaceRole(),
+    getMyManagedTeamIds(),
+    getApprovalQueueCount(),
+    getProjects(),
+    getWorkspaceMembers(),
+    getSidebarCounts(),
+    hasTaskSortOrder(),
+  ]);
+
+  const isSuperadmin = workspaceRole === "superadmin";
 
   // A signed-in user without a team has no scope. Bounce them through
   // /onboarding to create one (and pick up the admin role on the team
-  // they create). Demo accounts already have a team from the seed and
-  // skip this entirely.
-  if (!team) {
+  // they create). Superadmins are the exception — they oversee every
+  // team and may not belong to one themselves, so they skip onboarding
+  // and land in the app (the admin area is their home base).
+  if (!team && !isSuperadmin) {
     redirect("/onboarding");
   }
 
@@ -60,6 +79,9 @@ export default async function AppLayout({
       team={team}
       teams={teams}
       teamRole={teamRole}
+      isSuperadmin={isSuperadmin}
+      managedTeamIds={managedTeamIds}
+      approvalCount={approvalCount}
       projects={projects}
       members={members}
       counts={counts}

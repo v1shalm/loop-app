@@ -24,10 +24,23 @@ export type WorkflowStatus =
   | "completed"
   | "archived";
 
+/** Task lifecycle. 'in_review' (migration 0037) sits between work and
+ *  completion: a member submits, a team manager approves to 'done' or sends
+ *  it back. Project-less Inbox tasks skip review entirely. */
+export type TaskStatus = "todo" | "doing" | "in_review" | "done";
+
 export type Task = Tables["tasks"]["Row"] & {
   triaged_at?: string | null;
   parent_task_id?: string | null;
+  /** Approval bookkeeping (migration 0037). Present via `*` once applied. */
+  submitted_at?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
 };
+
+/** Workspace-level role. 'superadmin' (migration 0035) is company-wide
+ *  god mode — every team, project, and task, plus manager/role admin. */
+export type WorkspaceRole = "member" | "admin" | "superadmin";
 export type Project = Omit<Tables["projects"]["Row"], "workflow_status"> & {
   workflow_status?: WorkflowStatus | null;
   description?: string | null;
@@ -102,14 +115,30 @@ export const getDefaultWorkspace = cache(async (): Promise<Workspace | null> => 
   return data ?? null;
 });
 
+/**
+ * Projects for the sidebar — only the ones the current user actually
+ * belongs to. We filter on project_members explicitly rather than leaning
+ * on RLS: post-0036 a superadmin (and a team manager) can *reach* every
+ * project in their scope, which would flood the sidebar. The admin and
+ * team surfaces are where "all projects" lives; the sidebar stays personal.
+ */
 export const getProjects = cache(async (): Promise<Project[]> => {
   const supabase = await getSupabaseServer();
   if (!supabase) return [];
-  const { data } = await supabase
+  const profile = await getCurrentProfile();
+  if (!profile) return [];
+  const { data } = await (supabase as any)
     .from("projects")
-    .select("*")
+    .select("*, project_members!inner(user_id)")
+    .eq("project_members.user_id", profile.id)
     .order("created_at");
-  return (data ?? []) as Project[];
+  return ((data ?? []) as Project[]).map((p) => {
+    // Drop the join artifact so callers see a clean Project.
+    const { project_members: _pm, ...rest } = p as Project & {
+      project_members?: unknown;
+    };
+    return rest as Project;
+  });
 });
 
 // ── Teams ────────────────────────────────────────────────────────────────────
@@ -122,7 +151,8 @@ export interface Team {
 }
 
 export interface TeamMember extends Profile {
-  team_role: "admin" | "member";
+  /** Workspace role (member / admin / superadmin), surfaced in the roster. */
+  team_role: WorkspaceRole;
 }
 
 /**
@@ -191,6 +221,151 @@ export const getMyTeamRole = cache(
   }
 );
 
+// ── Superadmin & team managers (migrations 0035–0037) ──────────────────────────
+
+/** The current user's workspace role: member / admin / superadmin. */
+export const getMyWorkspaceRole = cache(
+  async (): Promise<WorkspaceRole | null> => {
+    const supabase = await getSupabaseServer();
+    if (!supabase) return null;
+    const profile = await getCurrentProfile();
+    if (!profile) return null;
+    const ws = await getDefaultWorkspace();
+    if (!ws) return null;
+
+    const { data } = await supabase
+      .from("workspace_members")
+      .select("role")
+      .eq("workspace_id", ws.id)
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    return (data?.role as WorkspaceRole | null) ?? null;
+  }
+);
+
+export const isSuperadmin = cache(async (): Promise<boolean> => {
+  return (await getMyWorkspaceRole()) === "superadmin";
+});
+
+/** Team ids the current user is a MANAGER (approver) of. */
+export const getMyManagedTeamIds = cache(async (): Promise<string[]> => {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return [];
+  const profile = await getCurrentProfile();
+  if (!profile) return [];
+  const { data } = await (supabase as any)
+    .from("team_managers")
+    .select("team_id")
+    .eq("user_id", profile.id);
+  return ((data ?? []) as Array<{ team_id: string }>).map((r) => r.team_id);
+});
+
+export interface TeamRosterRow extends Profile {
+  role: WorkspaceRole;
+  is_manager: boolean;
+}
+
+export interface TeamAdminRow {
+  id: string;
+  name: string;
+  color: string | null;
+  memberCount: number;
+  projectCount: number;
+  managers: Pick<
+    Profile,
+    "id" | "name" | "initials" | "avatar_color" | "avatar_url"
+  >[];
+  /** Full team roster, each member flagged manager-or-not. */
+  roster: TeamRosterRow[];
+}
+
+/**
+ * Every team in the workspace with its member/project counts, manager list,
+ * and full roster — everything the superadmin admin area needs, in a FIXED
+ * number of queries regardless of team count. Teams, members, managers, and
+ * projects are each fetched once and grouped in memory (no per-team
+ * round-trips). Relies on superadmin RLS reach for projects + team_managers,
+ * so it returns full data only for a superadmin (the page is superadmin-gated).
+ */
+export const getTeamsAdminOverview = cache(
+  async (): Promise<TeamAdminRow[]> => {
+    const supabase = await getSupabaseServer();
+    if (!supabase) return [];
+    const [teamsR, membersR, managersR, projectsR] = await Promise.all([
+      supabase.from("teams").select("id, name, color").order("name"),
+      (supabase as any)
+        .from("team_members")
+        .select("team_id, role, profile:profiles!inner(*)")
+        .order("joined_at"),
+      (supabase as any).from("team_managers").select("team_id, user_id"),
+      supabase.from("projects").select("id, team_id"),
+    ]);
+
+    const projectCount = new Map<string, number>();
+    for (const r of (projectsR.data ?? []) as Array<{
+      team_id: string | null;
+    }>) {
+      if (r.team_id)
+        projectCount.set(r.team_id, (projectCount.get(r.team_id) ?? 0) + 1);
+    }
+
+    // Manager user-ids per team → drives the is_manager flag on each roster
+    // row (and the managers list is then just the manager rows of the roster).
+    const managerIds = new Map<string, Set<string>>();
+    for (const r of (managersR.data ?? []) as Array<{
+      team_id: string;
+      user_id: string;
+    }>) {
+      const set = managerIds.get(r.team_id) ?? new Set<string>();
+      set.add(r.user_id);
+      managerIds.set(r.team_id, set);
+    }
+
+    const rosterByTeam = new Map<string, TeamRosterRow[]>();
+    for (const r of (membersR.data ?? []) as Array<{
+      team_id: string;
+      role: string;
+      profile: Profile;
+    }>) {
+      const row: TeamRosterRow = {
+        ...r.profile,
+        role: r.role as WorkspaceRole,
+        is_manager: managerIds.get(r.team_id)?.has(r.profile.id) ?? false,
+      };
+      const arr = rosterByTeam.get(r.team_id) ?? [];
+      arr.push(row);
+      rosterByTeam.set(r.team_id, arr);
+    }
+
+    return (
+      (teamsR.data ?? []) as Array<{
+        id: string;
+        name: string;
+        color: string | null;
+      }>
+    ).map((t) => {
+      const roster = rosterByTeam.get(t.id) ?? [];
+      return {
+        id: t.id,
+        name: t.name,
+        color: t.color,
+        memberCount: roster.length,
+        projectCount: projectCount.get(t.id) ?? 0,
+        managers: roster
+          .filter((m) => m.is_manager)
+          .map((m) => ({
+            id: m.id,
+            name: m.name,
+            initials: m.initials,
+            avatar_color: m.avatar_color,
+            avatar_url: m.avatar_url,
+          })),
+        roster,
+      };
+    });
+  }
+);
+
 /**
  * Members of the company workspace. The universe for assignee pickers,
  * the People directory, and the "add to project" picker. Projects can
@@ -225,7 +400,7 @@ export const getTeamMembersWithRole = cache(
       .eq("workspace_id", ws.id)
       .order("joined_at") as any);
     return ((data ?? []) as Array<{ role: string; profile: Profile }>).map(
-      (r) => ({ ...r.profile, team_role: r.role as "admin" | "member" })
+      (r) => ({ ...r.profile, team_role: r.role as WorkspaceRole })
     );
   }
 );
@@ -550,6 +725,45 @@ export async function getInboxAssignments(): Promise<TaskWithRelations[]> {
     return chain.order("created_at", { ascending: false });
   });
 }
+
+/**
+ * Approval queue — team tasks sitting in 'in_review' that the current user
+ * can sign off: tasks in teams they manage, or everything if a superadmin.
+ * RLS already scopes what they can see; we filter by status + managed teams
+ * for the focused queue. Oldest submission first (clear the backlog).
+ */
+export async function getTasksAwaitingMyApproval(): Promise<
+  TaskWithRelations[]
+> {
+  const [superadmin, managed] = await Promise.all([
+    isSuperadmin(),
+    getMyManagedTeamIds(),
+  ]);
+  if (!superadmin && managed.length === 0) return [];
+  return fetchTasks((q: any) => {
+    let chain = q.eq("status", "in_review");
+    if (!superadmin) chain = chain.in("team_id", managed);
+    return chain.order("submitted_at", { ascending: true, nullsFirst: false });
+  });
+}
+
+/** Badge count for the approval queue (managers / superadmins). */
+export const getApprovalQueueCount = cache(async (): Promise<number> => {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return 0;
+  const [superadmin, managed] = await Promise.all([
+    isSuperadmin(),
+    getMyManagedTeamIds(),
+  ]);
+  if (!superadmin && managed.length === 0) return 0;
+  let q = supabase
+    .from("tasks")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "in_review");
+  if (!superadmin) q = q.in("team_id", managed);
+  const { count } = await q;
+  return count ?? 0;
+});
 
 export async function getProjectTasks(
   projectId: string

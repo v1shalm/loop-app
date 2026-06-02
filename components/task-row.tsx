@@ -36,11 +36,17 @@ import {
   DotsThree,
   Eye,
   Flag,
+  PaperPlaneTilt,
   Paperclip,
   Trash,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import { deleteTask, setTaskStatus, updateTask } from "@/lib/actions";
+import {
+  deleteTask,
+  setTaskStatus,
+  submitTaskForReview,
+  updateTask,
+} from "@/lib/actions";
 import { isRecurrence, nextOccurrence, recurrenceLabel } from "@/lib/recurrence";
 import { playSound } from "@/lib/sounds";
 import { MentionText } from "@/components/mention-text";
@@ -114,7 +120,8 @@ function TaskRowInner({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const pathname = usePathname();
   const params = useSearchParams();
-  const { members, currentUserId } = useTeamContext();
+  const { members, currentUserId, isSuperadmin, managedTeamIds } =
+    useTeamContext();
   const isMobile = useIsMobile();
   // Horizontal drag offset for the mobile swipe gesture. The underlay
   // indicators read this value to fade in as the user drags.
@@ -137,6 +144,15 @@ function TaskRowInner({
     setOptDueAt(task.due_at);
     setOptAssignee(task.assignee);
   }, [task.priority, task.due_at, task.assignee]);
+
+  // Approval gate (migrations 0035–0037). A task that belongs to a team
+  // must be signed off by a manager (or superadmin) to complete. A regular
+  // member's checkbox submits it for review instead of completing it.
+  const isTeamTask = !!task.team_id;
+  const canApprove =
+    isSuperadmin || (task.team_id ? managedTeamIds.includes(task.team_id) : false);
+  const [reviewing, setReviewing] = useState(task.status === "in_review");
+  useEffect(() => setReviewing(task.status === "in_review"), [task.status]);
 
   const due = optDueAt ? new Date(optDueAt) : null;
   const overdue = due ? isPast(due) && !isToday(due) && !done : false;
@@ -240,6 +256,55 @@ function TaskRowInner({
         duration: 6000,
       });
     });
+  };
+
+  // Member submits a team task for the manager's approval.
+  const submitReview = () => {
+    setReviewing(true);
+    playSound("added");
+    startTransition(async () => {
+      const res = await submitTaskForReview(task.id);
+      if (res.error) {
+        sileo.error({ title: res.error });
+        setReviewing(false);
+        return;
+      }
+      const id = sileo.success({
+        title: "Sent for review",
+        description: task.title,
+        button: {
+          title: "Undo",
+          onClick: () => {
+            sileo.dismiss(id);
+            withdrawReview();
+          },
+        },
+        duration: 6000,
+      });
+    });
+  };
+
+  // Pull a task back out of review (member changed their mind).
+  const withdrawReview = () => {
+    setReviewing(false);
+    startTransition(async () => {
+      const res = await setTaskStatus(task.id, "doing");
+      if (res.error) {
+        sileo.error({ title: res.error });
+        setReviewing(true);
+      }
+    });
+  };
+
+  // Single entry point for the checkbox. Personal tasks and approvers
+  // complete directly; everyone else submits/withdraws from review.
+  const onCheckbox = () => {
+    if (!isTeamTask || canApprove) {
+      toggle();
+      return;
+    }
+    if (reviewing) withdrawReview();
+    else submitReview();
   };
 
   const openDrawer = () => {
@@ -487,20 +552,48 @@ function TaskRowInner({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                toggle();
+                onCheckbox();
               }}
               disabled={pending}
-              aria-label={`Mark "${task.title}" complete`}
+              aria-label={
+                reviewing
+                  ? canApprove
+                    ? `Approve "${task.title}"`
+                    : `Withdraw "${task.title}" from review`
+                  : isTeamTask && !canApprove
+                    ? `Submit "${task.title}" for review`
+                    : `Mark "${task.title}" complete`
+              }
+              title={
+                reviewing && !canApprove
+                  ? "Waiting for manager approval — click to withdraw"
+                  : reviewing && canApprove
+                    ? "Approve & complete"
+                    : undefined
+              }
               className={cn(
-                "focus-ring relative mt-0.5 grid size-6 shrink-0 place-items-center rounded-[6px] border border-border bg-background transition-[border-color,transform] duration-150 ease-[var(--ease-out)] hover:border-foreground/40 active:scale-90"
+                "focus-ring relative mt-0.5 grid size-6 shrink-0 place-items-center rounded-[6px] border bg-background transition-[border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-90",
+                reviewing && !checked
+                  ? "border-amber-500/70"
+                  : "border-border hover:border-foreground/40"
               )}
             >
-              {/* Empty-state hover hint: a faint check on the open circle. */}
-              <Check
-                size={12}
-                weight="bold"
-                className="text-foreground/0 transition-colors group-hover:text-muted-foreground/40"
-              />
+              {/* In review: an amber "sent" glyph instead of the empty box,
+                  so a submitted task reads as pending-approval at a glance. */}
+              {reviewing && !checked ? (
+                <PaperPlaneTilt
+                  size={12}
+                  weight="fill"
+                  className="text-amber-500"
+                />
+              ) : (
+                /* Empty-state hover hint: a faint check on the open circle. */
+                <Check
+                  size={12}
+                  weight="bold"
+                  className="text-foreground/0 transition-colors group-hover:text-muted-foreground/40"
+                />
+              )}
               {/* Completed: brand-blue fill springs in, then the check
                   draws. Lives a beat before the row collapses out
                   (animateOut), so the whole gesture is visible. */}
@@ -639,6 +732,19 @@ function TaskRowInner({
                   >
                     <ArrowsClockwise size={11} weight="bold" />
                   </span>
+                )}
+
+                {/* Awaiting manager sign-off. Reads "Needs approval" to an
+                    approver (a prompt to act) and "In review" to everyone
+                    else (a status). */}
+                {reviewing && (
+                  <>
+                    <Dot />
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/12 px-1.5 py-0.5 text-[10.5px] font-medium text-amber-700 dark:text-amber-300">
+                      <PaperPlaneTilt size={10} weight="fill" />
+                      {canApprove ? "Needs approval" : "In review"}
+                    </span>
+                  </>
                 )}
 
                 {/* Author note — only when someone else assigned this to you */}

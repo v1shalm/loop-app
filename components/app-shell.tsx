@@ -53,6 +53,9 @@ export function AppShell({
   team,
   teams,
   teamRole,
+  isSuperadmin = false,
+  managedTeamIds = [],
+  approvalCount = 0,
   projects,
   members,
   counts,
@@ -136,6 +139,8 @@ export function AppShell({
         members={members}
         projects={projects}
         currentUserId={user.id}
+        isSuperadmin={isSuperadmin}
+        managedTeamIds={managedTeamIds}
       >
         <QuickAddProvider
           open={(defaults) => {
@@ -185,6 +190,9 @@ export function AppShell({
                 team={team}
                 teams={teams}
                 teamRole={teamRole}
+                isSuperadmin={isSuperadmin}
+                managedTeamIds={managedTeamIds}
+                approvalCount={approvalCount}
                 projects={projects}
                 members={members}
                 counts={counts}

@@ -12,6 +12,7 @@ import {
   MoonStars,
   Question,
   SignOut,
+  SlidersHorizontal,
   SpeakerHigh,
   SpeakerSlash,
   UsersThree,
@@ -45,6 +46,7 @@ export function ProfileMenu({
   showPresence,
   progressToday,
   compact,
+  isSuperadmin = false,
 }: {
   user: Profile;
   onOpenHelp?: () => void;
@@ -55,6 +57,8 @@ export function ProfileMenu({
   /** When true, render an avatar-only square trigger (for the collapsed
    *  sidebar). Same menu content, smaller footprint. */
   compact?: boolean;
+  /** Superadmins get a "Workspace admin" entry into /admin. */
+  isSuperadmin?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [statusPending, startStatusTransition] = useTransition();
@@ -237,6 +241,17 @@ export function ProfileMenu({
           >
             Members
           </SheetRow>
+          {isSuperadmin && (
+            <SheetRow
+              icon={
+                <SlidersHorizontal size={18} className="text-muted-foreground" />
+              }
+              href="/admin"
+              onClick={closeMobile}
+            >
+              Workspace admin
+            </SheetRow>
+          )}
           <SheetRow
             icon={
               soundsOn ? (
@@ -450,6 +465,13 @@ export function ProfileMenu({
           <UsersThree size={15} className="text-muted-foreground" />
           <span className="flex-1">Members</span>
         </DropdownMenuItem>
+
+        {isSuperadmin && (
+          <DropdownMenuItem render={<Link href="/admin" />}>
+            <SlidersHorizontal size={15} className="text-muted-foreground" />
+            <span className="flex-1">Workspace admin</span>
+          </DropdownMenuItem>
+        )}
 
         {/* Sound toggle */}
         <button

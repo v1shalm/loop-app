@@ -6,6 +6,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { sileo } from "sileo";
 import {
+  CheckCircle,
   DotsThree,
   Folder,
   MagnifyingGlass,
@@ -64,6 +65,12 @@ export interface SidebarProps {
    *  header switcher. `team` is the active one. */
   teams: Team[];
   teamRole: "admin" | "member" | null;
+  /** Workspace-level superadmin — unlocks the admin area + approve-anything. */
+  isSuperadmin?: boolean;
+  /** Teams the user manages (approver). Drives the Approvals queue entry. */
+  managedTeamIds?: string[];
+  /** Count of tasks awaiting this user's approval — Approvals nav badge. */
+  approvalCount?: number;
   projects: Project[];
   members: Profile[];
   counts: SidebarCounts;
@@ -97,10 +104,15 @@ export function SidebarV2({
   team,
   projects,
   counts,
+  isSuperadmin = false,
+  managedTeamIds = [],
+  approvalCount = 0,
   onOpenSearch,
 }: SidebarProps) {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
+  // Managers (of ≥1 team) and superadmins get the Approvals queue.
+  const canApprove = isSuperadmin || managedTeamIds.length > 0;
 
   if (collapsed) {
     return (
@@ -108,6 +120,9 @@ export function SidebarV2({
         user={user}
         projects={projects}
         counts={counts}
+        isSuperadmin={isSuperadmin}
+        canApprove={canApprove}
+        approvalCount={approvalCount}
         onOpenSearch={onOpenSearch}
       />
     );
@@ -210,6 +225,14 @@ export function SidebarV2({
         {navItems.map((item) => (
           <NavRow key={item.href} {...item} />
         ))}
+        {/* Approvals — only for managers + superadmins. Sits with the
+            work queues because clearing approvals is a daily task. */}
+        {canApprove && (
+          <ApprovalsNavRow
+            active={pathname === "/approvals"}
+            count={approvalCount}
+          />
+        )}
       </nav>
 
       {/* Projects: header (with All link + add) + pinned-first list,
@@ -246,9 +269,63 @@ export function SidebarV2({
       <div className="flex-1" />
 
       <div className="border-t border-border/40 px-2 py-2">
-        <ProfileMenu user={user} />
+        <ProfileMenu user={user} isSuperadmin={isSuperadmin} />
       </div>
     </aside>
+  );
+}
+
+/**
+ * Approvals nav row — same visual language as NavRow but with a static
+ * icon (the animated NavIcon set is reserved for the four core queues).
+ * Shown only to managers / superadmins.
+ */
+function ApprovalsNavRow({
+  active,
+  count,
+}: {
+  active: boolean;
+  count: number;
+}) {
+  const showCount = count > 0;
+  return (
+    <Link
+      href="/approvals"
+      prefetch
+      className={cn(
+        "group/row focus-ring relative flex h-9 items-center gap-3 rounded-md px-3 text-[14px] transition-colors",
+        active
+          ? "font-semibold text-primary-readable"
+          : "text-foreground/85 hover:text-foreground"
+      )}
+    >
+      {!active && (
+        <span
+          aria-hidden
+          className="absolute inset-0 rounded-md bg-transparent transition-colors duration-150 ease-[var(--ease-out)] group-hover/row:bg-foreground/[0.06]"
+        />
+      )}
+      <span className="relative z-[1] grid size-5 shrink-0 place-items-center">
+        <CheckCircle size={18} weight={active ? "fill" : "regular"} />
+      </span>
+      <span className="relative z-[1]">Approvals</span>
+      {showCount && (
+        <motion.span
+          key={count}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 520, damping: 22 }}
+          className={cn(
+            "relative z-[1] grid h-[20px] min-w-[20px] place-items-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
+            active
+              ? "bg-primary text-primary-foreground"
+              : "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+          )}
+        >
+          {count}
+        </motion.span>
+      )}
+    </Link>
   );
 }
 
@@ -338,11 +415,17 @@ function SidebarRail({
   user,
   projects,
   counts,
+  isSuperadmin = false,
+  canApprove = false,
+  approvalCount = 0,
   onOpenSearch,
 }: {
   user: Profile;
   projects: Project[];
   counts: SidebarCounts;
+  isSuperadmin?: boolean;
+  canApprove?: boolean;
+  approvalCount?: number;
   onOpenSearch?: () => void;
 }) {
   const pathname = usePathname();
@@ -409,6 +492,43 @@ function SidebarRail({
         {navItems.map((item) => (
           <RailNavLink key={item.href} {...item} />
         ))}
+        {canApprove && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Link
+                  href="/approvals"
+                  aria-label="Approvals"
+                  className={cn(
+                    "focus-ring relative grid size-9 place-items-center rounded-md transition-colors",
+                    pathname === "/approvals"
+                      ? "text-primary-readable"
+                      : "text-foreground/85 hover:bg-foreground/[0.04] hover:text-foreground"
+                  )}
+                >
+                  <CheckCircle
+                    size={18}
+                    weight={pathname === "/approvals" ? "fill" : "regular"}
+                  />
+                  {approvalCount > 0 && (
+                    <span
+                      aria-hidden
+                      className="absolute right-1 top-1 size-1.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[oklch(0.185_0.005_250)]"
+                    />
+                  )}
+                </Link>
+              }
+            />
+            <TooltipContent side="right">
+              <span>Approvals</span>
+              {approvalCount > 0 && (
+                <span className="ml-1.5 text-background/60 tabular-nums">
+                  {approvalCount}
+                </span>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        )}
       </nav>
 
       {pinned.length > 0 && (
@@ -436,7 +556,7 @@ function SidebarRail({
       {/* Profile at the bottom — same ProfileMenu component in its
           compact (avatar-only) mode. */}
       <div className="pb-2">
-        <ProfileMenu user={user} compact />
+        <ProfileMenu user={user} compact isSuperadmin={isSuperadmin} />
       </div>
     </aside>
   );
