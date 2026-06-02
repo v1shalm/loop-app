@@ -58,19 +58,21 @@ const ACCENT_MAPS_KEY = "loop:accent-maps";
 const GRAIN_KEY = "loop:grain";
 const GRADIENT_KEY = "loop:gradient";
 
-/** A CSS value for the brand gradient. 1 stop → solid; 2+ → linear blend. */
-function gradientCss(stops: AccentBase[]): string {
-  if (stops.length === 0) return "transparent";
-  if (stops.length === 1) return baseToCss(stops[0]);
+/** The brand gradient CSS for 2+ stops, else null (a single color is just the
+ *  solid accent, so brand surfaces keep their normal fill). */
+function brandGradientCss(stops: AccentBase[]): string | null {
+  if (stops.length < 2) return null;
   return `linear-gradient(135deg, ${stops.map((s) => baseToCss(s)).join(", ")})`;
 }
 
+/** Set --brand-gradient for real (2+ stop) gradients so brand surfaces pick it
+ *  up; remove it for a single color so they fall back to the solid accent. */
 function applyBrandGradient(stops: AccentBase[]) {
   if (typeof document === "undefined") return;
-  document.documentElement.style.setProperty(
-    "--brand-gradient",
-    gradientCss(stops)
-  );
+  const v = brandGradientCss(stops);
+  const root = document.documentElement;
+  if (v) root.style.setProperty("--brand-gradient", v);
+  else root.style.removeProperty("--brand-gradient");
 }
 
 function readStoredGradient(fallback: AccentBase): AccentBase[] {
@@ -399,6 +401,11 @@ export function ThemeInitScript() {
     var g = parseFloat(localStorage.getItem('${GRAIN_KEY}'));
     if (isFinite(g) && g > 0) {
       html.style.setProperty('--grain-opacity', (Math.min(1, Math.max(0, g)) * ${GRAIN_MAX}).toFixed(4));
+    }
+    var gr = JSON.parse(localStorage.getItem('${GRADIENT_KEY}') || '[]');
+    if (Array.isArray(gr) && gr.length >= 2) {
+      var cols = gr.map(function (s) { return 'oklch(' + s.l + ' ' + s.c + ' ' + s.h + ')'; }).join(', ');
+      html.style.setProperty('--brand-gradient', 'linear-gradient(135deg, ' + cols + ')');
     }
   } catch (e) {}
 })();`;

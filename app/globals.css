@@ -496,19 +496,17 @@
 
   /* Brand surface — same-hue gradient (light → deeper pink). Depth
      comes from --shadow-cta, not from a hue sweep. */
+  /* Brand fill. When the theme studio has a multi-color gradient,
+     --brand-gradient drives every primary surface; otherwise it falls back
+     to the single-accent light→dark bevel. */
   .surface-brand {
-    background: linear-gradient(
-      180deg,
-      var(--primary-light),
-      var(--primary-dark)
+    background: var(
+      --brand-gradient,
+      linear-gradient(180deg, var(--primary-light), var(--primary-dark))
     );
   }
   .surface-brand-hover:hover {
-    background: linear-gradient(
-      180deg,
-      color-mix(in oklch, var(--primary-light) 88%, white),
-      color-mix(in oklch, var(--primary-dark) 92%, white)
-    );
+    filter: brightness(1.06) saturate(1.02);
   }
 
   /* Secondary CTA surface — neutral card-style fill with the same
