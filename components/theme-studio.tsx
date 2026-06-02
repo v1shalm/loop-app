@@ -5,11 +5,9 @@ import { CaretLeft, CaretRight } from "@/components/icons";
 import {
   type AccentBase,
   type AccentPreset,
-  type GradientPreset,
   ACCENT_GROUPS,
   baseToCss,
   CHROMA_MAX,
-  GRADIENT_PRESETS,
 } from "@/lib/accents";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
@@ -455,69 +453,6 @@ export function PresetCarousel({
                   : "hover:scale-110"
               )}
               style={{ backgroundColor: baseToCss(p.base) }}
-            />
-          );
-        })}
-      </div>
-      <ArrowBtn dir="right" disabled={!canRight} onClick={() => nudge(1)} />
-    </div>
-  );
-}
-
-// ── Gradient preset carousel (shown when 2+ colors are on the canvas) ────────
-
-export function GradientCarousel({
-  activeId,
-  onSelect,
-}: {
-  activeId: string;
-  onSelect: (preset: GradientPreset) => void;
-}) {
-  const scroller = useRef<HTMLDivElement>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(true);
-
-  const sync = useCallback(() => {
-    const el = scroller.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 4);
-    setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
-  }, []);
-  useEffect(() => {
-    sync();
-  }, [sync]);
-  const nudge = (dir: 1 | -1) =>
-    scroller.current?.scrollBy({ left: dir * 180, behavior: "smooth" });
-
-  return (
-    <div className="flex items-center gap-2">
-      <ArrowBtn dir="left" disabled={!canLeft} onClick={() => nudge(-1)} />
-      <div
-        ref={scroller}
-        onScroll={sync}
-        className="flex min-w-0 flex-1 items-center gap-2.5 overflow-x-auto scroll-smooth py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {GRADIENT_PRESETS.map((g) => {
-          const active = activeId === g.id;
-          return (
-            <button
-              key={g.id}
-              type="button"
-              aria-label={g.name}
-              title={g.name}
-              aria-pressed={active}
-              onClick={() => onSelect(g)}
-              className={cn(
-                "h-7 w-12 shrink-0 rounded-full transition-transform duration-200 ease-[var(--ease-out)] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                active
-                  ? "ring-2 ring-foreground/60 ring-offset-2 ring-offset-card"
-                  : "hover:scale-105"
-              )}
-              style={{
-                backgroundImage: `linear-gradient(115deg, ${g.stops
-                  .map((s) => baseToCss(s))
-                  .join(", ")})`,
-              }}
             />
           );
         })}

@@ -6,17 +6,11 @@ import { MoonStars, Plus, Sparkles, Sun } from "@/components/icons";
 import { useTheme } from "@/components/theme-provider";
 import {
   ColorField,
-  GradientCarousel,
   GrainDial,
   PresetCarousel,
   SaturationSlider,
 } from "@/components/theme-studio";
-import {
-  type AccentBase,
-  ACCENTS,
-  GRADIENT_PRESETS,
-  nearestGradientPreset,
-} from "@/lib/accents";
+import { type AccentBase, ACCENTS, nearestGradientPreset } from "@/lib/accents";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 
@@ -70,29 +64,22 @@ export function ThemeModal() {
     setGradient(next);
     if (i === selected) setCustomBase(base);
   };
+  // Adding a color re-arranges the whole mesh to the curated gradient preset
+  // nearest the current color, fitted to the new color count — so the circles
+  // snap into a designed gradient. The solid swatch carousel is untouched.
   const addColor = () => {
     playSound("added");
-    if (nodes.length === 1) {
-      // Going to two colors — snap to the curated preset nearest the current
-      // color so the gradient looks designed immediately.
-      const preset = nearestGradientPreset(selBase ?? accentBase);
-      setGradient(preset.stops);
-      const last = preset.stops.length - 1;
-      setSelected(last);
-      setCustomBase(preset.stops[last]);
-      return;
+    const target = nodes.length + 1;
+    const preset = nearestGradientPreset(selBase ?? accentBase);
+    let stops = preset.stops.slice(0, target);
+    while (stops.length < target) {
+      const src = stops[stops.length - 1];
+      stops = [...stops, { ...src, h: Math.round((src.h + 40) % 360) }];
     }
-    const src = selBase ?? accentBase;
-    const nb: AccentBase = { ...src, h: Math.round((src.h + 40) % 360) };
-    setGradient([...nodes, nb]);
-    setSelected(nodes.length);
-    setCustomBase(nb);
-  };
-  const applyGradientPreset = (stops: AccentBase[]) => {
-    playSound("pin");
     setGradient(stops);
-    setSelected(0);
-    setCustomBase(stops[0]);
+    const last = stops.length - 1;
+    setSelected(last);
+    setCustomBase(stops[last]);
   };
   const removeColor = () => {
     if (nodes.length <= 1) return;
@@ -107,14 +94,6 @@ export function ThemeModal() {
   const activeId = selBase
     ? ACCENTS.find((p) => samePreset(p.base, selBase))?.id ?? ""
     : "";
-  const activeGradientId =
-    nodes.length > 1
-      ? GRADIENT_PRESETS.find(
-          (g) =>
-            g.stops.length === nodes.length &&
-            g.stops.every((s, i) => samePreset(s, nodes[i]))
-        )?.id ?? ""
-      : "";
 
   return (
     <Dialog
@@ -203,20 +182,13 @@ export function ThemeModal() {
 
         {/* Controls: preset carousel, then saturation wave + grain knob. */}
         <div className="flex flex-col gap-5 px-4 pb-6 pt-4">
-          {nodes.length > 1 ? (
-            <GradientCarousel
-              activeId={activeGradientId}
-              onSelect={(g) => applyGradientPreset(g.stops)}
-            />
-          ) : (
-            <PresetCarousel
-              activeId={activeId}
-              onSelect={(p) => {
-                if (!samePreset(p.base, selBase)) playSound("pin");
-                changeNode(selected, p.base);
-              }}
-            />
-          )}
+          <PresetCarousel
+            activeId={activeId}
+            onSelect={(p) => {
+              if (!samePreset(p.base, selBase)) playSound("pin");
+              changeNode(selected, p.base);
+            }}
+          />
           <div className="flex items-center gap-5">
             {selBase && (
               <SaturationSlider
