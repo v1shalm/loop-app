@@ -196,126 +196,136 @@ function ApprovalCard({
       initial={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-      className="group/row overflow-hidden border-b border-border/40 last:border-b-0"
+      className="overflow-hidden border-b border-border/40 last:border-b-0"
     >
-      <div className="flex items-start gap-3 px-4 py-3.5">
-        {/* Approve — the primary, terminal action. Brand-filled circle so it
-            reads as "the thing to click" without a separate button. */}
-        <button
-          type="button"
-          onClick={approve}
-          disabled={pending}
-          aria-label={`Approve "${task.title}"`}
-          title="Approve & complete"
-          className="focus-ring relative mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border border-border bg-background transition-[border-color,background-color,transform] duration-150 ease-[var(--ease-out)] hover:border-emerald-500/70 hover:bg-emerald-500/10 active:scale-90 disabled:opacity-50"
-        >
-          {pending ? (
-            <CircleNotch size={13} className="animate-spin text-muted-foreground" />
-          ) : (
-            <Check
-              size={13}
-              weight="bold"
-              className="text-emerald-500/0 transition-colors group-hover/row:text-emerald-600 dark:group-hover/row:text-emerald-400"
+      <div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-start">
+        {/* The submitter's avatar leads the row so the queue scans by person;
+            the title is the primary link into the task. */}
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          {assignee && (
+            <Avatar
+              src={assignee.avatar_url}
+              initials={assignee.initials}
+              color={assignee.avatar_color}
+              size={28}
+              className="mt-0.5"
             />
           )}
-        </button>
+          <div className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={openDrawer}
+              className="focus-ring block max-w-full truncate text-left text-[14px] font-medium text-foreground transition-colors hover:text-primary-readable"
+            >
+              {task.title}
+            </button>
 
-        <div className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={openDrawer}
-            className="focus-ring block max-w-full truncate text-left text-[14px] font-medium text-foreground transition-colors hover:text-primary-readable"
-          >
-            {task.title}
-          </button>
-
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-muted-foreground">
-            {assignee && (
-              <span className="inline-flex items-center gap-1.5">
-                <Avatar
-                  src={assignee.avatar_url}
-                  initials={assignee.initials}
-                  color={assignee.avatar_color}
-                  size={16}
-                />
-                <span className="font-medium text-foreground/80">
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] text-muted-foreground">
+              {assignee && (
+                <span className="font-medium text-foreground/75">
                   {assignee.id === currentUserId ? "You" : assignee.name}
                 </span>
-              </span>
-            )}
-            {submittedAt && (
-              <>
-                <span aria-hidden className="text-border">·</span>
-                <RelativeTime date={submittedAt} />
-              </>
-            )}
-          </div>
+              )}
+              {assignee && submittedAt && (
+                <span aria-hidden className="text-border">
+                  ·
+                </span>
+              )}
+              {submittedAt && (
+                <span>
+                  submitted <RelativeTime date={submittedAt} />
+                </span>
+              )}
+            </div>
 
-          {/* Send-back note. Revealed inline so requesting changes is one
-              surface, not a modal — type the reason, send, done. */}
-          <AnimatePresence initial={false}>
-            {sendingBack && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.18 }}
-                className="overflow-hidden"
-              >
-                <div className="mt-2.5">
-                  <textarea
-                    autoFocus
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    onKeyDown={(e) => {
-                      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                        e.preventDefault();
-                        sendBack();
-                      }
-                      if (e.key === "Escape") setSendingBack(false);
-                    }}
-                    rows={2}
-                    placeholder="What needs changing? (optional — posted as a comment)"
-                    className="focus-ring w-full resize-none rounded-md border border-border bg-background px-2.5 py-2 text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
-                  />
-                  <div className="mt-2 flex items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSendingBack(false);
-                        setNote("");
+            {/* Send-back note. Revealed inline so requesting changes is one
+                surface, not a modal — type the reason, send, done. */}
+            <AnimatePresence initial={false}>
+              {sendingBack && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2.5">
+                    <textarea
+                      autoFocus
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                          e.preventDefault();
+                          sendBack();
+                        }
+                        if (e.key === "Escape") setSendingBack(false);
                       }}
-                      className="focus-ring rounded-md px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={sendBack}
-                      disabled={pending}
-                      className="focus-ring inline-flex items-center gap-1.5 rounded-md bg-amber-500/15 px-2.5 py-1.5 text-[12px] font-semibold text-amber-700 transition-colors hover:bg-amber-500/25 disabled:opacity-50 dark:text-amber-300"
-                    >
-                      <ArrowsClockwise size={12} weight="bold" />
-                      Send back
-                    </button>
+                      rows={2}
+                      placeholder="What needs changing? (optional — posted as a comment)"
+                      className="focus-ring w-full resize-none rounded-md border border-border bg-background px-2.5 py-2 text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+                    />
+                    <div className="mt-2 flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSendingBack(false);
+                          setNote("");
+                        }}
+                        className="focus-ring rounded-md px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={sendBack}
+                        disabled={pending}
+                        className="focus-ring inline-flex items-center gap-1.5 rounded-md bg-amber-500/15 px-2.5 py-1.5 text-[12px] font-semibold text-amber-700 transition-colors hover:bg-amber-500/25 disabled:opacity-50 dark:text-amber-300"
+                      >
+                        <ArrowsClockwise size={12} weight="bold" />
+                        Send back
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
-        {/* Send-back trigger — secondary to Approve, shown on the right. */}
+        {/* Decision actions — labeled so intent is unambiguous on touch as
+            well as hover. Approve carries the brand tint as the primary,
+            positive action; Send back stays quiet. On narrow screens they
+            drop to their own row, aligned under the title. Hidden while the
+            note composer is open. */}
         {!sendingBack && (
-          <button
-            type="button"
-            onClick={() => setSendingBack(true)}
-            disabled={pending}
-            className="focus-ring mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground disabled:opacity-50"
-          >
-            <ArrowsClockwise size={13} />
-            <span className="max-sm:hidden">Send back</span>
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5 max-sm:pl-[40px] sm:pt-px">
+            <button
+              type="button"
+              onClick={approve}
+              disabled={pending}
+              aria-label={`Approve "${task.title}"`}
+              title="Approve & complete"
+              className="focus-ring inline-flex h-8 items-center gap-1.5 rounded-md bg-primary/10 px-2.5 text-[12.5px] font-semibold text-primary-readable transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-primary/20 active:scale-[0.97] disabled:opacity-50"
+            >
+              {pending ? (
+                <CircleNotch size={13} className="animate-spin" />
+              ) : (
+                <Check size={13} weight="bold" />
+              )}
+              Approve
+            </button>
+            <button
+              type="button"
+              onClick={() => setSendingBack(true)}
+              disabled={pending}
+              aria-label={`Send "${task.title}" back for changes`}
+              className="focus-ring inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium text-muted-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-accent/40 hover:text-foreground active:scale-[0.97] disabled:opacity-50"
+            >
+              <ArrowsClockwise size={13} />
+              Send back
+            </button>
+          </div>
         )}
       </div>
     </motion.article>
