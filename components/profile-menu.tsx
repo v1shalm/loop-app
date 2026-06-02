@@ -286,7 +286,7 @@ export function ProfileMenu({
               <span
                 aria-hidden
                 className="size-[18px] rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15"
-                style={{ backgroundColor: accentSwatch }}
+                style={{ background: `var(--brand-gradient, ${accentSwatch})` }}
               />
             }
             onClick={() => {
@@ -509,7 +509,7 @@ export function ProfileMenu({
           <span
             aria-hidden
             className="size-[15px] shrink-0 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15"
-            style={{ backgroundColor: accentSwatch }}
+            style={{ background: `var(--brand-gradient, ${accentSwatch})` }}
           />
           <span className="flex-1">Theme</span>
           <span className="flex items-center gap-1 text-[11px] text-muted-foreground">

@@ -82,6 +82,106 @@ export function presetById(id: string | null | undefined): AccentPreset {
   return (id && ACCENT_BY_ID[id]) || ACCENT_BY_ID[DEFAULT_ACCENT_ID];
 }
 
+// ── Gradient presets ────────────────────────────────────────────────────
+// Curated, good-looking multi-stop gradients. When a second color is added
+// the studio snaps to whichever preset's lead colour is closest to what the
+// user already had, so a two-colour gradient looks designed instantly.
+
+export interface GradientPreset {
+  id: string;
+  name: string;
+  stops: AccentBase[];
+}
+
+export const GRADIENT_PRESETS: GradientPreset[] = [
+  {
+    id: "sunset",
+    name: "Sunset",
+    stops: [
+      { l: 0.74, c: 0.17, h: 60 },
+      { l: 0.64, c: 0.21, h: 18 },
+      { l: 0.55, c: 0.2, h: 340 },
+    ],
+  },
+  {
+    id: "ocean",
+    name: "Ocean",
+    stops: [
+      { l: 0.8, c: 0.12, h: 200 },
+      { l: 0.58, c: 0.18, h: 250 },
+    ],
+  },
+  {
+    id: "aurora",
+    name: "Aurora",
+    stops: [
+      { l: 0.82, c: 0.17, h: 150 },
+      { l: 0.78, c: 0.13, h: 200 },
+      { l: 0.56, c: 0.2, h: 285 },
+    ],
+  },
+  {
+    id: "berry",
+    name: "Berry",
+    stops: [
+      { l: 0.64, c: 0.25, h: 350 },
+      { l: 0.54, c: 0.22, h: 300 },
+    ],
+  },
+  {
+    id: "citrus",
+    name: "Citrus",
+    stops: [
+      { l: 0.86, c: 0.17, h: 100 },
+      { l: 0.74, c: 0.19, h: 55 },
+    ],
+  },
+  {
+    id: "dusk",
+    name: "Dusk",
+    stops: [
+      { l: 0.5, c: 0.2, h: 280 },
+      { l: 0.64, c: 0.21, h: 350 },
+    ],
+  },
+  {
+    id: "fire",
+    name: "Fire",
+    stops: [
+      { l: 0.62, c: 0.23, h: 25 },
+      { l: 0.76, c: 0.18, h: 70 },
+    ],
+  },
+  {
+    id: "lagoon",
+    name: "Lagoon",
+    stops: [
+      { l: 0.85, c: 0.13, h: 165 },
+      { l: 0.7, c: 0.15, h: 225 },
+    ],
+  },
+];
+
+const hueDist = (a: number, b: number) => {
+  const d = Math.abs((a % 360) - (b % 360));
+  return Math.min(d, 360 - d);
+};
+
+/** The preset whose lead colour best matches `base` (by hue) — used to snap a
+ *  freshly-2-colour gradient into a designed pairing around the user's color. */
+export function nearestGradientPreset(base: AccentBase): GradientPreset {
+  let best = GRADIENT_PRESETS[0];
+  let bd = Infinity;
+  for (const g of GRADIENT_PRESETS) {
+    const d = hueDist(g.stops[0].h, base.h);
+    if (d < bd) {
+      bd = d;
+      best = g;
+    }
+  }
+  return best;
+}
+
 // ── Color helpers ──────────────────────────────────────────────────────
 
 const clamp = (v: number, lo: number, hi: number) =>
@@ -199,6 +299,41 @@ export function hexToBase(hex: string): AccentBase {
   if (H < 0) H += 360;
   return { l: round(L), c: round(C), h: round(H, 2) };
 }
+
+/**
+ * OKLCH base → #rrggbb, gamut-clamped to sRGB (inverse of hexToBase, using
+ * Ottosson's transform). Lets the color studio keep `customHex` in sync
+ * when the user dials a color by lightness/chroma/hue rather than by hex.
+ */
+export function baseToHex(base: AccentBase): string {
+  const L = clamp(base.l, 0, 1);
+  const C = Math.max(0, base.c);
+  const hr = (base.h * Math.PI) / 180;
+  const a = C * Math.cos(hr);
+  const b = C * Math.sin(hr);
+
+  const l_ = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m_ = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s_ = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+
+  const lr = 4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_;
+  const lg = -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_;
+  const lb = -0.0041960863 * l_ - 0.7034186147 * m_ + 1.707614701 * s_;
+
+  const gamma = (v: number) => {
+    const x = clamp(v, 0, 1);
+    return x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055;
+  };
+  const toHex = (v: number) =>
+    Math.round(clamp(gamma(v), 0, 1) * 255)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${toHex(lr)}${toHex(lg)}${toHex(lb)}`;
+}
+
+/** Slider ceiling for chroma: beyond this, sRGB can't render most hues, so
+ *  the studio caps the saturation control here. */
+export const CHROMA_MAX = 0.3;
 
 // ── The brand variables, derived from a base for a given mode ──────────
 

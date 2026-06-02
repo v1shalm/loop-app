@@ -735,3 +735,61 @@
 
 /* State badges still track the state colour (success = green,
    error = red) — colour signal stays, just the surface is fixed. */
+
+/* ── Theme studio ──────────────────────────────────────────────────────────
+   Saturation slider: a clean thumb over the gradient track (the track is
+   painted inline per the current lightness/hue). Native range keeps it
+   keyboard- and screen-reader-accessible. */
+.studio-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid oklch(0 0 0 / 0.18);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.3);
+  cursor: grab;
+}
+.studio-range:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+.studio-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid oklch(0 0 0 / 0.18);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.3);
+  cursor: grab;
+}
+.studio-range::-moz-range-track {
+  background: transparent;
+}
+
+/* ── Grain texture ─────────────────────────────────────────────────────────
+   An optional film grain set by the theme studio's dial via --grain-opacity
+   (0 by default; the provider caps the real opacity at a low max so it's a
+   tactile whisper, never a filter). Rendered as a top film with
+   pointer-events:none — high z so the user can preview it live while turning
+   the dial (the dial lives inside the theme dialog), capped low enough that it
+   never perceptibly touches text contrast. Static (safe for reduced-motion);
+   disabled entirely under prefers-reduced-transparency. */
+.grain-film {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: var(--grain-opacity, 0);
+  transition: opacity 200ms var(--ease-out, ease);
+  /* White speckles: noise → white RGB with alpha from its luminance, so it
+     reads as a faint white grain rather than a gray film. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.5 0.5 0.5 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 150px 150px;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .grain-film {
+    display: none;
+  }
+}

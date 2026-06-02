@@ -1,39 +1,120 @@
 "use client";
 
+import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Check, Desktop, MoonStars, Sun, X } from "@/components/icons";
+import { MoonStars, Plus, Sparkles, Sun } from "@/components/icons";
 import { useTheme } from "@/components/theme-provider";
-import { ACCENT_GROUPS, baseToCss } from "@/lib/accents";
+import {
+  ColorField,
+  GradientCarousel,
+  GrainDial,
+  PresetCarousel,
+  SaturationSlider,
+} from "@/components/theme-studio";
+import {
+  type AccentBase,
+  ACCENTS,
+  GRADIENT_PRESETS,
+  nearestGradientPreset,
+} from "@/lib/accents";
 import { playSound } from "@/lib/sounds";
 import { cn } from "@/lib/utils";
 
 type Mode = "light" | "dark" | "system";
 
+// The reference's three glyphs: sparkle (auto/system), sun (light), moon (dark).
 const MODES: { key: Mode; label: string; Icon: typeof Sun }[] = [
+  { key: "system", label: "System", Icon: Sparkles },
   { key: "light", label: "Light", Icon: Sun },
   { key: "dark", label: "Dark", Icon: MoonStars },
-  { key: "system", label: "System", Icon: Desktop },
 ];
 
+const samePreset = (a: AccentBase, b: AccentBase) =>
+  Math.abs(a.l - b.l) < 0.005 &&
+  Math.abs(a.c - b.c) < 0.005 &&
+  Math.abs(a.h - b.h) < 0.5;
+
 /**
- * Theme modal — appearance (light/dark/system) and accent color in one
- * place, opened from the "Theme" row in the profile menu. Everything
- * applies instantly, so the modal recolors live as you pick: the brand
- * tile in the header, the swatches, and the preview all track the
- * current accent. That live recolor is the preview.
+ * Theme studio — a self-contained control panel that follows the app's
+ * light/dark theme. A dotted canvas holds one or more color nodes; the −/+
+ * keys remove/add colors and the set blends into the brand gradient. The
+ * selected node is the live accent. A saturation wave tunes its chroma, a
+ * preset carousel snaps it, and a knob adds optional grain. No chrome — it
+ * dismisses on Escape or a click outside.
  */
 export function ThemeModal() {
   const {
     theme,
-    accentId,
-    accentColor,
-    customHex,
+    accentBase,
     setTheme,
-    setPreset,
-    setCustom,
+    setCustomBase,
+    gradient,
+    setGradient,
+    grain,
+    setGrain,
     themeModalOpen,
     closeThemeModal,
   } = useTheme();
+
+  const nodes = gradient.length ? gradient : [accentBase];
+  const [selectedRaw, setSelected] = useState(0);
+  const selected = Math.min(selectedRaw, nodes.length - 1);
+  const selBase = nodes[selected];
+
+  const selectNode = (i: number) => {
+    setSelected(i);
+    setCustomBase(nodes[i]);
+  };
+  const changeNode = (i: number, base: AccentBase) => {
+    const next = nodes.map((n, j) => (j === i ? base : n));
+    setGradient(next);
+    if (i === selected) setCustomBase(base);
+  };
+  const addColor = () => {
+    playSound("added");
+    if (nodes.length === 1) {
+      // Going to two colors — snap to the curated preset nearest the current
+      // color so the gradient looks designed immediately.
+      const preset = nearestGradientPreset(selBase ?? accentBase);
+      setGradient(preset.stops);
+      const last = preset.stops.length - 1;
+      setSelected(last);
+      setCustomBase(preset.stops[last]);
+      return;
+    }
+    const src = selBase ?? accentBase;
+    const nb: AccentBase = { ...src, h: Math.round((src.h + 40) % 360) };
+    setGradient([...nodes, nb]);
+    setSelected(nodes.length);
+    setCustomBase(nb);
+  };
+  const applyGradientPreset = (stops: AccentBase[]) => {
+    playSound("pin");
+    setGradient(stops);
+    setSelected(0);
+    setCustomBase(stops[0]);
+  };
+  const removeColor = () => {
+    if (nodes.length <= 1) return;
+    const next = nodes.filter((_, i) => i !== selected);
+    const ns = Math.min(selected, next.length - 1);
+    playSound("deleted");
+    setGradient(next);
+    setSelected(ns);
+    setCustomBase(next[ns]);
+  };
+
+  const activeId = selBase
+    ? ACCENTS.find((p) => samePreset(p.base, selBase))?.id ?? ""
+    : "";
+  const activeGradientId =
+    nodes.length > 1
+      ? GRADIENT_PRESETS.find(
+          (g) =>
+            g.stops.length === nodes.length &&
+            g.stops.every((s, i) => samePreset(s, nodes[i]))
+        )?.id ?? ""
+      : "";
 
   return (
     <Dialog
@@ -44,329 +125,109 @@ export function ThemeModal() {
     >
       <DialogContent
         showCloseButton={false}
-        className="block w-full max-w-[calc(100%-2rem)] gap-0 overflow-hidden p-0 sm:max-w-[440px]"
+        aria-label="Theme"
+        className="block w-full max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-[28px] border border-border bg-card p-0 shadow-[var(--shadow-soft-xl)] sm:max-w-[400px]"
       >
-        {/* Header: brand tile + title (ElevenLabs-style), X to close. The
-            tile is painted with the live accent so it doubles as a
-            preview of the current color. */}
-        <div className="flex items-center gap-3 border-b border-border/60 px-5 py-4">
-          <span
-            aria-hidden
-            className="size-9 shrink-0 rounded-xl shadow-[var(--shadow-brand-tile)]"
-            style={{ backgroundColor: accentColor }}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-semibold tracking-tight text-foreground">
-              Theme
-            </p>
-            <p className="truncate text-[12px] text-muted-foreground">
-              How Loop looks on this device
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={closeThemeModal}
-            aria-label="Close"
-            className="focus-ring -mr-1 grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground active:scale-[0.94]"
-          >
-            <X size={14} weight="bold" />
-          </button>
-        </div>
+        {/* Canvas: dotted plane with the color nodes; appearance row and the
+            add/remove-color stepper overlaid. */}
+        <div className="p-3">
+          <div className="relative h-[340px] overflow-hidden rounded-[18px] bg-muted/60 ring-1 ring-inset ring-border/60">
+            <ColorField
+              nodes={nodes}
+              selected={selected}
+              onSelectNode={selectNode}
+              onChangeNode={changeNode}
+            />
 
-        <div className="flex max-h-[64vh] flex-col gap-6 overflow-y-auto px-5 py-5">
-          {/* Appearance */}
-          <section>
-            <p className="mb-2.5 text-[12px] font-medium text-foreground">
-              Appearance
-            </p>
+            {/* Appearance */}
             <div
               role="radiogroup"
               aria-label="Appearance"
-              className="grid grid-cols-3 gap-2.5"
+              className="absolute inset-x-0 top-3.5 z-[3] flex items-center justify-center gap-3"
             >
-              {MODES.map((m) => (
-                <AppearanceTile
-                  key={m.key}
-                  mode={m.key}
-                  label={m.label}
-                  Icon={m.Icon}
-                  accentColor={accentColor}
-                  active={theme === m.key}
-                  onSelect={() => {
-                    if (theme !== m.key) playSound("pin");
-                    setTheme(m.key);
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-
-          {/* Accent — one module, a labelled row per family so the
-              groups read as distinct units instead of one long grid. */}
-          <section>
-            <p className="mb-2.5 text-[12px] font-medium text-foreground">
-              Accent
-            </p>
-            <div className="divide-y divide-border/40 overflow-hidden rounded-xl bg-muted/40">
-              {ACCENT_GROUPS.map((group) => (
-                <div
-                  key={group.name}
-                  className="flex items-center gap-3 px-3.5 py-2.5"
-                >
-                  <span className="w-[52px] shrink-0 text-[12px] text-muted-foreground">
-                    {group.name}
-                  </span>
-                  <div
-                    role="radiogroup"
-                    aria-label={`${group.name} accents`}
-                    className="flex flex-1 items-center justify-between"
+              {MODES.map((m) => {
+                const active = theme === m.key;
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={m.label}
+                    title={m.label}
+                    onClick={() => {
+                      if (!active) playSound("pin");
+                      setTheme(m.key);
+                    }}
+                    className={cn(
+                      "grid size-11 place-items-center rounded-[14px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                      active
+                        ? "bg-foreground/[0.08] text-foreground"
+                        : "text-muted-foreground/80 hover:text-foreground"
+                    )}
                   >
-                    {group.presets.map((preset) => (
-                      <Swatch
-                        key={preset.id}
-                        color={baseToCss(preset.base)}
-                        label={preset.name}
-                        active={accentId === preset.id}
-                        onSelect={() => {
-                          if (accentId !== preset.id) playSound("pin");
-                          setPreset(preset);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              {/* Custom — same row rhythm; opens the OS color picker. */}
-              <div className="flex items-center gap-3 px-3.5 py-2.5">
-                <span className="w-[52px] shrink-0 text-[12px] text-muted-foreground">
-                  Custom
-                </span>
-                <div className="flex flex-1 items-center gap-2.5">
-                  <CustomSwatch
-                    hex={customHex}
-                    active={accentId === "custom"}
-                    onPick={(hex) => setCustom(hex)}
-                  />
-                  <span className="text-[12px] text-muted-foreground">
-                    {accentId === "custom" ? customHex.toUpperCase() : "Pick any color"}
-                  </span>
-                </div>
-              </div>
+                    <m.Icon size={24} weight={active ? "fill" : "regular"} />
+                  </button>
+                );
+              })}
             </div>
-          </section>
 
-          {/* Preview — real tokens, reflects mode + accent */}
-          <section>
-            <p className="mb-2.5 text-[12px] font-medium text-foreground">
-              Preview
-            </p>
-            <div className="flex items-center gap-2.5 rounded-xl bg-muted/40 p-3.5">
-              <span className="surface-brand inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)]">
-                <Check size={13} weight="bold" />
-                Add task
+            {/* Add / remove color */}
+            <div className="absolute inset-x-0 bottom-4 z-[3] flex items-center justify-center gap-5 text-muted-foreground">
+              <button
+                type="button"
+                aria-label="Remove this color"
+                disabled={nodes.length <= 1}
+                onClick={removeColor}
+                className="grid size-7 place-items-center rounded-md transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-30"
+              >
+                <span className="block h-[2px] w-3.5 rounded-full bg-current" />
+              </button>
+              <span aria-hidden className="text-[11px] tabular-nums opacity-70">
+                {nodes.length}
               </span>
-              <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/8 px-2.5 text-[12px] font-medium text-primary-readable">
-                In progress
-              </span>
-              <span className="ml-auto inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                <span aria-hidden className="size-2.5 rounded-full bg-primary" />
-                Accent
-              </span>
+              <button
+                type="button"
+                aria-label="Add a color"
+                onClick={addColor}
+                className="grid size-7 place-items-center rounded-md transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <Plus size={16} weight="bold" />
+              </button>
             </div>
-          </section>
+          </div>
         </div>
 
-        {/* Footer — a single confirming CTA. Everything already applied
-            live; Done just dismisses. */}
-        <div className="flex items-center justify-end border-t border-border/60 bg-muted/30 px-5 py-3">
-          <button
-            type="button"
-            onClick={closeThemeModal}
-            className="focus-ring surface-brand surface-brand-hover inline-flex h-9 items-center rounded-md px-4 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97]"
-          >
-            Done
-          </button>
+        {/* Divider */}
+        <div aria-hidden className="h-px bg-border" />
+
+        {/* Controls: preset carousel, then saturation wave + grain knob. */}
+        <div className="flex flex-col gap-5 px-4 pb-6 pt-4">
+          {nodes.length > 1 ? (
+            <GradientCarousel
+              activeId={activeGradientId}
+              onSelect={(g) => applyGradientPreset(g.stops)}
+            />
+          ) : (
+            <PresetCarousel
+              activeId={activeId}
+              onSelect={(p) => {
+                if (!samePreset(p.base, selBase)) playSound("pin");
+                changeNode(selected, p.base);
+              }}
+            />
+          )}
+          <div className="flex items-center gap-5">
+            {selBase && (
+              <SaturationSlider
+                base={selBase}
+                onChange={(b) => changeNode(selected, b)}
+              />
+            )}
+            <GrainDial value={grain} onChange={setGrain} />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Swatch({
-  color,
-  label,
-  active,
-  onSelect,
-}: {
-  color: string;
-  label: string;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={active}
-      aria-label={label}
-      title={label}
-      onClick={onSelect}
-      className={cn(
-        "focus-ring grid size-7 place-items-center rounded-full transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.88]",
-        active
-          ? "ring-2 ring-offset-2 ring-offset-card"
-          : "hover:scale-[1.12]"
-      )}
-      style={
-        active
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ({ ["--tw-ring-color" as any]: color })
-          : undefined
-      }
-    >
-      <span
-        aria-hidden
-        className="grid size-6 place-items-center rounded-full text-white shadow-soft-xs ring-1 ring-inset ring-black/10"
-        style={{ backgroundColor: color }}
-      >
-        {active && <Check size={12} weight="bold" />}
-      </span>
-    </button>
-  );
-}
-
-/** Native color input rendered as a swatch; click opens the OS picker. */
-function CustomSwatch({
-  hex,
-  active,
-  onPick,
-}: {
-  hex: string;
-  active: boolean;
-  onPick: (hex: string) => void;
-}) {
-  return (
-    <label
-      className={cn(
-        "focus-within:focus-ring grid size-7 cursor-pointer place-items-center rounded-full transition-transform duration-200 ease-[var(--ease-out)] active:scale-[0.88]",
-        active ? "ring-2 ring-offset-2 ring-offset-card" : "hover:scale-[1.12]"
-      )}
-      style={
-        active
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ({ ["--tw-ring-color" as any]: hex })
-          : undefined
-      }
-      title="Custom color"
-    >
-      <input
-        type="color"
-        value={hex}
-        onChange={(e) => onPick(e.target.value)}
-        className="sr-only"
-        aria-label="Custom accent color"
-      />
-      <span
-        aria-hidden
-        className="grid size-6 place-items-center rounded-full text-white shadow-soft-xs ring-1 ring-inset ring-black/10"
-        style={{
-          background: active
-            ? hex
-            : `conic-gradient(from 0deg, oklch(0.7 0.2 20), oklch(0.8 0.2 90), oklch(0.7 0.2 150), oklch(0.7 0.2 240), oklch(0.7 0.2 320), oklch(0.7 0.2 20))`,
-        }}
-      >
-        {active && <Check size={12} weight="bold" />}
-      </span>
-    </label>
-  );
-}
-
-/**
- * One appearance option, rendered as a miniature of the app in that
- * mode. Preview colors are literal (not the active theme's tokens) so
- * the Light tile always looks light and the Dark tile always looks
- * dark, while the accent pill tracks the chosen accent.
- */
-function AppearanceTile({
-  mode,
-  label,
-  Icon,
-  accentColor,
-  active,
-  onSelect,
-}: {
-  mode: Mode;
-  label: string;
-  Icon: typeof Sun;
-  accentColor: string;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={active}
-      onClick={onSelect}
-      className={cn(
-        "focus-ring group relative flex flex-col items-stretch gap-2 rounded-xl border p-1.5 text-left transition-[border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.98]",
-        active
-          ? "border-primary ring-2 ring-primary/25"
-          : "border-border/70 hover:border-foreground/30"
-      )}
-    >
-      <span
-        aria-hidden
-        className="relative block h-14 overflow-hidden rounded-lg"
-        style={{
-          background:
-            mode === "dark"
-              ? "oklch(0.2 0.006 250)"
-              : mode === "system"
-                ? "linear-gradient(110deg, oklch(1 0 0) 0 50%, oklch(0.2 0.006 250) 50% 100%)"
-                : "oklch(1 0 0)",
-          boxShadow: "inset 0 0 0 1px oklch(0 0 0 / 0.06)",
-        }}
-      >
-        <span
-          className="absolute inset-y-1 left-1 w-3 rounded-[3px]"
-          style={{
-            background:
-              mode === "dark" ? "oklch(0.27 0.006 250)" : "oklch(0.96 0.004 250)",
-          }}
-        />
-        <span
-          className="absolute left-5 top-2 h-2 w-7 rounded-full"
-          style={{ background: accentColor }}
-        />
-        <span
-          className="absolute left-5 top-5 h-1.5 w-9 rounded-full"
-          style={{
-            background:
-              mode === "dark" ? "oklch(0.4 0.008 250)" : "oklch(0.85 0.006 250)",
-          }}
-        />
-        <span
-          className="absolute left-5 top-7.5 h-1.5 w-6 rounded-full"
-          style={{
-            background:
-              mode === "dark" ? "oklch(0.4 0.008 250)" : "oklch(0.85 0.006 250)",
-          }}
-        />
-      </span>
-      <span className="flex items-center justify-center gap-1.5 pb-0.5 text-[12px] font-medium text-foreground">
-        <Icon size={13} weight={active ? "fill" : "regular"} />
-        {label}
-      </span>
-      {active && (
-        <span
-          aria-hidden
-          className="absolute -right-1.5 -top-1.5 grid size-[18px] place-items-center rounded-full bg-primary text-primary-foreground ring-2 ring-popover"
-        >
-          <Check size={10} weight="bold" />
-        </span>
-      )}
-    </button>
   );
 }

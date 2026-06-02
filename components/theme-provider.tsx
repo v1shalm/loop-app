@@ -12,6 +12,7 @@ import {
   type AccentBase,
   type AccentPreset,
   baseToCss,
+  baseToHex,
   computeThemeVars,
   DEFAULT_ACCENT_ID,
   DEFAULT_CUSTOM_HEX,
@@ -29,10 +30,21 @@ interface ThemeCtx {
   accentId: string;
   /** CSS color of the current accent base, for swatches/dots. */
   accentColor: string;
+  /** The live accent in OKLCH {l,c,h} — drives the color-studio controls. */
+  accentBase: AccentBase;
   /** The hex backing the custom swatch (whether or not it's active). */
   customHex: string;
   setPreset: (preset: AccentPreset) => void;
   setCustom: (hex: string) => void;
+  /** Set a custom accent directly in OKLCH (the studio field/slider). */
+  setCustomBase: (base: AccentBase) => void;
+  /** The gradient color stops the studio canvas blends. 1 stop = a solid
+   *  accent; 2+ stops paint --brand-gradient. */
+  gradient: AccentBase[];
+  setGradient: (stops: AccentBase[]) => void;
+  /** Surface grain amount, 0–1 (0 = off). Maps to a capped overlay opacity. */
+  grain: number;
+  setGrain: (amount: number) => void;
   themeModalOpen: boolean;
   openThemeModal: () => void;
   closeThemeModal: () => void;
@@ -43,6 +55,45 @@ const Ctx = createContext<ThemeCtx | null>(null);
 const STORAGE_KEY = "loop:theme";
 const ACCENT_KEY = "loop:accent";
 const ACCENT_MAPS_KEY = "loop:accent-maps";
+const GRAIN_KEY = "loop:grain";
+const GRADIENT_KEY = "loop:gradient";
+
+/** A CSS value for the brand gradient. 1 stop → solid; 2+ → linear blend. */
+function gradientCss(stops: AccentBase[]): string {
+  if (stops.length === 0) return "transparent";
+  if (stops.length === 1) return baseToCss(stops[0]);
+  return `linear-gradient(135deg, ${stops.map((s) => baseToCss(s)).join(", ")})`;
+}
+
+function applyBrandGradient(stops: AccentBase[]) {
+  if (typeof document === "undefined") return;
+  document.documentElement.style.setProperty(
+    "--brand-gradient",
+    gradientCss(stops)
+  );
+}
+
+function readStoredGradient(fallback: AccentBase): AccentBase[] {
+  try {
+    const raw = window.localStorage.getItem(GRADIENT_KEY);
+    if (!raw) return [fallback];
+    const parsed = JSON.parse(raw);
+    if (
+      Array.isArray(parsed) &&
+      parsed.length > 0 &&
+      parsed.every((s) => s && typeof s.h === "number")
+    ) {
+      return parsed as AccentBase[];
+    }
+  } catch {}
+  return [fallback];
+}
+
+// Grain is a tactile texture, not a filter: the user's 0–1 amount maps to a
+// deliberately low max overlay opacity so it never fights text legibility.
+const GRAIN_MAX = 0.06;
+const grainOpacity = (amount: number) =>
+  (Math.min(1, Math.max(0, amount)) * GRAIN_MAX).toFixed(4);
 
 function resolveTheme(t: Theme): "light" | "dark" {
   if (t !== "system") return t;
@@ -66,6 +117,25 @@ function applyAccentVars(base: AccentBase, mode: "light" | "dark") {
   const vars = computeThemeVars(base, mode);
   const root = document.documentElement;
   for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v);
+}
+
+/** Drive the global grain overlay opacity from a 0–1 amount. */
+function applyGrain(amount: number) {
+  if (typeof document === "undefined") return;
+  document.documentElement.style.setProperty(
+    "--grain-opacity",
+    grainOpacity(amount)
+  );
+}
+
+function readStoredGrain(): number {
+  try {
+    const raw = window.localStorage.getItem(GRAIN_KEY);
+    const n = raw == null ? 0 : Number(raw);
+    return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0;
+  } catch {
+    return 0;
+  }
 }
 
 interface StoredAccent {
@@ -121,6 +191,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     presetById(DEFAULT_ACCENT_ID).base
   );
   const [customHex, setCustomHex] = useState(DEFAULT_CUSTOM_HEX);
+  const [gradient, setGradientState] = useState<AccentBase[]>([
+    presetById(DEFAULT_ACCENT_ID).base,
+  ]);
+  const [grain, setGrainState] = useState(0);
   const [themeModalOpen, setThemeModalOpen] = useState(false);
 
   // Keep the latest resolved mode + base in refs so the setters can read
@@ -154,6 +228,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setCustomHex(a.customHex);
     applyAccentVars(a.base, r);
     persistAccent(a);
+
+    const g = readStoredGrain();
+    setGrainState(g);
+    applyGrain(g);
+
+    const grad = readStoredGradient(a.base);
+    setGradientState(grad);
+    applyBrandGradient(grad);
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
@@ -205,6 +287,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     [commitAccent]
   );
 
+  const setCustomBase = useCallback(
+    (base: AccentBase) => {
+      commitAccent("custom", base, baseToHex(base));
+    },
+    [commitAccent]
+  );
+
+  const setGradient = useCallback((stops: AccentBase[]) => {
+    const safe = stops.length ? stops : [presetById(DEFAULT_ACCENT_ID).base];
+    setGradientState(safe);
+    applyBrandGradient(safe);
+    try {
+      window.localStorage.setItem(GRADIENT_KEY, JSON.stringify(safe));
+    } catch {}
+  }, []);
+
+  const setGrain = useCallback((amount: number) => {
+    const a = Math.min(1, Math.max(0, amount));
+    setGrainState(a);
+    applyGrain(a);
+    try {
+      window.localStorage.setItem(GRAIN_KEY, String(a));
+    } catch {}
+  }, []);
+
   const openThemeModal = useCallback(() => setThemeModalOpen(true), []);
   const closeThemeModal = useCallback(() => setThemeModalOpen(false), []);
 
@@ -216,15 +323,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setTheme,
         accentId,
         accentColor: baseToCss(accentBase),
+        accentBase,
         customHex,
         setPreset,
         setCustom,
+        setCustomBase,
+        gradient,
+        setGradient,
+        grain,
+        setGrain,
         themeModalOpen,
         openThemeModal,
         closeThemeModal,
       }}
     >
       {children}
+      {/* Optional film grain over the whole app; opacity driven by
+          --grain-opacity (0 unless the studio's grain knob is turned up). */}
+      <span className="grain-film" aria-hidden />
     </Ctx.Provider>
   );
 }
@@ -238,9 +354,15 @@ export function useTheme(): ThemeCtx {
       setTheme: () => {},
       accentId: DEFAULT_ACCENT_ID,
       accentColor: baseToCss(presetById(DEFAULT_ACCENT_ID).base),
+      accentBase: presetById(DEFAULT_ACCENT_ID).base,
       customHex: DEFAULT_CUSTOM_HEX,
       setPreset: () => {},
       setCustom: () => {},
+      setCustomBase: () => {},
+      gradient: [presetById(DEFAULT_ACCENT_ID).base],
+      setGradient: () => {},
+      grain: 0,
+      setGrain: () => {},
       themeModalOpen: false,
       openThemeModal: () => {},
       closeThemeModal: () => {},
@@ -273,6 +395,10 @@ export function ThemeInitScript() {
       var maps = JSON.parse(raw);
       var m = maps[resolved];
       if (m) { for (var k in m) html.style.setProperty(k, m[k]); }
+    }
+    var g = parseFloat(localStorage.getItem('${GRAIN_KEY}'));
+    if (isFinite(g) && g > 0) {
+      html.style.setProperty('--grain-opacity', (Math.min(1, Math.max(0, g)) * ${GRAIN_MAX}).toFixed(4));
     }
   } catch (e) {}
 })();`;
