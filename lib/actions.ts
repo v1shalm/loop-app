@@ -154,7 +154,9 @@ export async function searchAll(query: string): Promise<SearchResults> {
 }
 
 export async function createProject(
-  input: { name: string; color?: string | null; emoji?: string | null } | string,
+  input:
+    | { name: string; color?: string | null; emoji?: string | null; teamId?: string | null }
+    | string,
   emojiCompat?: string | null
 ): Promise<{ ok?: true; projectId?: string; error?: string }> {
   // Back-compat: legacy callers passed `(name, emoji?)`. New callers pass
@@ -162,7 +164,7 @@ export async function createProject(
   // without churning every call site again.
   const args =
     typeof input === "string"
-      ? { name: input, emoji: emojiCompat ?? null, color: null }
+      ? { name: input, emoji: emojiCompat ?? null, color: null, teamId: null }
       : input;
 
   const trimmed = args.name?.trim();
@@ -172,6 +174,15 @@ export async function createProject(
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
+  // Every project belongs to a team now (the team wall, migration 0036).
+  // Fall back to the user's active team when the caller didn't pick one.
+  let teamId = args.teamId ?? null;
+  if (!teamId) {
+    const team = await getMyTeam();
+    teamId = team?.id ?? null;
+  }
+  if (!teamId) return { error: "Pick a team for this project first." };
+
   // Atomic create: the RPC inserts the project AND the creator's
   // project_members row in one transaction. Without that, RLS would
   // block the select-back of the new project id (the creator isn't a
@@ -180,6 +191,7 @@ export async function createProject(
     "create_project_for_me",
     {
       p_name: trimmed,
+      p_team_id: teamId,
       p_color: args.color?.trim() || null,
       p_emoji: args.emoji?.trim() || null,
     }
@@ -301,6 +313,17 @@ export async function createTeam(input: {
     }
     return { error: msg || "Could not add you to the new team." };
   }
+
+  // Every team needs at least one manager (migration 0035). Seed the
+  // creator as the first manager — the insert policy allows this bootstrap
+  // when no manager exists yet. Superadmins can reassign afterwards.
+  // Best-effort: a failure here (e.g. migration 0035 not yet applied)
+  // doesn't fail team creation; the admin area can fix it.
+  await (supabase as any).from("team_managers").insert({
+    team_id: teamIns.data.id,
+    user_id: profile.id,
+    assigned_by: profile.id,
+  });
 
   // Land the creator in the team they just made (active workspace). RLS
   // lets a user write only their own selection row.
@@ -1370,17 +1393,21 @@ export async function reorderTasks(
 
 export async function setTaskStatus(
   id: string,
-  status: "todo" | "doing" | "done"
+  status: "todo" | "doing" | "in_review" | "done"
 ): Promise<{ ok?: true; error?: string }> {
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
+  // The 0037 trigger also manages completed_at + the approval stamps and
+  // blocks a non-manager from setting a team task to 'done' (its message is
+  // surfaced verbatim). We still set completed_at here so personal tasks
+  // match optimistically.
   const { error } = await supabase
     .from("tasks")
     .update({
       status,
       completed_at: status === "done" ? new Date().toISOString() : null,
-    })
+    } as never)
     .eq("id", id);
 
   if (error) return { error: error.message };
@@ -1705,5 +1732,142 @@ export async function updateMyDepartment(
   if (error) return { error: error.message };
   revalidatePath("/profile");
   revalidatePath("/workspace");
+  return { ok: true };
+}
+
+// ── Task approval (migration 0037) ─────────────────────────────────────────────
+//
+// Team tasks (those in a project, which belongs to a team) can only be
+// completed by a manager of that team or a superadmin. A member finishing
+// work submits for review; the manager approves to 'done' or sends it back.
+// Enforcement lives in the DB trigger — these actions just drive the status
+// transitions and surface the trigger's error verbatim when a non-manager
+// tries to approve.
+
+/** Assignee/member action: "Submit for review" — moves a task to in_review. */
+export async function submitTaskForReview(
+  id: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const { error } = await supabase
+    .from("tasks")
+    .update({ status: "in_review" } as never)
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+/** Manager action: approve a task in review → 'done'. */
+export async function approveTask(
+  id: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const { error } = await supabase
+    .from("tasks")
+    .update({ status: "done" } as never)
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+/** Manager action: send a task back for changes → 'doing', optionally
+ *  recording the reason as a comment so the assignee sees the feedback. */
+export async function requestTaskChanges(
+  id: string,
+  note?: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const { error } = await supabase
+    .from("tasks")
+    .update({ status: "doing" } as never)
+    .eq("id", id);
+  if (error) return { error: error.message };
+
+  const text = note?.trim();
+  if (text) {
+    const profile = await getCurrentProfile();
+    if (profile) {
+      await (supabase as any).from("task_comments").insert({
+        task_id: id,
+        author_id: profile.id,
+        body: `Changes requested: ${text}`,
+      });
+    }
+  }
+  revalidateTaskRoutes();
+  return { ok: true };
+}
+
+// ── Team managers & superadmins (migration 0035) ───────────────────────────────
+
+/** Superadmin action: make `userId` a manager of `teamId`. They must
+ *  already be a member of the team (DB FK). */
+export async function assignTeamManager(
+  teamId: string,
+  userId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "Not signed in." };
+
+  const { error } = await (supabase as any).from("team_managers").insert({
+    team_id: teamId,
+    user_id: userId,
+    assigned_by: profile.id,
+  });
+  if (error) {
+    const msg = String(error.message ?? "");
+    if (msg.toLowerCase().includes("duplicate")) return { ok: true };
+    if (msg.toLowerCase().includes("foreign key")) {
+      return { error: "That person must be a member of the team first." };
+    }
+    return { error: msg };
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Superadmin action: remove a manager. Blocked by the DB if they're the
+ *  last manager of the team (every team keeps at least one). */
+export async function removeTeamManager(
+  teamId: string,
+  userId: string
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const { error } = await (supabase as any)
+    .from("team_managers")
+    .delete()
+    .eq("team_id", teamId)
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Superadmin action: grant or revoke the superadmin role. RLS only lets
+ *  an existing superadmin touch the superadmin tier. */
+export async function setSuperadmin(
+  userId: string,
+  makeSuperadmin: boolean
+): Promise<{ ok?: true; error?: string }> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+  const ws = await getDefaultWorkspace();
+  if (!ws) return { error: "No workspace found." };
+
+  const { error } = await (supabase as any)
+    .from("workspace_members")
+    .update({ role: makeSuperadmin ? "superadmin" : "member" })
+    .eq("workspace_id", ws.id)
+    .eq("user_id", userId);
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
   return { ok: true };
 }
