@@ -159,6 +159,11 @@ function SuperadminSection({
                 busy={busy}
                 disabled={isMe && isSuper}
                 label={`${isSuper ? "Remove" : "Make"} superadmin: ${m.name}`}
+                title={
+                  isMe && isSuper
+                    ? "You can't remove your own superadmin access"
+                    : undefined
+                }
                 onToggle={() => toggle(m)}
               />
             </div>
@@ -426,12 +431,14 @@ function ToggleSwitch({
   busy,
   disabled,
   label,
+  title,
   onToggle,
 }: {
   on: boolean;
   busy?: boolean;
   disabled?: boolean;
   label: string;
+  title?: string;
   onToggle: () => void;
 }) {
   return (
@@ -440,6 +447,7 @@ function ToggleSwitch({
       role="switch"
       aria-checked={on}
       aria-label={label}
+      title={title}
       disabled={busy || disabled}
       onClick={onToggle}
       className={cn(
