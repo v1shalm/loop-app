@@ -44,8 +44,12 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthRoute = path.startsWith("/login") || path.startsWith("/auth");
   const isPublicAsset = path.startsWith("/_next") || path.startsWith("/api");
-  // /process is the case-study landing — public to anyone hitting the URL
-  const isPublicMarketing = path === "/process" || path.startsWith("/process/");
+  // /process is the case-study landing, /flows is the system map — both
+  // public to anyone hitting the URL (no app data, just docs).
+  const isPublicMarketing =
+    path === "/process" ||
+    path.startsWith("/process/") ||
+    path === "/flows";
 
   if (!user && !isAuthRoute && !isPublicAsset && !isPublicMarketing) {
     const next = new URL("/login", request.url);
