@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -14,9 +14,11 @@ import {
   MagnifyingGlass,
   Tray,
   UsersThree,
+  X,
 } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { cn } from "@/lib/utils";
+import { useClearDissolve } from "@/lib/use-clear-dissolve";
 import { searchAll, type SearchResults } from "@/lib/actions";
 
 /**
@@ -126,7 +128,9 @@ export function SearchPalette({
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const inputRef = useRef<HTMLInputElement>(null);
+  // transitions.dev input-clear dissolve: the wrapper/input/mirror/glow
+  // refs drive the per-frame fly-down + per-word streak on clear.
+  const { wrapRef, inputRef, mirrorRef, glowRef, play } = useClearDissolve();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults>({
     tasks: [],
@@ -238,6 +242,16 @@ export function SearchPalette({
     onOpenChange(false);
   };
 
+  // Clear the field immediately (so search resets at once), then play the
+  // dissolve flourish over the snapshot of the text that was cleared.
+  const clearSearch = () => {
+    const prev = query;
+    if (!prev) return;
+    setQuery("");
+    play(prev);
+    inputRef.current?.focus({ preventScroll: true });
+  };
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -275,20 +289,41 @@ export function SearchPalette({
             size={18}
             className="shrink-0 text-muted-foreground/80"
           />
-          <input
-            ref={inputRef}
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="Search tasks, projects, teammates…"
-            className="flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground/55"
-          />
+          {/* .t-clear wrapper layers the real input under an overlay
+              mirror (flies down on clear) and a glow layer (per-word
+              streak). The wrapper clips the dissolve to its own box. */}
+          <div className="t-clear relative min-w-0 flex-1 overflow-hidden" ref={wrapRef}>
+            <input
+              ref={inputRef}
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Search tasks, projects, teammates…"
+              className="w-full bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground/55"
+            />
+            <div
+              aria-hidden
+              ref={mirrorRef}
+              className="t-clear-mirror text-[15px] text-foreground"
+            />
+            <div aria-hidden ref={glowRef} className="t-clear-glow" />
+          </div>
           {pending ? (
             <CircleNotch
               size={14}
               className="shrink-0 animate-spin text-muted-foreground"
             />
+          ) : query ? (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={clearSearch}
+              className="focus-ring grid size-7 shrink-0 place-items-center rounded-full bg-muted/60 text-muted-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X size={13} weight="bold" />
+            </button>
           ) : (
             <span
               aria-hidden
@@ -313,6 +348,20 @@ export function SearchPalette({
               />
             ))}
           </div>
+        )}
+
+        {/* transitions.dev shimmer-text: an alive "Searching…" label that
+            fills the body while the debounced query is in flight, instead
+            of a blank pane. */}
+        {pending && hasQuery && totalRows === 0 && (
+          <p className="px-6 py-8 text-center">
+            <span
+              className="t-shimmer text-[13px] font-medium"
+              data-text="Searching…"
+            >
+              Searching…
+            </span>
+          </p>
         )}
 
         {noResults && (

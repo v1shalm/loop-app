@@ -4,7 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { sileo } from "sileo";
 import { Check, CircleNotch } from "@/components/icons";
+import { TextSwap } from "@/components/text-swap";
 import { createTeam } from "@/lib/actions";
+import { useShake } from "@/lib/use-shake";
 import { cn } from "@/lib/utils";
 
 // Six accent options the user can pick for their team. The same swatch
@@ -26,6 +28,7 @@ export function CreateTeamForm() {
   const [seedSamples, setSeedSamples] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const { ref: nameRef, shake } = useShake<HTMLInputElement>();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +39,7 @@ export function CreateTeamForm() {
       const res = await createTeam({ name: trimmed, color, seedSamples });
       if (res.error) {
         setError(res.error);
+        shake();
         return;
       }
       sileo.success({
@@ -57,6 +61,7 @@ export function CreateTeamForm() {
           Workspace name
         </span>
         <input
+          ref={nameRef}
           type="text"
           required
           autoFocus
@@ -67,7 +72,7 @@ export function CreateTeamForm() {
           aria-invalid={!!error}
           aria-describedby={error ? "create-team-error" : undefined}
           disabled={pending}
-          className="focus-ring mt-2 h-11 w-full rounded-md border border-border bg-background px-3 text-[14px] text-foreground outline-none transition-[border-color,background-color] duration-150 ease-[var(--ease-out)] placeholder:text-muted-foreground/60 hover:border-border focus:border-ring/50 disabled:opacity-60"
+          className="t-input focus-ring mt-2 h-11 w-full rounded-md border border-border bg-background px-3 text-[14px] text-foreground outline-none transition-[border-color,background-color] duration-150 ease-[var(--ease-out)] placeholder:text-muted-foreground/60 hover:border-border focus:border-ring/50 disabled:opacity-60"
         />
       </label>
 
@@ -151,7 +156,7 @@ export function CreateTeamForm() {
         )}
       >
         {pending && <CircleNotch size={14} className="animate-spin" />}
-        {pending ? "Creating…" : "Create workspace"}
+        <TextSwap value={pending ? "Creating…" : "Create workspace"} />
       </button>
     </form>
   );

@@ -392,6 +392,32 @@ function DrawerInner({
     if (!loading && !task) onClose();
   }, [loading, task, onClose]);
 
+  // Skeleton → content cross-blur (transitions.dev). The skeleton and the
+  // loaded body share identical chrome, so when data lands we mount an
+  // identical skeleton *overlay* on top of the now-rendered content and
+  // blur it away — the values appear to resolve in place rather than the
+  // panel swapping screens. Replays on each task switch (loading re-arms).
+  const [revealOverlay, setRevealOverlay] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    if (loading || !task) return;
+    setRevealOverlay(true);
+    setRevealed(false);
+    let raf2 = 0;
+    // Two frames so the overlay paints opaque before we flip .is-revealed,
+    // otherwise the cross-blur has nothing to transition from.
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setRevealed(true));
+    });
+    // Unmount just after --reveal-dur (400ms) finishes.
+    const done = setTimeout(() => setRevealOverlay(false), 520);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      clearTimeout(done);
+    };
+  }, [loading, task]);
+
   // Escape to close
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -590,7 +616,7 @@ function DrawerInner({
     "focus-ring inline-flex h-7 items-center gap-1.5 rounded-md bg-card px-2.5 text-[12px] font-medium text-foreground ring-1 ring-inset ring-border/70 transition-colors hover:bg-accent/40";
 
   return (
-    <div className="flex h-full flex-col">
+    <div className={cn("t-skel flex h-full flex-col", revealed && "is-revealed")}>
       <Header
         onClose={onClose}
         pending={pending}
@@ -914,6 +940,20 @@ function DrawerInner({
         confirmLabel="Delete"
         onConfirm={actuallyDelete}
       />
+
+      {/* Identical skeleton overlay that blurs away once data lands — the
+          .t-skel-skeleton half of the reveal. Content sits in normal flow
+          beneath it (so height is correct); the overlay is pointer-through
+          so the real body is interactive immediately. */}
+      {revealOverlay && (
+        <div
+          className="t-skel-skeleton pointer-events-none"
+          style={{ zIndex: 30 }}
+          aria-hidden
+        >
+          <DrawerSkeleton onClose={onClose} />
+        </div>
+      )}
     </div>
   );
 }

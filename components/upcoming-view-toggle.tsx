@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { CalendarBlank, SlidersHorizontal } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import { useSlidingPill } from "@/lib/use-sliding-pill";
 
 /**
  * Segmented control for /upcoming: list vs calendar. Pinned in the page
@@ -17,6 +18,7 @@ export function UpcomingViewToggle({
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  const { pillRef, setTabRef } = useSlidingPill(current === "list" ? 0 : 1);
 
   const setView = (next: "list" | "calendar") => {
     const sp = new URLSearchParams(params.toString());
@@ -47,9 +49,17 @@ export function UpcomingViewToggle({
     <div
       role="radiogroup"
       aria-label="View"
-      className="inline-flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5"
+      className="t-tabs inline-flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5"
     >
+      {/* Sliding indicator: position is measured from the active tab and
+          tweened in CSS (transitions.dev tabs-sliding). */}
+      <span
+        ref={pillRef}
+        aria-hidden
+        className="t-tabs-pill rounded bg-primary/12"
+      />
       <ToggleBtn
+        buttonRef={setTabRef(0)}
         active={current === "list"}
         onClick={() => setView("list")}
         label="List"
@@ -57,6 +67,7 @@ export function UpcomingViewToggle({
         <SlidersHorizontal size={11} />
       </ToggleBtn>
       <ToggleBtn
+        buttonRef={setTabRef(1)}
         active={current === "calendar"}
         onClick={() => setView("calendar")}
         label="Calendar"
@@ -72,22 +83,27 @@ function ToggleBtn({
   onClick,
   label,
   children,
+  buttonRef,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   children: React.ReactNode;
+  buttonRef?: React.Ref<HTMLButtonElement>;
 }) {
   return (
     <button
+      ref={buttonRef}
       type="button"
       role="radio"
       aria-checked={active}
       onClick={onClick}
       className={cn(
-        "focus-ring inline-flex h-6 items-center gap-1.5 rounded px-2 text-[11px] font-medium transition-colors duration-150 ease-[var(--ease-out)]",
+        // The active fill is the sliding pill behind the row, so the
+        // button itself only owns its text color (+ hover when inactive).
+        "t-tab focus-ring inline-flex h-6 items-center gap-1.5 rounded px-2 text-[11px] font-medium transition-colors duration-150 ease-[var(--ease-out)]",
         active
-          ? "bg-primary/12 text-primary"
+          ? "text-primary"
           : "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
       )}
     >

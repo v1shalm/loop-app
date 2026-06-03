@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { sileo } from "sileo";
@@ -9,7 +9,6 @@ import { RelativeTime } from "@/components/relative-time";
 import {
   ArrowsClockwise,
   Check,
-  CheckCircle,
   CircleNotch,
   Hash,
 } from "@/components/icons";
@@ -72,23 +71,7 @@ export function ApprovalQueue({
     // The list emptied out client-side (everything approved). A quiet,
     // self-contained note rather than bouncing to the page-level empty
     // state, so the approver gets a moment of "done" before navigating.
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center gap-3 rounded-xl border border-border/60 bg-card py-12 text-center"
-      >
-        <span className="grid size-11 place-items-center rounded-full bg-emerald-500/12 text-emerald-600 dark:text-emerald-300">
-          <CheckCircle size={22} weight="fill" />
-        </span>
-        <p className="text-[14px] font-semibold text-foreground">
-          Queue cleared
-        </p>
-        <p className="max-w-[280px] text-[12.5px] text-muted-foreground">
-          Every submitted task has been signed off. Nicely done.
-        </p>
-      </motion.div>
-    );
+    return <QueueCleared />;
   }
 
   return (
@@ -127,6 +110,50 @@ export function ApprovalQueue({
         </section>
       ))}
     </div>
+  );
+}
+
+/**
+ * Shown when the approver clears the last task in the queue. The check
+ * draws itself in (fade + rotate + blur + Y-bob, with the tick path
+ * stroking on) — a small "done" beat before they navigate away.
+ * transitions.dev success-check; data-state flips out→in on mount so the
+ * keyframes fire reliably. Honors prefers-reduced-motion via the CSS.
+ */
+function QueueCleared() {
+  const [state, setState] = useState<"out" | "in">("out");
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setState("in"));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-center gap-3 rounded-xl border border-border/60 bg-card py-12 text-center"
+    >
+      <span
+        className="t-success-check text-emerald-600 dark:text-emerald-300"
+        data-state={state}
+        aria-hidden="true"
+      >
+        <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="23" className="fill-emerald-500/12" />
+          <path
+            d="M14 25 L21 32 L35 16"
+            stroke="currentColor"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <p className="text-[14px] font-semibold text-foreground">Queue cleared</p>
+      <p className="max-w-[280px] text-[12.5px] text-muted-foreground">
+        Every submitted task has been signed off. Nicely done.
+      </p>
+    </motion.div>
   );
 }
 

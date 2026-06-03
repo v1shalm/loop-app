@@ -91,7 +91,11 @@ do $do$
 begin
   if to_regclass('public.projects') is not null then
     drop policy if exists "projects_select_member"    on public.projects;
+    -- Drop BOTH the pre-0036 insert-policy name (projects_insert_workspace)
+    -- and this migration's own new name (projects_insert_team) so a re-run
+    -- doesn't trip on "policy already exists".
     drop policy if exists "projects_insert_workspace" on public.projects;
+    drop policy if exists "projects_insert_team"      on public.projects;
     drop policy if exists "projects_update_member"    on public.projects;
     drop policy if exists "projects_delete_member"    on public.projects;
 

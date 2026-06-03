@@ -791,3 +791,662 @@
     display: none;
   }
 }
+
+/* ============================================================
+   Transitions.dev — Notification badge
+   Slide-in + pop (scale/opacity/blur) for the dot over a trigger.
+   Toggle data-open="true"/"false" on .t-badge; only the dot moves,
+   the trigger stays put. Anchored to the bell's existing 6px inset.
+   ============================================================ */
+:root {
+  --badge-slide-dur: 260ms;
+  --badge-pop-dur: 500ms;
+  --badge-pop-close-dur: 180ms;
+  --badge-fade-dur: 400ms;
+  --badge-fade-close-dur: 180ms;
+  --badge-blur: 2px;
+  --badge-offset-x: -8.2px;
+  --badge-offset-y: 12.4px;
+  --badge-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --badge-pop-ease: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --badge-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes t-badge-slide-in {
+  from {
+    transform: translate(var(--badge-offset-x), var(--badge-offset-y));
+  }
+  to {
+    transform: translate(0, 0);
+  }
+}
+
+/* .t-badge is the absolutely-positioned wrapper for the dot.
+   top/right anchor it to the trigger (6px inset to match the bell). */
+.t-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  pointer-events: none;
+  will-change: transform;
+}
+.t-badge[data-open="true"] {
+  animation: t-badge-slide-in var(--badge-slide-dur) var(--badge-slide-ease);
+}
+
+.t-badge-dot {
+  display: block;
+  transform-origin: center;
+  transform: scale(1);
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    transform var(--badge-pop-dur) var(--badge-pop-ease),
+    opacity var(--badge-fade-dur) var(--badge-pop-ease),
+    filter var(--badge-pop-dur) var(--badge-pop-ease);
+  will-change: transform, opacity, filter;
+}
+.t-badge[data-open="false"] .t-badge-dot {
+  transform: scale(0);
+  opacity: 0;
+  filter: blur(var(--badge-blur));
+  transition:
+    transform var(--badge-pop-close-dur) var(--badge-close-ease),
+    opacity var(--badge-fade-close-dur) var(--badge-close-ease),
+    filter var(--badge-pop-close-dur) var(--badge-close-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-badge,
+  .t-badge-dot {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Success check
+   Wrapper drives fade + rotate + blur + Y-bob; an SVG <path>
+   inside gets the stroke-draw. Cold load is data-state="out";
+   set data-state="in" to play. Appear-only.
+   ============================================================ */
+:root {
+  --check-opacity-dur: 550ms;
+  --check-rotate-dur: 550ms;
+  --check-rotate-from: 80deg;
+  --check-bob-dur: 450ms;
+  --check-y-amount: 40px;
+  --check-blur-dur: 500ms;
+  --check-blur-from: 10px;
+  --check-path-dur: 550ms;
+  --check-path-delay: 80ms;
+  --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-opacity: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-rotate: cubic-bezier(0.22, 1, 0.36, 1);
+  --check-ease-bob: cubic-bezier(0.34, 1.35, 0.64, 1);
+  --check-ease-path: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Wrapper drives the appear animation; it doesn't own any
+   sizing or color so you can drop in any icon. */
+.t-success-check {
+  display: inline-block;
+  transform-origin: center;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+/* overflow: visible keeps the stroke from clipping while it
+   draws; display: block kills the inline whitespace under SVGs. */
+.t-success-check svg {
+  display: block;
+  overflow: visible;
+}
+/* Stroke-draw setup. 32 = path.getTotalLength() for the check
+   path below (M14 25 L21 32 L35 16), rounded up; round caps
+   hide any sub-pixel overshoot. */
+.t-success-check svg path {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+}
+
+.t-success-check[data-state="in"] {
+  animation:
+    t-check-fade var(--check-opacity-dur) var(--check-ease-opacity) forwards,
+    t-check-rotate var(--check-rotate-dur) var(--check-ease-rotate) forwards,
+    t-check-blur var(--check-blur-dur) var(--check-ease-out) forwards,
+    t-check-bob var(--check-bob-dur) var(--check-ease-bob) forwards;
+}
+.t-success-check[data-state="in"] svg path {
+  animation: t-check-draw var(--check-path-dur) var(--check-ease-path)
+    var(--check-path-delay, 0ms) forwards;
+}
+
+@keyframes t-check-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes t-check-rotate {
+  from {
+    transform: rotate(var(--check-rotate-from));
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+@keyframes t-check-blur {
+  from {
+    filter: blur(var(--check-blur-from));
+  }
+  to {
+    filter: blur(0);
+  }
+}
+@keyframes t-check-bob {
+  from {
+    translate: 0 var(--check-y-amount);
+  }
+  to {
+    translate: 0 0;
+  }
+}
+@keyframes t-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-success-check {
+    animation: none !important;
+    opacity: 1;
+  }
+  .t-success-check svg path {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Skeleton loader and reveal
+   Cross-blur from a skeleton layer to the loaded content. Both
+   layers stack on the same coordinates, so this is for
+   equal-size swaps (e.g. the task drawer's matched chrome).
+   Add .is-revealed to .t-skel when data lands.
+   ============================================================ */
+:root {
+  --pulse-dur: 1000ms;
+  --pulse-count: 1;
+  --pulse-min: 0.5;
+  --reveal-dur: 400ms;
+  --reveal-blur: 2px;
+  --reveal-ease: ease-in-out;
+}
+
+.t-skel {
+  position: relative;
+}
+.t-skel-skeleton,
+.t-skel-content {
+  position: absolute;
+  inset: 0;
+}
+
+.t-skel-skeleton {
+  z-index: 1;
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel-content {
+  z-index: 2;
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel.is-revealed .t-skel-skeleton {
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+}
+.t-skel.is-revealed .t-skel-content {
+  opacity: 1;
+  filter: blur(0);
+}
+.t-skel.is-resetting .t-skel-skeleton,
+.t-skel.is-resetting .t-skel-content {
+  transition: none !important;
+}
+
+.t-skel-skeleton.is-pulsing > * {
+  animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
+}
+@keyframes t-skel-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: var(--pulse-min);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-skel-skeleton,
+  .t-skel-content {
+    transition: none !important;
+  }
+  .t-skel-skeleton.is-pulsing > * {
+    animation: none !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Tabs sliding
+   The active pill's transform + width + height are written inline
+   by JS (measured from the selected tab); CSS owns the tween. The
+   pill's surface color comes from the app's own tokens on the
+   element (e.g. bg-primary/12), so only the timing vars live here.
+   ============================================================ */
+:root {
+  --tabs-dur: 200ms;
+  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Container anchors the absolutely-positioned pill; tabs sit above it. */
+.t-tabs {
+  position: relative;
+}
+.t-tab {
+  position: relative;
+  z-index: 1;
+}
+/* width / transform / height are written inline by JS so the
+   transition tweens between the previous and next measured tab. */
+.t-tabs-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 0;
+  pointer-events: none;
+  transform: translateX(0);
+  transition:
+    transform var(--tabs-dur) var(--tabs-ease),
+    width var(--tabs-dur) var(--tabs-ease),
+    height var(--tabs-dur) var(--tabs-ease);
+  will-change: transform, width, height;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-tabs-pill,
+  .t-tab {
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Error state shake
+   Percussive left/right shake with overshoot — a "this is wrong"
+   cue on a rejected field. Per-segment easing; replay by removing
+   .is-shaking, forcing a reflow, then re-adding it. The visible
+   error message stays the app's own alert box / toast, so only the
+   shake leg of the transition is installed here.
+   ============================================================ */
+:root {
+  --shake-distance: 6px;
+  --shake-overshoot: 4px;
+  --shake-dur-a: 80ms;
+  --shake-dur-b: 60ms;
+  --shake-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.t-input {
+  will-change: transform;
+}
+/* %-stops are cumulative leg durations (80, 80, 60, 60 = 280ms):
+   28.57%, 57.14%, 78.57%, 100%. Recompute if the durations change. */
+.t-input.is-shaking {
+  animation: t-input-shake
+    calc(var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2) linear;
+}
+@keyframes t-input-shake {
+  0% {
+    transform: translateX(0);
+    animation-timing-function: var(--shake-ease);
+  }
+  28.57% {
+    transform: translateX(var(--shake-distance));
+    animation-timing-function: var(--shake-ease);
+  }
+  57.14% {
+    transform: translateX(calc(var(--shake-distance) * -1));
+    animation-timing-function: var(--shake-ease);
+  }
+  78.57% {
+    transform: translateX(var(--shake-overshoot));
+    animation-timing-function: var(--shake-ease);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-input {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Icon swap
+   Cross-fade two icons stacked in the same grid cell — set
+   data-state="a"/"b" on .t-icon-swap; the matching .t-icon fades
+   in while the other blurs + scales out. Pure CSS.
+   ============================================================ */
+:root {
+  --icon-swap-dur: 200ms;
+  --icon-swap-blur: 2px;
+  --icon-swap-start-scale: 0.25;
+  --icon-swap-ease: ease-in-out;
+}
+
+.t-icon-swap {
+  position: relative;
+  display: inline-grid;
+}
+.t-icon-swap .t-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--icon-swap-dur) var(--icon-swap-ease),
+    filter var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease);
+  will-change: opacity, filter, transform;
+}
+.t-icon-swap[data-state="a"] .t-icon[data-icon="a"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="b"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+.t-icon-swap[data-state="a"] .t-icon[data-icon="b"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="a"] {
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-icon-swap .t-icon {
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Text states swap
+   Swap a status label in place — "Create workspace" → "Creating…",
+   "Save" → "Saved". Old text exits up with blur; new text enters
+   from below. Driven by the useTextSwap hook (lib/use-text-swap.ts):
+   add .is-exit, swap textContent, add .is-enter-start (no transition),
+   reflow, then remove it so the new text settles back to rest.
+   ============================================================ */
+:root {
+  --text-swap-dur: 150ms;
+  --text-swap-translate-y: 4px;
+  --text-swap-blur: 2px;
+  --text-swap-ease: ease-in-out;
+}
+
+.t-text-swap {
+  display: inline-block;
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform var(--text-swap-dur) var(--text-swap-ease),
+    filter    var(--text-swap-dur) var(--text-swap-ease),
+    opacity   var(--text-swap-dur) var(--text-swap-ease);
+  will-change: transform, filter, opacity;
+}
+.t-text-swap.is-exit {
+  transform: translateY(calc(var(--text-swap-translate-y) * -1));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+}
+.t-text-swap.is-enter-start {
+  transform: translateY(var(--text-swap-translate-y));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-text-swap {
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Avatar group hover
+   Distance-falloff lift across a horizontal stack (member avatars):
+   the hovered item lifts + scales, neighbors lift less with a power
+   falloff, everything springs back with overshoot on mouseleave.
+   The hook (lib/use-avatar-group-hover.ts) writes --shift /
+   --scale-active inline and flips the timing function per direction.
+   ============================================================ */
+:root {
+  --avatar-lift: -4px;
+  --avatar-dur: 320ms;
+  --avatar-scale: 1.05;
+  --avatar-falloff: 0.45;
+  --avatar-ease-in: cubic-bezier(0.22, 1, 0.36, 1);
+  --avatar-ease-out: cubic-bezier(0.34, 3.85, 0.64, 1);
+}
+
+/* Hover-spring transition only — the avatar/chip styling (size, shape,
+   ring, stacking) stays the caller's. */
+.t-avatar {
+  transform-origin: center;
+  /* translateY before scale so scale doesn't amplify the lift offset. */
+  transform:
+    translateY(var(--shift, 0px))
+    scale(var(--scale-active, 1));
+  transition: transform var(--avatar-dur) var(--avatar-ease-in);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-avatar {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Input clear with dissolve
+   Clearing a search field: the typed text flies down + blurs + fades
+   while a soft per-word streak ignites under each word and the
+   placeholder falls in from above. Per-frame JS (useClearDissolve in
+   lib/use-clear-dissolve.ts) writes the transforms + the radial-gradient
+   streak stack; this stylesheet owns the layer geometry + resting state.
+   ============================================================ */
+:root {
+  --clear-dur: 1000ms;
+  --clear-out-dur: 400ms;
+  --clear-in-dur: 400ms;
+  --clear-out-fly: 12px;
+  --clear-in-fly: 12px;
+  --clear-out-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --clear-in-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --clear-blur: 2px;
+  --glow-delay: 50ms;
+  --glow-peak-at: 0.15;
+  --glow-opacity: 0.42;
+  --glow-spread: 1.5;
+}
+
+.t-clear {
+  position: relative;
+  overflow: hidden;
+}
+.t-clear-mirror,
+.t-clear-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  z-index: 2;
+}
+.t-clear-mirror {
+  opacity: 0;
+}
+.t-clear.is-clearing .t-clear-mirror {
+  opacity: 1;
+}
+/* The streak overlay: empty by default; JS writes a stack of
+   radial-gradient(...) layers into background during a clear, then
+   animates opacity. multiply darkens the input + hairline in light
+   mode; flipped to screen under .dark so the same alpha lightens. */
+.t-clear-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 3;
+  mix-blend-mode: multiply;
+}
+.dark .t-clear-glow {
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-clear-glow {
+    opacity: 0 !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Number pop-in
+   Each digit of an updated count re-enters from below with blur; the
+   last two characters stagger so the number feels alive. Replay is
+   driven by remounting the group (key={n}) so the keyframes restart;
+   the PopNumber component (components/pop-number.tsx) skips the very
+   first paint so counts don't all pop on initial load.
+   ============================================================ */
+:root {
+  --digit-dur: 500ms;
+  --digit-distance: 8px;
+  --digit-stagger: 70ms;
+  --digit-blur: 2px;
+  --digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --digit-dir-x: 0;
+  --digit-dir-y: 1;
+}
+
+@keyframes t-digit-pop-in {
+  0% {
+    transform: translate(
+      calc(var(--digit-distance) * var(--digit-dir-x)),
+      calc(var(--digit-distance) * var(--digit-dir-y))
+    );
+    opacity: 0;
+    filter: blur(var(--digit-blur));
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.t-digit-group {
+  display: inline-flex;
+  align-items: baseline;
+}
+.t-digit {
+  display: inline-block;
+  will-change: transform, opacity, filter;
+}
+.t-digit-group.is-animating .t-digit {
+  animation: t-digit-pop-in var(--digit-dur) var(--digit-ease) both;
+}
+.t-digit-group.is-animating .t-digit[data-stagger="1"] {
+  animation-delay: var(--digit-stagger);
+}
+.t-digit-group.is-animating .t-digit[data-stagger="2"] {
+  animation-delay: calc(var(--digit-stagger) * 2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-digit-group .t-digit {
+    animation: none !important;
+  }
+}
+
+/* ============================================================
+   Transitions.dev — Shimmer text
+   A loading / "thinking" label that sweeps a highlight band across
+   muted text on a loop (pure CSS, no JS). Duplicate the visible
+   string into data-text so the ::before layer can clip the gradient
+   onto the same glyphs. Colours are mapped to the app's own tokens
+   (--muted-foreground base, --foreground highlight) so the sweep
+   follows light / dark automatically.
+   ============================================================ */
+:root {
+  --shimmer-dur: 2000ms;
+  --shimmer-base: var(--muted-foreground);
+  --shimmer-highlight: var(--foreground);
+  --shimmer-band: 400%;
+  --shimmer-ease: linear;
+}
+
+.t-shimmer {
+  position: relative;
+  display: inline-block;
+  color: var(--shimmer-base);
+}
+.t-shimmer::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    var(--shimmer-highlight) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: var(--shimmer-band) 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: t-shimmer var(--shimmer-dur) var(--shimmer-ease) infinite;
+}
+@keyframes t-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-shimmer::before {
+    animation: none !important;
+  }
+}

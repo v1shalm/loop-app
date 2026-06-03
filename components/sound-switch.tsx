@@ -36,8 +36,15 @@ export function SoundSwitch() {
       aria-label={on ? "Mute sounds" : "Unmute sounds"}
       className="focus-ring flex w-full items-center gap-2 rounded-lg border border-border/60 bg-card px-3 py-2 shadow-soft-xs transition-colors hover:bg-accent/40"
     >
-      <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
-        {on ? <SpeakerHigh size={13} /> : <SpeakerSlash size={13} />}
+      {/* transitions.dev icon-swap: both icons stack in one grid cell;
+          data-state crossfades between them (blur + scale) as sound
+          toggles, instead of a hard swap. */}
+      <span
+        data-state={on ? "a" : "b"}
+        className="t-icon-swap grid size-6 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"
+      >
+        <SpeakerHigh size={13} data-icon="a" className="t-icon" />
+        <SpeakerSlash size={13} data-icon="b" className="t-icon" />
       </span>
       <span className="flex-1 text-left text-[12px] font-medium text-foreground">
         Sounds

@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { sileo } from "sileo";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Check, CircleNotch, X } from "@/components/icons";
+import { TextSwap } from "@/components/text-swap";
 import { createTeam } from "@/lib/actions";
 import { playSound } from "@/lib/sounds";
+import { useShake } from "@/lib/use-shake";
 import { cn } from "@/lib/utils";
 
 // Same six accents the onboarding form offers, so a workspace created
@@ -38,6 +40,7 @@ export function CreateWorkspaceDialog({
   const [color, setColor] = useState(COLOR_OPTIONS[0].value);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const { ref: nameRef, shake } = useShake<HTMLInputElement>();
 
   useEffect(() => {
     if (!open) {
@@ -55,6 +58,7 @@ export function CreateWorkspaceDialog({
       const res = await createTeam({ name: trimmed, color, seedSamples: false });
       if (res.error) {
         setError(res.error);
+        shake();
         return;
       }
       playSound("added");
@@ -90,6 +94,7 @@ export function CreateWorkspaceDialog({
               Workspace name
             </span>
             <input
+              ref={nameRef}
               type="text"
               autoFocus
               maxLength={60}
@@ -103,7 +108,7 @@ export function CreateWorkspaceDialog({
                 }
               }}
               placeholder="Design, Engineering, Marketing…"
-              className="focus-ring mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/40 disabled:opacity-60"
+              className="t-input focus-ring mt-2 h-10 w-full rounded-md border border-border bg-background px-3 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring/40 disabled:opacity-60"
             />
           </label>
 
@@ -174,7 +179,7 @@ export function CreateWorkspaceDialog({
             className="focus-ring surface-brand surface-brand-hover inline-flex h-9 items-center gap-1.5 rounded-md px-4 text-[13px] font-semibold text-primary-foreground shadow-[var(--shadow-cta)] transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
           >
             {pending && <CircleNotch size={13} className="animate-spin" />}
-            {pending ? "Creating…" : "Create workspace"}
+            <TextSwap value={pending ? "Creating…" : "Create workspace"} />
           </button>
         </div>
       </DialogContent>

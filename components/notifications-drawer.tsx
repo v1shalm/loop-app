@@ -357,23 +357,27 @@ export function NotificationsBell({ className }: { className?: string }) {
         )}
       >
         <Bell size={16} weight={open ? "fill" : "regular"} />
-        {hasUnread && (
-          <span
-            aria-hidden
-            className="absolute right-1.5 top-1.5 grid size-1.5 place-items-center"
-          >
-            {/* Pulses a couple of times when unread arrives, then rests —
-                the solid dot below carries the state. A forever-pulsing
-                dot reads as restless. */}
+        {/* Notification badge (transitions.dev): the dot slides in + pops
+            on unread, and pops out with a blur when cleared. Stays mounted
+            so the close transition can play — data-open drives the state. */}
+        <span
+          aria-hidden
+          data-open={hasUnread ? "true" : "false"}
+          className="t-badge grid size-1.5 place-items-center"
+        >
+          {/* Ripples a couple of times when unread arrives, then rests —
+              the solid dot carries the state. A forever-pulsing dot reads
+              as restless. */}
+          {hasUnread && (
             <motion.span
               initial={{ scale: 0.6, opacity: 0.9 }}
               animate={{ scale: [0.6, 1.6, 0.6], opacity: [0.9, 0, 0.9] }}
               transition={{ duration: 1.8, repeat: 2, ease: "easeOut" }}
               className="absolute inline-flex size-1.5 rounded-full bg-rose-400"
             />
-            <span className="relative size-1.5 rounded-full bg-rose-500 ring-2 ring-background" />
-          </span>
-        )}
+          )}
+          <span className="t-badge-dot size-1.5 rounded-full bg-rose-500 ring-2 ring-background" />
+        </span>
       </button>
 
       {isMobile && (
