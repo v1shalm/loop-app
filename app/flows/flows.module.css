@@ -1,0 +1,170 @@
+/* Connector geometry for the /flows diagrams. Tailwind can't draw the
+   elbow/branch lines a tree or flowchart needs, so the lines live here.
+   Colours come from the theme tokens (var(--border)) so they adapt to
+   light/dark. Boxes themselves are styled with Tailwind in the page. */
+
+/* ============================ IA TREE (image-2 style) ===================== */
+
+.treeScroll {
+  overflow-x: auto;
+  padding: 6px 2px 10px;
+}
+.tree {
+  min-width: 760px; /* keeps the 5 columns legible; scrolls on mobile */
+}
+
+/* Root node + the line that drops from it to the bus. */
+.root {
+  position: relative;
+  padding-bottom: 26px;
+  text-align: center;
+}
+.root::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  height: 26px;
+  background: var(--border);
+  transform: translateX(-0.5px);
+}
+
+/* The row of top-level categories, joined by a horizontal "bus" line. */
+.cats {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  padding-top: 26px;
+}
+.cats::before {
+  /* bus spans between the centre of the first and last columns (1/10 in) */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: var(--border);
+}
+.cat {
+  position: relative;
+}
+.cat::before {
+  /* drop from the bus down into each category node */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 26px;
+  background: var(--border);
+  transform: translateX(-0.5px);
+}
+
+/* Vertical list of children under a category (file-tree style). */
+.vlist {
+  position: relative;
+  margin-top: 14px;
+  padding-left: 16px;
+}
+.vlist::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: -8px;
+  bottom: 15px;
+  width: 1px;
+  background: var(--border);
+}
+.vitem {
+  position: relative;
+  margin: 7px 0;
+}
+.vitem::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 14px;
+  width: 10px;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ============================ FLOWCHART (image-1 style) =================== */
+
+.flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* a single vertical connector with an arrowhead at the bottom */
+.conn {
+  position: relative;
+  width: 1px;
+  height: 30px;
+  margin: 0 auto;
+  background: var(--border);
+}
+.conn::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  transform: translateX(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--border);
+}
+
+/* the two-way branch under a decision node */
+.split {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  padding-top: 30px;
+  width: 100%;
+  max-width: 760px;
+}
+.split::before {
+  /* bus between the two column centres (each 1/4 in from the edges) */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 1px;
+  background: var(--border);
+}
+.splitCol {
+  position: relative;
+  text-align: center;
+}
+.splitCol::before {
+  /* drop from the bus down to the branch label, with an arrowhead */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 26px;
+  background: var(--border);
+  transform: translateX(-0.5px);
+}
+.splitCol::after {
+  content: "";
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--border);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* nothing motion-specific here; reveals are handled in the page */
+}
