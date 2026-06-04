@@ -40,9 +40,10 @@ export default async function AssignedToMePage() {
   const activeCount = overdue.length + today.length + upcoming.length;
   const firstName = profile?.name?.split(/\s+/)[0] ?? "friend";
 
-  // Active sections in render order. The last one renders the "+ Add task"
-  // footer so the page has exactly one quick-add affordance, attached to
-  // the most relevant group.
+  // Active sections in render order. Capture lives in the top-bar "Add task"
+  // button and the bottom quick-add bar, so the per-list inline "+ Add task"
+  // footer is intentionally omitted here to keep My Day calm (one fewer
+  // competing affordance on the most-used screen).
   const sections: {
     key: "overdue" | "today" | "upcoming";
     title: string;
@@ -73,8 +74,6 @@ export default async function AssignedToMePage() {
       tasks: upcoming,
     });
   }
-  const lastIdx = sections.length - 1;
-
   const dueTodayCount = overdue.length + today.length;
   const completedTodayCount = completedToday.length;
   const hasAnyStats = dueTodayCount > 0 || completedTodayCount > 0;
@@ -93,7 +92,7 @@ export default async function AssignedToMePage() {
             {hasAnyStats
               ? [
                   dueTodayCount > 0 &&
-                    `${dueTodayCount} ${dueTodayCount === 1 ? "task" : "tasks"} due today`,
+                    `${dueTodayCount} ${dueTodayCount === 1 ? "task" : "tasks"} for today`,
                   completedTodayCount > 0 &&
                     `${completedTodayCount} completed today`,
                 ]
@@ -121,14 +120,13 @@ export default async function AssignedToMePage() {
               />
             ) : (
               <>
-                {sections.map((s, i) => (
+                {sections.map((s) => (
                   <Section
                     key={s.key}
                     title={s.title}
                     subtitle={s.subtitle}
                     count={s.tasks.length}
                     tone={s.tone}
-                    addFooter={i === lastIdx}
                   >
                     <SortableTaskList tasks={s.tasks} />
                   </Section>

@@ -478,6 +478,32 @@ export async function addTeamMember(
   return { ok: true };
 }
 
+/**
+ * Add an already-registered person to a team directly (invite from the
+ * database). Goes through the add_team_member SECURITY DEFINER RPC
+ * (migration 0040), which enforces that the caller is a superadmin, a team
+ * admin, or a team manager — and that the target is already in the workspace.
+ */
+export async function addExistingMember(
+  teamId: string,
+  userId: string,
+  role: "admin" | "member" = "member"
+): Promise<{ ok?: true; error?: string }> {
+  if (!teamId || !userId) return { error: "Team and person are required." };
+  const supabase = await getSupabaseServer();
+  if (!supabase) return { error: "Supabase not configured." };
+
+  const { error } = await (supabase as any).rpc("add_team_member", {
+    p_team_id: teamId,
+    p_user_id: userId,
+    p_role: role,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function removeTeamMember(
   userId: string
 ): Promise<{ ok?: true; error?: string }> {

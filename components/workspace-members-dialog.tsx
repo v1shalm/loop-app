@@ -18,11 +18,14 @@ import {
   LinkSimple,
   MagnifyingGlass,
   PaperPlaneTilt,
+  Plus,
   ShieldCheck,
   Trash,
   X,
 } from "@/components/icons";
+import { useTeamContext } from "@/components/team-provider";
 import {
+  addExistingMember,
   cancelInvite,
   changeTeamMemberRole,
   removeTeamMember,
@@ -85,6 +88,12 @@ export function WorkspaceMembersDialog({
   // automatically. Without any pending invites it shows a soft hint.
   const latestInvite = invites[0] ?? null;
 
+  // Ids already on this team — excluded from the "add existing member" picker.
+  const existingIds = useMemo(
+    () => new Set(members.map((m) => m.id)),
+    [members]
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -122,6 +131,11 @@ export function WorkspaceMembersDialog({
 
           {/* Invite with link */}
           <InviteLinkRow invite={latestInvite} />
+
+          {/* Add a registered person directly (invite from the database) */}
+          {team && (
+            <AddExistingMemberRow teamId={team.id} existingIds={existingIds} />
+          )}
 
           {/* Search */}
           <SearchRow value={query} onChange={setQuery} />
@@ -331,6 +345,110 @@ function InviteLinkRow({ invite }: { invite: PendingInvitation | null }) {
           <p className="px-1 py-2 text-[12px] text-muted-foreground">
             Send an invite email above to get a shareable link.
           </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ── Add an already-registered person ────────────────────────────────────────
+
+function AddExistingMemberRow({
+  teamId,
+  existingIds,
+}: {
+  teamId: string;
+  existingIds: Set<string>;
+}) {
+  // The full workspace roster comes from context (already filtered by the
+  // directory rule — a General-only lobby user wouldn't see everyone, but they
+  // also can't open this dialog). Exclude people already on the team.
+  const { members: workspaceMembers } = useTeamContext();
+  const [query, setQuery] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [addingId, setAddingId] = useState<string | null>(null);
+
+  const q = query.trim().toLowerCase();
+  const candidates = useMemo(
+    () =>
+      workspaceMembers
+        .filter((m) => !existingIds.has(m.id))
+        .filter((m) => !q || m.name.toLowerCase().includes(q)),
+    [workspaceMembers, existingIds, q]
+  );
+
+  const add = (m: { id: string; name: string }) => {
+    setAddingId(m.id);
+    startTransition(async () => {
+      const res = await addExistingMember(teamId, m.id, "member");
+      setAddingId(null);
+      if (res.error) {
+        sileo.error({ title: res.error });
+        return;
+      }
+      playSound("added");
+      sileo.success({ title: `${m.name} added to the team` });
+      setQuery("");
+    });
+  };
+
+  return (
+    <section className="mt-4">
+      <div className="flex items-center gap-2 text-[12px] font-medium text-foreground">
+        <Plus size={13} className="text-muted-foreground" />
+        Add someone already signed up
+      </div>
+      <div className="mt-2 border-b border-border/60 pb-3">
+        <div className="flex items-center gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search people in the workspace"
+            className="focus-ring h-9 min-w-0 flex-1 rounded-md bg-transparent px-1 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+          />
+          <MagnifyingGlass size={14} className="text-muted-foreground/70" />
+        </div>
+        {q && (
+          <ul className="mt-2 max-h-[200px] space-y-0.5 overflow-y-auto">
+            {candidates.length === 0 ? (
+              <li className="px-1 py-2 text-[12px] text-muted-foreground">
+                No matching people who aren&apos;t already on the team.
+              </li>
+            ) : (
+              candidates.slice(0, 8).map((m) => (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    onClick={() => add(m)}
+                    disabled={pending}
+                    className="focus-ring flex w-full items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-accent/40 disabled:opacity-60"
+                  >
+                    <Avatar
+                      src={m.avatar_url}
+                      initials={m.initials}
+                      color={m.avatar_color}
+                      size={26}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">
+                      {m.name}
+                    </span>
+                    {addingId === m.id ? (
+                      <CircleNotch
+                        size={13}
+                        className="animate-spin text-muted-foreground"
+                      />
+                    ) : (
+                      <Plus
+                        size={14}
+                        weight="bold"
+                        className="text-primary-readable"
+                      />
+                    )}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
         )}
       </div>
     </section>

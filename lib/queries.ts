@@ -383,7 +383,40 @@ export const getWorkspaceMembers = cache(async (): Promise<Profile[]> => {
     .select("profile:profiles!inner(*)")
     .eq("workspace_id", ws.id)
     .order("joined_at") as any);
-  return ((data ?? []) as Array<{ profile: Profile }>).map((r) => r.profile);
+  const all = ((data ?? []) as Array<{ profile: Profile }>).map((r) => r.profile);
+
+  // Directory restriction (lobby model). A "General-only" lobby user — in the
+  // shared General team, on no real team, and not an admin/superadmin/manager —
+  // shouldn't see the whole company roster (or be able to assign to anyone).
+  // Anyone on a real team, plus admins/superadmins/managers, sees everyone so
+  // they can find people to invite. Latent today (every current user is on a
+  // real team, so they fall through to "see everyone"); it engages once
+  // external people sign in to the lobby.
+  const [role, myTeams, managed] = await Promise.all([
+    getMyWorkspaceRole(),
+    getMyTeams(),
+    getMyManagedTeamIds(),
+  ]);
+  const privileged =
+    role === "admin" || role === "superadmin" || managed.length > 0;
+  const onRealTeam = myTeams.some(
+    (t) => (t.name ?? "").toLowerCase() !== "general"
+  );
+  if (privileged || onRealTeam) return all;
+
+  // General-only: show only people who share the General team.
+  const generalTeamIds = myTeams
+    .filter((t) => (t.name ?? "").toLowerCase() === "general")
+    .map((t) => t.id);
+  if (generalTeamIds.length === 0) return all;
+  const { data: gm } = await (supabase
+    .from("team_members")
+    .select("user_id")
+    .in("team_id", generalTeamIds) as any);
+  const visible = new Set(
+    ((gm ?? []) as Array<{ user_id: string }>).map((r) => r.user_id)
+  );
+  return all.filter((m) => visible.has(m.id));
 });
 
 /** Same as getWorkspaceMembers but each row carries its workspace role. */
