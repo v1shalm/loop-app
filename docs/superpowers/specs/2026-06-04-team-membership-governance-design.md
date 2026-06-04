@@ -59,12 +59,14 @@ people so official members can find and invite them — without exposing any rea
 - Backfill every existing team-less user into General.
 - Net: every signed-in person is always on at least General.
 
-### W2 · Onboarding change
-- `app/(app)/layout.tsx`: stop sending team-less users to `/onboarding` to *create* a team.
-  After W1 nobody is team-less; keep a safety net (ensure-General, then continue) so the
-  create-team wall is gone.
-- Retire or repurpose `/onboarding`'s "create your first team" flow — team creation becomes
-  an admin action (W3). New users simply land in General (e.g. their General work view).
+### W2 · Onboarding change (keep the screen, gate the create-team step)
+- **Keep the onboarding screen.** For regular new users, remove the "create a team" step —
+  they are already in General (W1), so onboarding becomes a light welcome that lands them in
+  their General work view; it no longer gates entry behind creating a team.
+- The **create-team screen is shown only to admins and superadmins** (reuse the existing
+  form). They reach it from onboarding and/or an in-app admin entry (W3).
+- `app/(app)/layout.tsx`: stop redirecting team-less users into a create-team wall (after W1
+  nobody is team-less; keep an ensure-General safety net).
 
 ### W3 · Gate team creation (superadmin + workspace admin)
 - `createTeam()` rejects callers who are not superadmin or workspace admin.
@@ -84,8 +86,9 @@ people so official members can find and invite them — without exposing any rea
 - Official team admins/managers can bring someone in two ways:
   1. **Pick a registered user** (search the directory) and add them to the team.
   2. **Invite by email** for someone who has not signed in yet (existing token flow).
-- For a registered user, prefer a **direct add** (they already have an account) over a
-  pending email invite — smoother. *(Open question — see §11.)*
+- For a registered user, **direct-add** (no accept step): the admin/manager adds them and
+  they immediately become a team member and start seeing **that team's** projects and tasks.
+  Email invites (token + accept) remain only for people who have not signed in yet.
 - Reuse `team_invitations` for email; add an "add existing member" path.
 
 ### W6 · Asymmetric people directory
@@ -155,14 +158,16 @@ A new migration, e.g. `00XX_general_team_and_governance.sql`:
 - Create team: superadmin + workspace admin.
 - Create project: any member, within their team.
 - Join an official team: invite only (people-picker for registered users + email fallback).
+- Adding a *registered* user to a team: **direct add** — instant membership; they
+  immediately see that team's projects/tasks. Email invite + accept stays only for
+  not-yet-registered people.
+- Onboarding: **keep the screen**; remove the create-team step from the regular path and
+  show the create-team screen to **admins/superadmins only**.
 - People directory: asymmetric.
 
 ## 11. Open questions
 
-- When adding a **registered** user to an official team: direct-add vs send-an-invite-to-accept?
-- What happens to the existing `/onboarding` route — retire it, or repurpose it as the
-  admin "create team" screen?
-- General clutter policy (later).
+- General clutter policy over time — read-mostly General, or periodic cleanup. Low priority.
 
 ## 12. Dependencies
 
