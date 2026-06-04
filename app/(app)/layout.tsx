@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { ensureInGeneral } from "@/lib/actions";
 import {
   getCurrentProfile,
   getDefaultWorkspace,
+  getGeneralTeam,
   getMyTeam,
   getMyTeams,
   getMyTeamRole,
@@ -63,20 +65,27 @@ export default async function AppLayout({
 
   const isSuperadmin = workspaceRole === "superadmin";
 
-  // A signed-in user without a team has no scope. Bounce them through
-  // /onboarding to create one (and pick up the admin role on the team
-  // they create). Superadmins are the exception — they oversee every
-  // team and may not belong to one themselves, so they skip onboarding
-  // and land in the app (the admin area is their home base).
-  if (!team && !isSuperadmin) {
-    redirect("/onboarding");
+  // A signed-in user without a team has no scope. In the lobby model nobody
+  // should be team-less — but a team deletion (e.g. cleanup) can orphan a
+  // member after the one-time backfill ran. Rather than strand them at
+  // onboarding (which they can't complete — only admins create teams), drop
+  // them back into the shared General lobby and continue. Superadmins skip
+  // this; they oversee everything and needn't belong to a team.
+  let resolvedTeam = team;
+  if (!resolvedTeam && !isSuperadmin) {
+    await ensureInGeneral();
+    resolvedTeam = await getGeneralTeam();
+    if (!resolvedTeam) {
+      // No General team at all (not seeded yet) — fall back to onboarding.
+      redirect("/onboarding");
+    }
   }
 
   return (
     <AppShell
       user={profile}
       workspace={workspace}
-      team={team}
+      team={resolvedTeam}
       teams={teams}
       teamRole={teamRole}
       isSuperadmin={isSuperadmin}

@@ -504,6 +504,18 @@ export async function addExistingMember(
   return { ok: true };
 }
 
+/**
+ * Drop a team-less member back into the shared General lobby (idempotent;
+ * no-ops if they already have a team). Called from the app layout so a user
+ * whose team was deleted in a cleanup isn't stranded at onboarding. Backed by
+ * the ensure_in_general RPC (migration 0041).
+ */
+export async function ensureInGeneral(): Promise<void> {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return;
+  await (supabase as any).rpc("ensure_in_general");
+}
+
 export async function removeTeamMember(
   userId: string
 ): Promise<{ ok?: true; error?: string }> {

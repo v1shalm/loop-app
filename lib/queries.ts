@@ -176,6 +176,22 @@ export const getMyTeams = cache(async (): Promise<Team[]> => {
     .filter((t): t is Team => t != null);
 });
 
+/** The shared "General" lobby team in the default workspace, if it exists. */
+export const getGeneralTeam = cache(async (): Promise<Team | null> => {
+  const supabase = await getSupabaseServer();
+  if (!supabase) return null;
+  const ws = await getDefaultWorkspace();
+  if (!ws) return null;
+  const { data } = await (supabase
+    .from("teams")
+    .select("id, workspace_id, name, color")
+    .eq("workspace_id", ws.id)
+    .ilike("name", "general")
+    .limit(1)
+    .maybeSingle() as any);
+  return (data as Team | null) ?? null;
+});
+
 /**
  * The team the user is currently viewing — their active selection, or
  * the earliest team they joined as a fallback. Mirrors the DB's
