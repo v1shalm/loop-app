@@ -46,7 +46,6 @@ export default function ProcessPage() {
         <Screens />
         <SmallCalls />
         <NextUp />
-        <DemoAccounts />
         <Footer />
       </main>
     </>
@@ -414,101 +413,6 @@ function NextUp() {
           </li>
         ))}
       </ul>
-    </Section>
-  );
-}
-
-// ── Demo accounts ──────────────────────────────────────────────────────────
-
-const DEMOS = [
-  {
-    name: "Alex Chen",
-    team: "Design",
-    role: "Admin",
-    email: "alex@loop.app",
-    pw: "alex-loop-2026",
-  },
-  {
-    name: "Mia Patel",
-    team: "Design",
-    role: "Member",
-    email: "mia@loop.app",
-    pw: "mia-loop-2026",
-  },
-  {
-    name: "Ravi Kumar",
-    team: "Engineering",
-    role: "Admin",
-    email: "ravi@loop.app",
-    pw: "ravi-loop-2026",
-  },
-  {
-    name: "Priya Shah",
-    team: "Engineering",
-    role: "Member",
-    email: "priya@loop.app",
-    pw: "priya-loop-2026",
-  },
-];
-
-function DemoAccounts() {
-  return (
-    <Section title="Demo accounts">
-      <Prose>
-        <p>
-          Sign in as an admin to see the full app. Sign in as a member
-          to see what&apos;s hidden from non-admins.
-        </p>
-      </Prose>
-
-      <div className="mt-5 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft-xs">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border/60 text-left text-[12px] font-semibold text-muted-foreground">
-              <th className="px-5 py-3">Name</th>
-              <th className="px-5 py-3">Team</th>
-              <th className="px-5 py-3">Role</th>
-              <th className="px-5 py-3">Password</th>
-            </tr>
-          </thead>
-          <tbody className="text-[15px]">
-            {DEMOS.map((d, i) => (
-              <tr
-                key={d.email}
-                className={
-                  i < DEMOS.length - 1
-                    ? "border-b border-border/40"
-                    : undefined
-                }
-              >
-                <td className="px-5 py-3.5">
-                  <p className="font-medium text-foreground">{d.name}</p>
-                  <p className="text-[13px] text-muted-foreground">
-                    {d.email}
-                  </p>
-                </td>
-                <td className="px-5 py-3.5 text-muted-foreground">
-                  {d.team}
-                </td>
-                <td className="px-5 py-3.5">
-                  <span
-                    className={
-                      d.role === "Admin"
-                        ? "inline-flex items-center rounded-md border border-violet-200/70 bg-violet-50 px-2 py-0.5 text-[12px] font-medium text-violet-700 dark:border-violet-400/30 dark:bg-violet-500/15 dark:text-violet-200"
-                        : "inline-flex items-center rounded-md border border-border bg-muted px-2 py-0.5 text-[12px] font-medium text-muted-foreground"
-                    }
-                  >
-                    {d.role}
-                  </span>
-                </td>
-                <td className="px-5 py-3.5 font-mono text-[13px] text-muted-foreground">
-                  {d.pw}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </Section>
   );
 }
