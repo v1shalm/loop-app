@@ -726,62 +726,31 @@ export async function createTask(
   const supabase = await getSupabaseServer();
   if (!supabase) return { error: "Supabase not configured." };
 
-  const [profile, workspace] = await Promise.all([
-    getCurrentProfile(),
-    getDefaultWorkspace(),
-  ]);
+  const profile = await getCurrentProfile();
   if (!profile) return { error: "Not signed in." };
-  if (!workspace)
-    return {
-      error:
-        "No workspace yet. Run supabase/seed.sql in the Supabase SQL Editor.",
-    };
 
-  // Self-assigned tasks are auto-triaged so they don't show up in the Inbox.
+  // Create through the create_task_for_me SECURITY DEFINER RPC (migration
+  // 0038) rather than a direct insert. A raw INSERT into `tasks` is rejected
+  // by RLS ("new row violates row-level security policy") even for a member
+  // inserting their own task — the same reason projects go through
+  // create_project_for_me. The RPC validates the caller (workspace
+  // membership, project access) in its body and stamps workspace_id,
+  // author_id, triaged_at, sort_order, and team_id (via trigger) server-side.
   const assigneeId = input.assigneeId ?? profile.id;
-  const triagedAt = assigneeId === profile.id ? new Date().toISOString() : null;
-
-  // sort_order = current epoch ms means new tasks land at the top of
-  // any list ordered by sort_order DESC (migration 0015). When the
-  // migration hasn't been applied yet, we drop the column from the
-  // payload so insert doesn't 400.
-  const useSortOrder = await hasTaskSortOrder();
-  const insertPayload: Record<string, unknown> = {
-    workspace_id: workspace.id,
-    project_id: input.projectId ?? null,
-    title,
-    description: input.description ?? null,
-    priority: input.priority ?? 4,
-    due_at: input.dueAt ?? null,
-    assignee_id: assigneeId,
-    author_id: profile.id,
-    triaged_at: triagedAt,
-  };
-  if (useSortOrder) insertPayload.sort_order = Date.now();
-  // Only attach recurrence when set, so task creation still works before
-  // migration 0029 lands (only recurring tasks need the new column).
-  if (input.recurrence) insertPayload.recurrence = input.recurrence;
-  const { data, error } = await (supabase as any)
-    .from("tasks")
-    .insert(insertPayload)
-    .select("id")
-    .single();
+  const { data, error } = await (supabase as any).rpc("create_task_for_me", {
+    p_title: title,
+    p_description: input.description ?? null,
+    p_priority: input.priority ?? 4,
+    p_due_at: input.dueAt ?? null,
+    p_project_id: input.projectId ?? null,
+    p_assignee_id: assigneeId,
+    p_recurrence: input.recurrence ?? null,
+  });
 
   if (error) return { error: error.message };
 
-  // Auto-add the assignee to the project so the task they own is
-  // visible to them. RLS lets any workspace member do this.
-  if (input.projectId && assigneeId && assigneeId !== profile.id) {
-    await (supabase as any)
-      .from("project_members")
-      .upsert(
-        { project_id: input.projectId, user_id: assigneeId, role: "member" },
-        { onConflict: "project_id,user_id", ignoreDuplicates: true }
-      );
-  }
-
   revalidateTaskRoutes(input.projectId ?? null);
-  return { ok: true, taskId: data?.id as string | undefined };
+  return { ok: true, taskId: data as string | undefined };
 }
 
 export interface UpdateTaskInput {
