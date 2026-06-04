@@ -7,6 +7,7 @@ import {
   getDefaultWorkspace,
   getMyTeam,
   getMyTeams,
+  getMyWorkspaceRole,
   hasTaskSortOrder,
 } from "@/lib/queries";
 import type { ProfileStatus } from "@/lib/queries";
@@ -269,6 +270,18 @@ export async function createTeam(input: {
 
   const profile = await getCurrentProfile();
   if (!profile) return { error: "Not signed in." };
+
+  // Only workspace admins + superadmins can create teams (governance:
+  // teams are org structure, not something every member spins up). The DB
+  // enforces this too via the teams_insert policy (migration 0039); this
+  // is the friendly app-level gate. Everyone else lands in the shared
+  // General team on sign-in and joins real teams by invite.
+  const role = await getMyWorkspaceRole();
+  if (role !== "admin" && role !== "superadmin") {
+    return {
+      error: "Only workspace admins can create teams. Ask an admin to set one up.",
+    };
+  }
 
   const workspace = await getDefaultWorkspace();
   if (!workspace) return { error: "Workspace missing." };
