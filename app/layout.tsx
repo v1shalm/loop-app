@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, ThemeInitScript } from "@/components/theme-provider";
-import { ThemeModal } from "@/components/theme-modal";
+import { ThemeModalMount } from "@/components/theme-modal-mount";
 import { ThemedToaster } from "@/components/themed-toaster";
-import { Agentation } from "agentation";
+import { DevToolbar } from "@/components/dev-toolbar";
 import "sileo/styles.css";
 import "./globals.css";
 
@@ -102,14 +102,13 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider>
             {children}
-            <ThemeModal />
+            <ThemeModalMount />
             <ThemedToaster />
           </TooltipProvider>
         </ThemeProvider>
-        {/* Agentation visual-feedback toolbar — dev only. Annotate the UI
-            in the browser and it syncs to the coding agent via the MCP
-            server. Guarded by NODE_ENV so it never ships to production. */}
-        {process.env.NODE_ENV === "development" && <Agentation />}
+        {/* Agentation visual-feedback toolbar — dev only, loaded via a guarded
+            dynamic import in DevToolbar so it never ships to production. */}
+        <DevToolbar />
         {/* Placeholder for @vercel/analytics */}
         {/* <Analytics /> */}
       </body>
