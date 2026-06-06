@@ -71,4 +71,10 @@ describe("reorderWidgets", () => {
     const out = reorderWidgets(input, "a", "a");
     expect(out.map((x) => x.id)).toEqual(["a", "b"]);
   });
+
+  it("returns a normalized copy when an id is not found", () => {
+    const out = reorderWidgets([w("a", 3), w("b", 7)], "zzz", "a");
+    expect(out.map((x) => x.id)).toEqual(["a", "b"]);
+    expect(out.map((x) => x.order)).toEqual([0, 1]);
+  });
 });

@@ -52,7 +52,7 @@ export function reorderWidgets(
   const ordered = normalizeOrders(widgets);
   const from = ordered.findIndex((wgt) => wgt.id === activeId);
   const to = ordered.findIndex((wgt) => wgt.id === overId);
-  if (from === -1 || to === -1) return widgets;
+  if (from === -1 || to === -1) return ordered;
   const copy = [...ordered];
   const [moved] = copy.splice(from, 1);
   copy.splice(to, 0, moved);

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import type { DashboardLayout, DashboardWidget } from "./types";
+import { normalizeOrders } from "./layout";
 
 interface Row {
   id: string;
@@ -13,7 +14,9 @@ interface Row {
 }
 
 /** Load the current user's dashboard (lock flag + ordered widgets). */
-export async function getMyDashboard(): Promise<DashboardLayout> {
+export async function getMyDashboard(): Promise<
+  DashboardLayout & { error?: string }
+> {
   const supabase = await getSupabaseServer();
   if (!supabase) return { locked: false, widgets: [] };
 
@@ -22,7 +25,7 @@ export async function getMyDashboard(): Promise<DashboardLayout> {
   if (!uid) return { locked: false, widgets: [] };
 
   const db = supabase as any;
-  const [{ data: dash }, { data: rows }] = await Promise.all([
+  const [dashRes, rowsRes] = await Promise.all([
     db.from("dashboards").select("locked").eq("user_id", uid).maybeSingle(),
     db
       .from("dashboard_widgets")
@@ -31,15 +34,23 @@ export async function getMyDashboard(): Promise<DashboardLayout> {
       .order("position", { ascending: true }),
   ]);
 
-  const widgets: DashboardWidget[] = ((rows ?? []) as Row[]).map((r) => ({
-    id: r.id,
-    type: r.type as DashboardWidget["type"],
-    order: r.position,
-    size: r.size,
-    settings: r.settings ?? {},
-  }));
+  // Surface a read failure so the UI can show a retry state instead of an
+  // indistinguishable "empty board".
+  if (rowsRes.error) {
+    return { locked: false, widgets: [], error: rowsRes.error.message };
+  }
 
-  return { locked: (dash?.locked as boolean) ?? false, widgets };
+  const widgets = normalizeOrders(
+    ((rowsRes.data ?? []) as Row[]).map((r) => ({
+      id: r.id,
+      type: r.type as DashboardWidget["type"],
+      order: r.position,
+      size: r.size,
+      settings: r.settings ?? {},
+    }))
+  );
+
+  return { locked: (dashRes.data?.locked as boolean) ?? false, widgets };
 }
 
 export async function saveDashboardLayout(
@@ -70,7 +81,7 @@ export async function saveDashboardLayout(
     );
     if (up.error) return { error: up.error.message };
 
-    const keep = widgets.map((w) => `"${w.id}"`).join(",");
+    const keep = widgets.map((w) => w.id).join(",");
     const prune = await db
       .from("dashboard_widgets")
       .delete()
