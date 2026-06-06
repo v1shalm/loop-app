@@ -6,7 +6,9 @@
     "dev": "NODE_OPTIONS=--disable-warning=DEP0205 next dev",
     "build": "NODE_OPTIONS=--disable-warning=DEP0205 next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -39,6 +41,7 @@
     "playwright": "^1.60.0",
     "shadcn": "^4.8.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.6"
   }
 }
