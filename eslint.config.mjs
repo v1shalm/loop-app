@@ -31,7 +31,7 @@ const eslintConfig = defineConfig([
     // generated client types don't model nested / renamed-fkey selects.
     // Scope the allowance to these two files instead of scattering
     // per-line disables through every query.
-    files: ["lib/queries.ts", "lib/actions.ts"],
+    files: ["lib/queries.ts", "lib/actions.ts", "lib/dashboard/actions.ts"],
     rules: { "@typescript-eslint/no-explicit-any": "off" },
   },
   // Override default ignores of eslint-config-next.
