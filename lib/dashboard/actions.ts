@@ -42,10 +42,6 @@ export async function getMyDashboard(): Promise<DashboardLayout> {
   return { locked: (dash?.locked as boolean) ?? false, widgets };
 }
 
-/**
- * Replace the user's widget set with `widgets` (full-set save on edit).
- * Delete-all then insert: simple and race-free for a per-user board.
- */
 export async function saveDashboardLayout(
   widgets: DashboardWidget[]
 ): Promise<{ ok?: true; error?: string }> {
@@ -56,11 +52,12 @@ export async function saveDashboardLayout(
   if (!uid) return { error: "Not signed in." };
 
   const db = supabase as any;
-  const del = await db.from("dashboard_widgets").delete().eq("user_id", uid);
-  if (del.error) return { error: del.error.message };
 
+  // Upsert first so a failed write never empties the board; then prune any
+  // rows the user removed. If the prune fails, the worst case is harmless
+  // stale rows that self-heal on the next save — never a blank canvas.
   if (widgets.length > 0) {
-    const ins = await db.from("dashboard_widgets").insert(
+    const up = await db.from("dashboard_widgets").upsert(
       widgets.map((w) => ({
         id: w.id,
         user_id: uid,
@@ -68,12 +65,24 @@ export async function saveDashboardLayout(
         position: w.order,
         size: w.size,
         settings: w.settings,
-      }))
+      })),
+      { onConflict: "id" }
     );
-    if (ins.error) return { error: ins.error.message };
+    if (up.error) return { error: up.error.message };
+
+    const keep = widgets.map((w) => `"${w.id}"`).join(",");
+    const prune = await db
+      .from("dashboard_widgets")
+      .delete()
+      .eq("user_id", uid)
+      .not("id", "in", `(${keep})`);
+    if (prune.error) return { error: prune.error.message };
+  } else {
+    const del = await db.from("dashboard_widgets").delete().eq("user_id", uid);
+    if (del.error) return { error: del.error.message };
   }
 
-  revalidatePath("/home");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
@@ -87,11 +96,12 @@ export async function setDashboardLocked(
   const uid = auth.user?.id;
   if (!uid) return { error: "Not signed in." };
 
-  const { error } = await (supabase as any)
+  const db = supabase as any;
+  const { error } = await db
     .from("dashboards")
     .upsert({ user_id: uid, locked }, { onConflict: "user_id" });
   if (error) return { error: error.message };
 
-  revalidatePath("/home");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
